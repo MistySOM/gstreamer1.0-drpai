@@ -44,18 +44,18 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef __GST_PLUGIN_TEMPLATE_H__
-#define __GST_PLUGIN_TEMPLATE_H__
+#ifndef __GST_PLUGIN_DRPAI_H__
+#define __GST_PLUGIN_DRPAI_H__
 
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_PLUGIN_TEMPLATE (gst_plugin_template_get_type())
-G_DECLARE_FINAL_TYPE (GstPluginTemplate, gst_plugin_template,
-    GST, PLUGIN_TEMPLATE, GstElement)
+#define GST_TYPE_PLUGIN_DRPAI (gst_plugin_drpai_get_type())
+G_DECLARE_FINAL_TYPE (GstPluginDRPAI, gst_plugin_drpai,
+    GST, PLUGIN_DRPAI, GstElement)
 
-struct _GstPluginTemplate
+struct _GstPluginDRPAI
 {
   GstElement element;
 
@@ -66,4 +66,4 @@ struct _GstPluginTemplate
 
 G_END_DECLS
 
-#endif /* __GST_PLUGIN_TEMPLATE_H__ */
+#endif /* __GST_PLUGIN_DRPAI_H__ */
