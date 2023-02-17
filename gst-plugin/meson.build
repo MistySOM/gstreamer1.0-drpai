@@ -17,7 +17,7 @@ plugin_sources = [
   'src/gstplugin.c'
   ]
 
-gstplugindrpai = library('gstplugin',
+gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   dependencies : [gst_dep],

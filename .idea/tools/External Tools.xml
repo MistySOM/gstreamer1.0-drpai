@@ -1,0 +1,9 @@
+<toolSet name="External Tools">
+  <tool name="Ninja" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="ninja" />
+      <option name="PARAMETERS" value="-C build" />
+      <option name="WORKING_DIRECTORY" value="$USER_HOME$/Git/MistySOM/gstreamer1.0-drpai" />
+    </exec>
+  </tool>
+</toolSet>

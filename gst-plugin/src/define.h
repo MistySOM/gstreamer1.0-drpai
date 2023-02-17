@@ -36,11 +36,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <iomanip>
-#include <cstring>
 
 /*****************************************
 * Static Variables for ResNet50
@@ -49,23 +44,22 @@
 *  - drpai_prefix = directory name of DRP-AI Object files (DRP-AI Translator output)
 *  - input_img = input image to DRP-AI (size and format are determined in DRP-AI Translator)
 ******************************************/
-const static std::string label_list     = "synset_words_imagenet.txt";
-const static std::string drpai_prefix   = "resnet50_bmp";
-const static std::string input_img      = "sample.bmp";
+const static char* label_list     = "synset_words_imagenet.txt";
+const static char* drpai_prefix   = "resnet50_bmp";
+const static char* input_img      = "sample.bmp";
 
 /*****************************************
 * Static Variables (No need to change)
 * Following variables are the file name of each DRP-AI Object file
 * drpai_file_path order must be same as the INDEX_* defined later.
 ******************************************/
-const static std::string drpai_address_file = drpai_prefix+"/"+drpai_prefix+"_addrmap_intm.txt";
-const static std::string drpai_file_path[5] =
+const static char* drpai_file_path[5] =
 {
-    drpai_prefix+"/drp_desc.bin",
-    drpai_prefix+"/"+drpai_prefix+"_drpcfg.mem",
-    drpai_prefix+"/drp_param.bin",
-    drpai_prefix+"/aimac_desc.bin",
-    drpai_prefix+"/"+drpai_prefix+"_weight.dat",
+    "resnet50_bmp/drp_desc.bin",
+    "resnet50_bmp/resnet50_bmp_drpcfg.mem",
+    "resnet50_bmp/drp_param.bin",
+    "resnet50_bmp/aimac_desc.bin",
+    "resnet50_bmp/resnet50_bmp_weight.dat",
 };
 /*****************************************
 * Macro for ResNet

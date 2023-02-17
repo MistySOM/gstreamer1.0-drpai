@@ -64,6 +64,7 @@
 
 #include <gst/gst.h>
 #include "gstplugin.h"
+#include "drpai.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_plugin_drpai_debug);
 #define GST_CAT_DEFAULT gst_plugin_drpai_debug
@@ -103,6 +104,8 @@ static gboolean gst_plugin_drpai_sink_event(GstPad *pad, GstObject *parent, GstE
 
 static GstFlowReturn gst_plugin_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf);
 
+static void gst_plugin_drpai_finalize (GstPluginDRPAI * filter);
+
 /* GObject vmethod implementations */
 
 /* initialize the plugin's class */
@@ -114,6 +117,7 @@ gst_plugin_drpai_class_init(GstPluginDRPAIClass *klass) {
     gobject_class = (GObjectClass *) klass;
     gstelement_class = (GstElementClass *) klass;
 
+    gobject_class->finalize = (GObjectFinalizeFunc) gst_plugin_drpai_finalize;
     gobject_class->set_property = gst_plugin_drpai_set_property;
     gobject_class->get_property = gst_plugin_drpai_get_property;
 
@@ -152,6 +156,12 @@ gst_plugin_drpai_init(GstPluginDRPAI *filter) {
     gst_element_add_pad(GST_ELEMENT (filter), filter->srcpad);
 
     filter->silent = FALSE;
+    initialize_drpai(&filter->drpai_handles);
+}
+
+static void
+gst_plugin_drpai_finalize(GstPluginDRPAI *filter) {
+    finalize_drpai(&filter->drpai_handles);
 }
 
 static void
@@ -240,9 +250,7 @@ gst_plugin_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 static gboolean
 plugin_init(GstPlugin *plugin) {
     /* debug category for filtering log messages */
-    GST_DEBUG_CATEGORY_INIT (gst_plugin_drpai_debug, "drpai",
-                             0, "DRP-AI plugin");
-
+    GST_DEBUG_CATEGORY_INIT (gst_plugin_drpai_debug, "drpai", 0, "DRP-AI plugin");
     return GST_ELEMENT_REGISTER (plugin_drpai, plugin);
 }
 

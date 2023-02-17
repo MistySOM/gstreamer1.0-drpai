@@ -48,6 +48,7 @@
 #define __GST_PLUGIN_DRPAI_H__
 
 #include <gst/gst.h>
+#include "drpai.h"
 
 G_BEGIN_DECLS
 
@@ -62,6 +63,8 @@ struct _GstPluginDRPAI
   GstPad *sinkpad, *srcpad;
 
   gboolean silent;
+
+  struct drpai_handles drpai_handles;
 };
 
 G_END_DECLS
