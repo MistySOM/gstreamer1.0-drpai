@@ -1,4 +1,4 @@
-name: Gstreamer DRP-AI CI
+name: Gstreamer DRP-AI Make CI
 
 on:
   push:
@@ -14,9 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Refresh Package List
-      run: sudo apt update
-    
     - name: Install Dependencies
       run: sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev libunwind-dev
       
@@ -26,8 +23,5 @@ jobs:
     - name: make
       run: ninja -C build
       
-    - name: make install
-      run: sudo ninja -C build install
-      
     - name: gst-inspect
-      run: gst-inspect-1.0 drpai 
+      run: gst-inspect-1.0 build/gst-plugin/libgstdrpai.so
