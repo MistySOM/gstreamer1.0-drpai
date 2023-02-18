@@ -63,11 +63,11 @@
 #endif
 
 #include <gst/gst.h>
-#include "gstplugin.h"
+#include "gstdrpai.h"
 #include "drpai.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_plugin_drpai_debug);
-#define GST_CAT_DEFAULT gst_plugin_drpai_debug
+GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
+#define GST_CAT_DEFAULT gst_drpai_debug
 
 /* Filter signals and args */
 enum {
@@ -90,36 +90,37 @@ static GstStaticPadTemplate sink_factory =
 static GstStaticPadTemplate src_factory =
         GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS("ANY"));
 
-#define gst_plugin_drpai_parent_class parent_class
+#define gst_drpai_parent_class parent_class
 
-G_DEFINE_TYPE (GstPluginDRPAI, gst_plugin_drpai, GST_TYPE_ELEMENT);
+G_DEFINE_TYPE (GstDRPAI, gst_drpai, GST_TYPE_ELEMENT);
 
-GST_ELEMENT_REGISTER_DEFINE (plugin_drpai, "plugin_drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);
+GST_ELEMENT_REGISTER_DEFINE (drpai, "drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);
 
-static void gst_plugin_drpai_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
+static void gst_drpai_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
-static void gst_plugin_drpai_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
+static void gst_drpai_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 
-static gboolean gst_plugin_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event);
+static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event);
 
-static GstFlowReturn gst_plugin_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf);
+static GstFlowReturn gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf);
 
-static void gst_plugin_drpai_finalize (GstPluginDRPAI * filter);
+static GstStateChangeReturn gst_drpai_change_state (GstElement * element, GstStateChange transition);
 
 /* GObject vmethod implementations */
 
 /* initialize the plugin's class */
 static void
-gst_plugin_drpai_class_init(GstPluginDRPAIClass *klass) {
+gst_drpai_class_init(GstDRPAIClass *klass) {
     GObjectClass *gobject_class;
     GstElementClass *gstelement_class;
 
     gobject_class = (GObjectClass *) klass;
     gstelement_class = (GstElementClass *) klass;
 
-    gobject_class->finalize = (GObjectFinalizeFunc) gst_plugin_drpai_finalize;
-    gobject_class->set_property = gst_plugin_drpai_set_property;
-    gobject_class->get_property = gst_plugin_drpai_get_property;
+    gobject_class->set_property = gst_drpai_set_property;
+    gobject_class->get_property = gst_drpai_get_property;
+
+    gstelement_class->change_state = gst_drpai_change_state;
 
     g_object_class_install_property(gobject_class, PROP_SILENT,
                                     g_param_spec_boolean("silent", "Silent", "Produce verbose output ?",
@@ -142,12 +143,12 @@ gst_plugin_drpai_class_init(GstPluginDRPAIClass *klass) {
  * initialize instance structure
  */
 static void
-gst_plugin_drpai_init(GstPluginDRPAI *filter) {
+gst_drpai_init(GstDRPAI *filter) {
     filter->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
     gst_pad_set_event_function (filter->sinkpad,
-                                GST_DEBUG_FUNCPTR(gst_plugin_drpai_sink_event));
+                                GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
     gst_pad_set_chain_function (filter->sinkpad,
-                                GST_DEBUG_FUNCPTR(gst_plugin_drpai_chain));
+                                GST_DEBUG_FUNCPTR(gst_drpai_chain));
     GST_PAD_SET_PROXY_CAPS (filter->sinkpad);
     gst_element_add_pad(GST_ELEMENT (filter), filter->sinkpad);
 
@@ -156,18 +157,42 @@ gst_plugin_drpai_init(GstPluginDRPAI *filter) {
     gst_element_add_pad(GST_ELEMENT (filter), filter->srcpad);
 
     filter->silent = FALSE;
-    initialize_drpai(&filter->drpai_handles);
+}
+
+static GstStateChangeReturn
+gst_drpai_change_state (GstElement * element, GstStateChange transition) {
+    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+    GstDRPAI *obj = (GstDRPAI*) &element->object;
+
+    switch (transition) {
+        case GST_STATE_CHANGE_NULL_TO_READY:
+            /* open the device */
+            if(initialize_drpai(&obj->drpai_handles) == -1)
+                return GST_STATE_CHANGE_FAILURE;
+            break;
+        default:
+            break;
+    }
+
+    ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+
+    switch (transition) {
+        case GST_STATE_CHANGE_READY_TO_NULL:
+            /* close the device */
+            if (finalize_drpai(&obj->drpai_handles) == -1)
+                return GST_STATE_CHANGE_FAILURE;
+            break;
+        default:
+            break;
+    }
+
+    return ret;
 }
 
 static void
-gst_plugin_drpai_finalize(GstPluginDRPAI *filter) {
-    finalize_drpai(&filter->drpai_handles);
-}
-
-static void
-gst_plugin_drpai_set_property(GObject *object, guint prop_id,
+gst_drpai_set_property(GObject *object, guint prop_id,
                               const GValue *value, GParamSpec *pspec) {
-    GstPluginDRPAI *filter = GST_PLUGIN_DRPAI(object);
+    GstDRPAI *filter = GST_PLUGIN_DRPAI(object);
 
     switch (prop_id) {
         case PROP_SILENT:
@@ -180,9 +205,9 @@ gst_plugin_drpai_set_property(GObject *object, guint prop_id,
 }
 
 static void
-gst_plugin_drpai_get_property(GObject *object, guint prop_id,
+gst_drpai_get_property(GObject *object, guint prop_id,
                               GValue *value, GParamSpec *pspec) {
-    GstPluginDRPAI *filter = GST_PLUGIN_DRPAI(object);
+    GstDRPAI *filter = GST_PLUGIN_DRPAI(object);
 
     switch (prop_id) {
         case PROP_SILENT:
@@ -198,9 +223,9 @@ gst_plugin_drpai_get_property(GObject *object, guint prop_id,
 
 /* this function handles sink events */
 static gboolean
-gst_plugin_drpai_sink_event(GstPad *pad, GstObject *parent,
+gst_drpai_sink_event(GstPad *pad, GstObject *parent,
                             GstEvent *event) {
-    GstPluginDRPAI *filter;
+    GstDRPAI *filter;
     gboolean ret;
 
     filter = GST_PLUGIN_DRPAI(parent);
@@ -230,8 +255,8 @@ gst_plugin_drpai_sink_event(GstPad *pad, GstObject *parent,
  * this function does the actual processing
  */
 static GstFlowReturn
-gst_plugin_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
-    GstPluginDRPAI *filter;
+gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
+    GstDRPAI *filter;
 
     filter = GST_PLUGIN_DRPAI(parent);
 
@@ -250,8 +275,8 @@ gst_plugin_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 static gboolean
 plugin_init(GstPlugin *plugin) {
     /* debug category for filtering log messages */
-    GST_DEBUG_CATEGORY_INIT (gst_plugin_drpai_debug, "drpai", 0, "DRP-AI plugin");
-    return GST_ELEMENT_REGISTER (plugin_drpai, plugin);
+    GST_DEBUG_CATEGORY_INIT (gst_drpai_debug, "drpai", 0, "DRP-AI plugin");
+    return GST_ELEMENT_REGISTER (drpai, plugin);
 }
 
 /* PACKAGE: this is usually set by meson depending on some _INIT macro
@@ -266,7 +291,7 @@ plugin_init(GstPlugin *plugin) {
 /* gstreamer looks for this structure to register plugins */
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
                    GST_VERSION_MINOR,
-                   plugin,
-                   "plugin_drpai",
+                   drpai,
+                   "DRP-AI Plug-in",
                    plugin_init,
                    PACKAGE_VERSION, GST_LICENSE, GST_PACKAGE_NAME, GST_PACKAGE_ORIGIN)

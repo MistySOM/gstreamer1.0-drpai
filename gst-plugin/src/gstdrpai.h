@@ -52,11 +52,11 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_PLUGIN_DRPAI (gst_plugin_drpai_get_type())
-G_DECLARE_FINAL_TYPE (GstPluginDRPAI, gst_plugin_drpai,
+#define GST_TYPE_PLUGIN_DRPAI (gst_drpai_get_type())
+G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai,
     GST, PLUGIN_DRPAI, GstElement)
 
-struct _GstPluginDRPAI
+struct _GstDRPAI
 {
   GstElement element;
 

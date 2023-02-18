@@ -6,7 +6,7 @@ cdata.set_quoted('PACKAGE', 'gst-drpai-plugin')
 cdata.set_quoted('GST_LICENSE', 'LGPL')
 cdata.set_quoted('GST_API_VERSION', api_version)
 cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
-cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://gstreamer.freedesktop.org')
+cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
 configure_file(output : 'config.h', configuration : cdata)
 
 ### gstaudio_dep = dependency('gstreamer-audio-1.0',
@@ -14,7 +14,7 @@ configure_file(output : 'config.h', configuration : cdata)
 
 # Plugin 1
 plugin_sources = [
-  'src/gstplugin.c'
+  'src/gstdrpai.c'
   ]
 
 gstplugindrpai = library('gstdrpai',
