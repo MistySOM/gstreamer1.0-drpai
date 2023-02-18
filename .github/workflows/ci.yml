@@ -18,7 +18,7 @@ jobs:
       run: sudo apt update
     
     - name: Install Dependencies
-      run: sudo apt install -y meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev
+      run: sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev
       
     - name: setup meson
       run: meson setup build
