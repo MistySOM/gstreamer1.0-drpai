@@ -1,0 +1,30 @@
+name: Gstreamer DRP-AI CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: sudo apt install -y meson ninja gstreamer1.0-tools gstreamer1.0-plugins-base
+      
+    - name: setup meson
+      run: meson setup build
+      
+    - name: make
+      run: ninja -C build
+      
+    - name: make install
+      run: sudo ninja -C build install
+      
+    - name: gst-inspect
+      run: gst-inspect-1.0 drpai 
