@@ -94,8 +94,6 @@ static GstStaticPadTemplate src_factory =
 
 G_DEFINE_TYPE (GstDRPAI, gst_drpai, GST_TYPE_ELEMENT);
 
-GST_ELEMENT_REGISTER_DEFINE (drpai, "drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);
-
 static void gst_drpai_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
 static void gst_drpai_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
@@ -276,7 +274,7 @@ static gboolean
 plugin_init(GstPlugin *plugin) {
     /* debug category for filtering log messages */
     GST_DEBUG_CATEGORY_INIT (gst_drpai_debug, "drpai", 0, "DRP-AI plugin");
-    return GST_ELEMENT_REGISTER (drpai, plugin);
+    return gst_element_register (plugin, "drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);
 }
 
 /* PACKAGE: this is usually set by meson depending on some _INIT macro
