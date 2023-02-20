@@ -159,32 +159,36 @@ gst_drpai_init(GstDRPAI *filter) {
 
 static GstStateChangeReturn
 gst_drpai_change_state (GstElement * element, GstStateChange transition) {
-    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+    GstStateChangeReturn state_change_ret = GST_STATE_CHANGE_SUCCESS;
     GstDRPAI *obj = (GstDRPAI*) &element->object;
 
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
-            if(initialize_drpai(&obj->drpai_handles) == -1)
+            obj->drpai_instance = malloc(sizeof(struct drpai_instance_variables));
+            if(initialize_drpai(obj->drpai_instance) == -1)
                 return GST_STATE_CHANGE_FAILURE;
             break;
         default:
             break;
     }
 
-    ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+    state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
 
+    int ret;
     switch (transition) {
         case GST_STATE_CHANGE_READY_TO_NULL:
             /* close the device */
-            if (finalize_drpai(&obj->drpai_handles) == -1)
+            ret = finalize_drpai(obj->drpai_instance);
+            free(obj->drpai_instance);
+            if (ret == -1)
                 return GST_STATE_CHANGE_FAILURE;
             break;
         default:
             break;
     }
 
-    return ret;
+    return state_change_ret;
 }
 
 static void
@@ -258,8 +262,17 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 
     filter = GST_PLUGIN_DRPAI(parent);
 
-    if (filter->silent == FALSE)
-        g_print("I'm plugged, therefore I'm in.\n");
+    GstMapInfo info;
+    gst_buffer_map(buf, &info, GST_MAP_READ);
+    memcpy(filter->drpai_instance->img_buffer,
+           info.data,
+           filter->drpai_instance->drpai_address.data_in_size);
+    gst_buffer_unmap(buf, &info);
+
+    if (process_drpai(filter->drpai_instance) == -1) {
+        gst_buffer_unref (buf);
+        return GST_FLOW_ERROR;
+    }
 
     /* just push out the incoming buffer without touching it */
     return gst_pad_push(filter->srcpad, buf);

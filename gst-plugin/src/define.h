@@ -46,7 +46,6 @@
 ******************************************/
 const static char* label_list     = "synset_words_imagenet.txt";
 const static char* drpai_prefix   = "resnet50_bmp";
-const static char* input_img      = "sample.bmp";
 
 /*****************************************
 * Static Variables (No need to change)

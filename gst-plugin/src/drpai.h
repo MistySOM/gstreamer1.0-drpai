@@ -16,13 +16,16 @@
 /*****************************************
 * Global Variables
 ******************************************/
-static st_addr_t drpai_address;
-static float drpai_output_buf[NUM_CLASS];
-static unsigned char* img_buffer;
 
-struct drpai_handles {
+struct drpai_instance_variables {
     int8_t drpai_fd;
     int8_t udmabuf_fd;
+
+    st_addr_t drpai_address;
+    float drpai_output_buf[NUM_CLASS];
+    char* labels[NUM_CLASS];
+    drpai_data_t proc[DRPAI_INDEX_NUM];
+    unsigned char* img_buffer;
 };
 
 /*****************************************
@@ -119,7 +122,7 @@ int8_t load_data_to_mem(const char* data, int8_t drpai_fd, uint32_t from, uint32
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-int8_t load_drpai_data(int8_t drpai_fd)
+int8_t load_drpai_data(int8_t drpai_fd, st_addr_t* drpai_address)
 {
     uint32_t addr = 0;
     uint32_t size = 0;
@@ -130,24 +133,24 @@ int8_t load_drpai_data(int8_t drpai_fd)
         switch (i)
         {
             case (INDEX_W):
-                addr = drpai_address.weight_addr;
-                size = drpai_address.weight_size;
+                addr = drpai_address->weight_addr;
+                size = drpai_address->weight_size;
                 break;
             case (INDEX_C):
-                addr = drpai_address.drp_config_addr;
-                size = drpai_address.drp_config_size;
+                addr = drpai_address->drp_config_addr;
+                size = drpai_address->drp_config_size;
                 break;
             case (INDEX_P):
-                addr = drpai_address.drp_param_addr;
-                size = drpai_address.drp_param_size;
+                addr = drpai_address->drp_param_addr;
+                size = drpai_address->drp_param_size;
                 break;
             case (INDEX_A):
-                addr = drpai_address.desc_aimac_addr;
-                size = drpai_address.desc_aimac_size;
+                addr = drpai_address->desc_aimac_addr;
+                size = drpai_address->desc_aimac_size;
                 break;
             case (INDEX_D):
-                addr = drpai_address.desc_drp_addr;
-                size = drpai_address.desc_drp_size;
+                addr = drpai_address->desc_drp_addr;
+                size = drpai_address->desc_drp_size;
                 break;
             default:
                 break;
@@ -163,7 +166,38 @@ int8_t load_drpai_data(int8_t drpai_fd)
     return 0;
 }
 
-int initialize_drpai(struct drpai_handles* handles) {
+/*****************************************
+* Function Name     : load_label_file
+* Description       : Load label list text file and return the label list that contains the label.
+* Arguments         : label_file_name = filename of label list. must be in txt format
+* Return value      : map<int32_t, string> list = list contains labels
+*                     empty if error occured
+******************************************/
+int load_label_file(const char* labels_file_name, char** labels)
+{
+    size_t len = 0;
+    char* line = NULL;
+    FILE * fp;
+    ssize_t read, count = 0;
+
+
+    fp = fopen(labels_file_name, "r");
+    if (fp == NULL)
+        return -1;
+
+    read = getline(&line, &len, fp);
+    while (read != -1) {
+        labels[count++] = line;
+        read = getline(&line, &len, fp);
+    }
+
+    fclose(fp);
+    if (line)
+        free(line);
+    return 0;
+}
+
+int initialize_drpai(struct drpai_instance_variables* instance) {
     printf("RZ/V2L DRP-AI Plugin\n");
     printf("Model : PyTorch ResNet    | %s\n", drpai_prefix);
 
@@ -197,44 +231,39 @@ int initialize_drpai(struct drpai_handles* handles) {
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
-    fd_set rfds;
-    struct timeval tv;
-    int8_t ret_drpai;
-    drpai_data_t proc[DRPAI_INDEX_NUM];
-    drpai_status_t drpai_status;
 
     /* Read DRP-AI Object files address and size */
-    drpai_address.drp_config_addr = 0x855333c0;
-    drpai_address.drp_config_size = 0x187220;
+    instance->drpai_address.drp_config_addr = 0x855333c0;
+    instance->drpai_address.drp_config_size = 0x187220;
 
-    drpai_address.desc_aimac_addr = 0x856ba740;
-    drpai_address.desc_aimac_size = 0x43970;
+    instance->drpai_address.desc_aimac_addr = 0x856ba740;
+    instance->drpai_address.desc_aimac_size = 0x43970;
 
-    drpai_address.desc_drp_addr = 0x856fe0c0;
-    drpai_address.desc_drp_size = 0x1a0;
+    instance->drpai_address.desc_drp_addr = 0x856fe0c0;
+    instance->drpai_address.desc_drp_size = 0x1a0;
 
-    drpai_address.drp_param_addr = 0x856ba600;
-    drpai_address.drp_param_size = 0x120;
+    instance->drpai_address.drp_param_addr = 0x856ba600;
+    instance->drpai_address.drp_param_size = 0x120;
 
-    drpai_address.weight_addr = 0x8247d7c0;
-    drpai_address.weight_size = 0x30b5be0;
+    instance->drpai_address.weight_addr = 0x8247d7c0;
+    instance->drpai_address.weight_size = 0x30b5be0;
 
-    drpai_address.data_in_addr = 0x80000000;
-    drpai_address.data_in_size = 0xe1000;
+    instance->drpai_address.data_in_addr = 0x80000000;
+    instance->drpai_address.data_in_size = 0xe1000;
 
-    drpai_address.data_addr = 0x800e1000;
-    drpai_address.data_size = 0x208b7d0;
+    instance->drpai_address.data_addr = 0x800e1000;
+    instance->drpai_address.data_size = 0x208b7d0;
 
-    drpai_address.data_out_addr = 0x8216c800;
-    drpai_address.data_out_size = 0xfa0;
+    instance->drpai_address.data_out_addr = 0x8216c800;
+    instance->drpai_address.data_out_size = 0xfa0;
 
-    drpai_address.work_addr = 0x8216d7c0;
-    drpai_address.work_size = 0x310000;
+    instance->drpai_address.work_addr = 0x8216d7c0;
+    instance->drpai_address.work_size = 0x310000;
 
     /* Open DRP-AI Driver */
     errno = 0;
-    handles->drpai_fd = open("/dev/drpai0", O_RDWR);
-    if (0 > handles->drpai_fd)
+    instance->drpai_fd = open("/dev/drpai0", O_RDWR);
+    if (0 > instance->drpai_fd)
     {
         fprintf(stderr, "[ERROR] Failed to open DRP-AI Driver: errno=%d\n", errno);
         ret = -1;
@@ -242,7 +271,7 @@ int initialize_drpai(struct drpai_handles* handles) {
     }
 
     /* Load DRP-AI Data from Filesystem to Memory via DRP-AI Driver */
-    ret = load_drpai_data(handles->drpai_fd);
+    ret = load_drpai_data(instance->drpai_fd, &instance->drpai_address);
     if (0 > ret)
     {
         fprintf(stderr, "[ERROR] Failed to load DRP-AI Object files.\n");
@@ -251,35 +280,35 @@ int initialize_drpai(struct drpai_handles* handles) {
     }
 
     /* Set DRP-AI Driver Input (DRP-AI Object files address and size)*/
-    proc[DRPAI_INDEX_INPUT].address       = udmabuf_address;
-    proc[DRPAI_INDEX_INPUT].size          = drpai_address.data_in_size;
-    proc[DRPAI_INDEX_DRP_CFG].address     = drpai_address.drp_config_addr;
-    proc[DRPAI_INDEX_DRP_CFG].size        = drpai_address.drp_config_size;
-    proc[DRPAI_INDEX_DRP_PARAM].address   = drpai_address.drp_param_addr;
-    proc[DRPAI_INDEX_DRP_PARAM].size      = drpai_address.drp_param_size;
-    proc[DRPAI_INDEX_AIMAC_DESC].address  = drpai_address.desc_aimac_addr;
-    proc[DRPAI_INDEX_AIMAC_DESC].size     = drpai_address.desc_aimac_size;
-    proc[DRPAI_INDEX_DRP_DESC].address    = drpai_address.desc_drp_addr;
-    proc[DRPAI_INDEX_DRP_DESC].size       = drpai_address.desc_drp_size;
-    proc[DRPAI_INDEX_WEIGHT].address      = drpai_address.weight_addr;
-    proc[DRPAI_INDEX_WEIGHT].size         = drpai_address.weight_size;
-    proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
-    proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
+    instance->proc[DRPAI_INDEX_INPUT].address       = udmabuf_address;
+    instance->proc[DRPAI_INDEX_INPUT].size          = instance->drpai_address.data_in_size;
+    instance->proc[DRPAI_INDEX_DRP_CFG].address     = instance->drpai_address.drp_config_addr;
+    instance->proc[DRPAI_INDEX_DRP_CFG].size        = instance->drpai_address.drp_config_size;
+    instance->proc[DRPAI_INDEX_DRP_PARAM].address   = instance->drpai_address.drp_param_addr;
+    instance->proc[DRPAI_INDEX_DRP_PARAM].size      = instance->drpai_address.drp_param_size;
+    instance->proc[DRPAI_INDEX_AIMAC_DESC].address  = instance->drpai_address.desc_aimac_addr;
+    instance->proc[DRPAI_INDEX_AIMAC_DESC].size     = instance->drpai_address.desc_aimac_size;
+    instance->proc[DRPAI_INDEX_DRP_DESC].address    = instance->drpai_address.desc_drp_addr;
+    instance->proc[DRPAI_INDEX_DRP_DESC].size       = instance->drpai_address.desc_drp_size;
+    instance->proc[DRPAI_INDEX_WEIGHT].address      = instance->drpai_address.weight_addr;
+    instance->proc[DRPAI_INDEX_WEIGHT].size         = instance->drpai_address.weight_size;
+    instance->proc[DRPAI_INDEX_OUTPUT].address      = instance->drpai_address.data_out_addr;
+    instance->proc[DRPAI_INDEX_OUTPUT].size         = instance->drpai_address.data_out_size;
 
     printf("Inference -----------------------------------------------\n");
 
     /* Allocate the img_buffer in udmabuf memory area */
     errno = 0;
-    handles->udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
-    if (0 > handles->udmabuf_fd)
+    instance->udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
+    if (0 > instance->udmabuf_fd)
     {
         fprintf(stderr, "[ERROR] Failed to open udmabuf: errno=%d\n", errno);
         ret = -1;
         return ret;
     }
-    img_buffer =(uint8_t *) mmap(NULL, drpai_address.data_in_size ,PROT_READ|PROT_WRITE, MAP_SHARED, handles->udmabuf_fd, 0);
+    instance->img_buffer =(uint8_t *) mmap(NULL, instance->drpai_address.data_in_size ,PROT_READ|PROT_WRITE, MAP_SHARED, instance->udmabuf_fd, 0);
 
-    if (MAP_FAILED == img_buffer)
+    if (MAP_FAILED == instance->img_buffer)
     {
         fprintf(stderr, "[ERROR] Failed to mmap udmabuf memory area: errno=%d\n", errno);
         ret = -1;
@@ -289,27 +318,200 @@ int initialize_drpai(struct drpai_handles* handles) {
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (i = 0 ; i < drpai_address.data_in_size; i++)
+        for (i = 0 ; i < instance->drpai_address.data_in_size; i++)
         {
-            img_buffer[i] = 0;
+            instance->img_buffer[i] = 0;
         }
     }
 
-    printf("DRP-AI Ready!");
+    /* Load label from label file */
+    ret = load_label_file(label_list, instance->labels);
+    if (ret == -1)
+    {
+        fprintf(stderr,"[ERROR] Failed to load label file: %s\n", label_list);
+        return -1;
+    }
+
+    printf("DRP-AI Ready!\n");
+    return 0;
 }
 
-int finalize_drpai(struct drpai_handles* handles) {
-    munmap(img_buffer, drpai_address.data_in_size);
-    close(handles->udmabuf_fd);
+int finalize_drpai(struct drpai_instance_variables* instance) {
+    munmap(instance->img_buffer, instance->drpai_address.data_in_size);
+    close(instance->udmabuf_fd);
+    for (int i=0; i<NUM_CLASS; i++)
+        free(instance->labels[i]);
 
     errno = 0;
-    int ret = close(handles->drpai_fd);
+    int ret = close(instance->drpai_fd);
     if (0 != ret)
     {
         fprintf(stderr, "[ERROR] Failed to close DRP-AI Driver: errno=%d\n", errno);
         ret = -1;
     }
     return ret;
+}
+
+/*****************************************
+* Function Name : get_result
+* Description   : Get DRP-AI Output from memory via DRP-AI Driver
+* Arguments     : drpai_fd = file descriptor of DRP-AI Driver
+*                 output_addr = memory start address of DRP-AI output
+*                 output_size = output data size
+* Return value  : 0 if succeeded
+*                 not 0 otherwise
+******************************************/
+int8_t get_result(int8_t drpai_fd, unsigned long output_addr, uint32_t output_size, float drpai_output_buf[NUM_CLASS])
+{
+    drpai_data_t drpai_data;
+    float drpai_buf[BUF_SIZE];
+    drpai_data.address = output_addr;
+    drpai_data.size = output_size;
+    int32_t i = 0;
+    int8_t ret = 0;
+
+    errno = 0;
+    /* Assign the memory address and size to be read */
+    ret = ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data);
+    if (-1 == ret)
+    {
+        fprintf(stderr, "[ERROR] Failed to run DRPAI_ASSIGN: errno=%d\n", errno);
+        return -1;
+    }
+
+    /* Read the memory via DRP-AI Driver and store the output to buffer */
+    for (i = 0; i < (drpai_data.size / BUF_SIZE); i++)
+    {
+        errno = 0;
+        ret = read(drpai_fd, drpai_buf, BUF_SIZE);
+        if ( -1 == ret )
+        {
+            fprintf(stderr, "[ERROR] Failed to read via DRP-AI Driver: errno=%d\n", errno);
+            return -1;
+        }
+
+        memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
+    }
+
+    if ( 0 != (drpai_data.size % BUF_SIZE))
+    {
+        errno = 0;
+        ret = read(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE));
+        if ( -1 == ret)
+        {
+            fprintf(stderr, "[ERROR] Failed to read via DRP-AI Driver: errno=%d\n", errno);
+            return -1;
+        }
+
+        memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
+    }
+    return 0;
+}
+
+/*****************************************
+* Function Name : print_result
+* Description   : Process CPU post-processing (sort and label) and print the result on console.
+* Arguments     : floatarr = float DRP-AI output data
+* Return value  : 0 if succeeded
+*               not 0 otherwise
+******************************************/
+void print_result(const float* floatarr, char** labels)
+{
+    /* Post-processing */
+    ssize_t best_index = 0;
+    float best_value = floatarr[best_index];
+    for (ssize_t i = 1; i < NUM_CLASS; i++) {
+        float value = floatarr[i];
+        if(value > best_value) {
+            best_index = i;
+            best_value = value;
+        }
+    }
+    printf("DRP-AI Result [%5.1f%%] : [%s]\n", best_value, labels[best_index]);
+}
+
+int process_drpai(struct drpai_instance_variables* instance) {
+
+    /**********************************************************************
+    * START Inference
+    **********************************************************************/
+    printf("[START] DRP-AI\n");
+    errno = 0;
+    int ret = ioctl(instance->drpai_fd, DRPAI_START, &instance->proc[0]);
+    if (0 != ret)
+    {
+        fprintf(stderr, "[ERROR] Failed to run DRPAI_START: errno=%d\n", errno);
+        ret = -1;
+        return ret;
+    }
+
+    /**********************************************************************
+    * Wait until the DRP-AI finish (Thread will sleep)
+    **********************************************************************/
+    fd_set rfds;
+    struct timeval tv;
+    int8_t ret_drpai;
+    drpai_status_t drpai_status;
+    FD_ZERO(&rfds);
+    FD_SET(instance->drpai_fd, &rfds);
+    tv.tv_sec = DRPAI_TIMEOUT;
+    tv.tv_usec = 0;
+
+    ret_drpai = select(instance->drpai_fd+1, &rfds, NULL, NULL, &tv);
+    if (0 == ret_drpai)
+    {
+        fprintf(stderr, "[ERROR] DRP-AI select() Timeout : errno=%d\n", errno);
+        ret = -1;
+        return ret;
+    }
+    else if (-1 == ret_drpai)
+    {
+        fprintf(stderr, "[ERROR] DRP-AI select() Error : errno=%d\n", errno);
+        ret_drpai = ioctl(instance->drpai_fd, DRPAI_GET_STATUS, &drpai_status);
+        if (-1 == ret_drpai)
+        {
+            fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+        }
+        ret = -1;
+        return ret;
+    }
+    else
+    {
+        /*Do nothing*/
+    }
+
+    if (FD_ISSET(instance->drpai_fd, &rfds))
+    {
+        errno = 0;
+        ret_drpai = ioctl(instance->drpai_fd, DRPAI_GET_STATUS, &drpai_status);
+        if (-1 == ret_drpai)
+        {
+            fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+            ret = -1;
+            return ret;
+        }
+        printf("[END] DRP-AI\n");
+    }
+
+    /**********************************************************************
+    * CPU Post-processing
+    **********************************************************************/
+    /* Get the output data from memory */
+    ret = get_result(instance->drpai_fd,
+                     instance->drpai_address.data_out_addr,
+                     instance->drpai_address.data_out_size,
+                     instance->drpai_output_buf);
+    if (0 != ret)
+    {
+        fprintf(stderr, "[ERROR] Failed to get result from memory.\n");
+        ret = -1;
+        return ret;
+    }
+
+    /* Compute the classification result and display it on console */
+    print_result(instance->drpai_output_buf, instance->labels);
+
+    return 0;
 }
 
 #endif //GSTREAMER1_0_DRPAI_DRPAI_H

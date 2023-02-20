@@ -48,13 +48,13 @@
 #define __GST_PLUGIN_DRPAI_H__
 
 #include <gst/gst.h>
-#include "drpai.h"
 
 G_BEGIN_DECLS
 
 #define GST_TYPE_PLUGIN_DRPAI (gst_drpai_get_type())
-G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai,
-    GST, PLUGIN_DRPAI, GstElement)
+G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
+
+struct drpai_instance_variables;
 
 struct _GstDRPAI
 {
@@ -64,7 +64,7 @@ struct _GstDRPAI
 
   gboolean silent;
 
-  struct drpai_handles drpai_handles;
+  struct drpai_instance_variables *drpai_instance;
 };
 
 G_END_DECLS
