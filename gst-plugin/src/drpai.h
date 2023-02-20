@@ -187,7 +187,9 @@ int load_label_file(const char* labels_file_name, char** labels)
 
     read = getline(&line, &len, fp);
     while (read != -1) {
-        labels[count++] = line;
+        char* label = malloc((len+1) * sizeof(char));
+        memcpy(label, line, len);
+        labels[count++] = label;
         read = getline(&line, &len, fp);
     }
 
@@ -427,7 +429,7 @@ void print_result(const float* floatarr, char** labels)
             best_value = value;
         }
     }
-    printf("DRP-AI Result [%5.1f%%] : [%s]\n", best_value, labels[best_index]);
+    printf("DRP-AI Result [%5.1f%%] : [%s]\n", best_value*100, labels[best_index]);
 }
 
 int process_drpai(struct drpai_instance_variables* instance) {
