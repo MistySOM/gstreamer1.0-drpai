@@ -263,16 +263,23 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     filter = GST_PLUGIN_DRPAI(parent);
 
     GstMapInfo info;
-    gst_buffer_map(buf, &info, GST_MAP_READ);
+    gst_buffer_map(buf, &info, GST_MAP_READWRITE);
     memcpy(filter->drpai_instance->img_buffer,
            info.data,
            filter->drpai_instance->drpai_address.data_in_size);
-    gst_buffer_unmap(buf, &info);
 
     if (process_drpai(filter->drpai_instance) == -1) {
         gst_buffer_unref (buf);
         return GST_FLOW_ERROR;
     }
+
+    for(int i=0; i<filter->drpai_instance->drpai_address.data_in_size; i+=3) {
+//        filter->drpai_instance->img_buffer[0+i] = 255;
+        filter->drpai_instance->img_buffer[1+i] = 0;
+        filter->drpai_instance->img_buffer[2+i] = 0;
+    }
+    memcpy(info.data, filter->drpai_instance->img_buffer, filter->drpai_instance->drpai_address.data_in_size);
+    gst_buffer_unmap(buf, &info);
 
     /* just push out the incoming buffer without touching it */
     return gst_pad_push(filter->srcpad, buf);
