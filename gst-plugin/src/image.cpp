@@ -263,7 +263,7 @@ uint8_t Image::save_bmp(std::string filename)
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(const uint8_t code, int32_t x,  int32_t y, int32_t color, int32_t backcolor)
+void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
 {
     int32_t height;
     int32_t width;
@@ -308,22 +308,19 @@ void Image::write_char(const uint8_t code, int32_t x,  int32_t y, int32_t color,
 *                 backcolor = character background color
 * Return Value  : -
 ******************************************/
-void Image::write_string(const char * pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor)
+void Image::write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor)
 {
     int32_t i;
-    int32_t len = strlen(pcode);
 
     x = x < 0 ? 2 : x;
     x = (x > img_w - (i * font_w)) ? img_w - (i * font_w)-2 : x;
     y = y < 0 ? 2 : y;
     y = (y > img_h - font_h) ? img_h - font_h - 2 : y;
 
-    for (i = 0; i < len; i++)
+    for (i = 0; i < pcode.length(); i++)
     {
-        write_char((uint8_t) pcode[i], (x + (i * font_w)), y, color, backcolor);
+        write_char(pcode[i], (x + (i * font_w)), y, color, backcolor);
     }
-
-    return;
 }
 
 /*****************************************
@@ -418,7 +415,7 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const char * str)
+void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str)
 {
     int32_t x_min = x - round(w / 2.);
     int32_t y_min = y - round(h / 2.);

@@ -45,7 +45,7 @@ class Image
         uint8_t init(uint32_t w, uint32_t h, uint32_t c);
         uint8_t read_bmp(std::string filename);
         uint8_t save_bmp(std::string filename);
-        void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const char * str);
+        void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
 
     private:
         uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
@@ -62,8 +62,8 @@ class Image
         int32_t font_h = CPU_DRAW_FONT_HEIGHT;
         void draw_point(int32_t x, int32_t y, int32_t color);
         void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
-        void write_char(const uint8_t code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
-        void write_string(const char *pcode, int32_t x, int32_t y, int32_t color, int32_t backcolor);
+        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
+        void write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor);
 
 };
 
