@@ -23,7 +23,7 @@ struct drpai_instance_variables {
 
     st_addr_t drpai_address;
     float drpai_output_buf[NUM_CLASS];
-    char* labels[NUM_CLASS];
+    char labels[NUM_CLASS][120];
     drpai_data_t proc[DRPAI_INDEX_NUM];
     unsigned char* img_buffer;
 };
@@ -173,7 +173,7 @@ int8_t load_drpai_data(int8_t drpai_fd, st_addr_t* drpai_address)
 * Return value      : map<int32_t, string> list = list contains labels
 *                     empty if error occured
 ******************************************/
-int load_label_file(const char* labels_file_name, char** labels)
+int load_label_file(const char* labels_file_name, char labels[NUM_CLASS][120])
 {
     size_t len = 0;
     char* line = NULL;
@@ -187,9 +187,8 @@ int load_label_file(const char* labels_file_name, char** labels)
 
     read = getline(&line, &len, fp);
     while (read != -1) {
-        char* label = malloc((len+1) * sizeof(char));
-        memcpy(label, line, len);
-        labels[count++] = label;
+        line[strlen(line)-1 ] = '\0';
+        strcpy(labels[count++], line);
         read = getline(&line, &len, fp);
     }
 
@@ -334,6 +333,8 @@ int initialize_drpai(struct drpai_instance_variables* instance) {
         return -1;
     }
 
+    memset(instance->drpai_output_buf, 0, NUM_CLASS * sizeof(float));
+
     printf("DRP-AI Ready!\n");
     return 0;
 }
@@ -341,8 +342,6 @@ int initialize_drpai(struct drpai_instance_variables* instance) {
 int finalize_drpai(struct drpai_instance_variables* instance) {
     munmap(instance->img_buffer, instance->drpai_address.data_in_size);
     close(instance->udmabuf_fd);
-    for (int i=0; i<NUM_CLASS; i++)
-        free(instance->labels[i]);
 
     errno = 0;
     int ret = close(instance->drpai_fd);
