@@ -54,7 +54,7 @@ G_BEGIN_DECLS
 #define GST_TYPE_PLUGIN_DRPAI (gst_drpai_get_type())
 G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
-struct drpai_instance_variables;
+class DRPAI;
 
 struct _GstDRPAI
 {
@@ -64,7 +64,7 @@ struct _GstDRPAI
 
   gboolean silent;
 
-  struct drpai_instance_variables *drpai_instance;
+  DRPAI *drpai;
 };
 
 G_END_DECLS

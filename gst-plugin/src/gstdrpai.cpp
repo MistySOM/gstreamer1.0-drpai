@@ -57,9 +57,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-
 #  include <config.h>
-
 #endif
 
 #include <gst/gst.h>
@@ -160,13 +158,13 @@ gst_drpai_init(GstDRPAI *filter) {
 static GstStateChangeReturn
 gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     GstStateChangeReturn state_change_ret = GST_STATE_CHANGE_SUCCESS;
-    GstDRPAI *obj = (GstDRPAI*) &element->object;
+    auto *obj = (GstDRPAI*) &element->object;
 
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
-            obj->drpai_instance = malloc(sizeof(struct drpai_instance_variables));
-            if(initialize_drpai(obj->drpai_instance) == -1)
+            obj->drpai = new DRPAI();
+            if(obj->drpai->initialize() == -1)
                 return GST_STATE_CHANGE_FAILURE;
             break;
         default:
@@ -175,12 +173,12 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
 
     state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
 
-    int ret;
+    int8_t ret;
     switch (transition) {
         case GST_STATE_CHANGE_READY_TO_NULL:
             /* close the device */
-            ret = finalize_drpai(obj->drpai_instance);
-            free(obj->drpai_instance);
+            ret = obj->drpai->release();
+            delete obj->drpai;
             if (ret == -1)
                 return GST_STATE_CHANGE_FAILURE;
             break;
@@ -264,16 +262,17 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
-    memcpy(filter->drpai_instance->img_buffer,
-           info.data,
-           filter->drpai_instance->drpai_address.data_in_size);
 
-    if (process_drpai(filter->drpai_instance) == -1) {
+    Image img;
+    img.init(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
+    memcpy(img.img_buffer, info.data, info.size);
+
+    if (filter->drpai->process(img) == -1) {
         gst_buffer_unref (buf);
         return GST_FLOW_ERROR;
     }
 
-    memcpy(info.data, filter->drpai_instance->img_buffer, filter->drpai_instance->drpai_address.data_in_size);
+    memcpy(info.data, img.img_buffer, info.size);
     gst_buffer_unmap(buf, &info);
 
     /* just push out the incoming buffer without touching it */

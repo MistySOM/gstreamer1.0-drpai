@@ -1,4 +1,4 @@
-plugin_c_args = ['-DHAVE_CONFIG_H']
+plugin_c_args = ['-DHAVE_CONFIG_H', '-DYOLOV3']
 
 cdata = configuration_data()
 cdata.set_quoted('PACKAGE_VERSION', gst_version)
@@ -14,12 +14,17 @@ configure_file(output : 'config.h', configuration : cdata)
 
 # Plugin 1
 plugin_sources = [
-  'src/gstdrpai.c'
+  'src/gstdrpai.cpp',
+  'src/drpai.cpp',
+  'src/image.cpp',
+  'src/box.cpp',
+  'src/ascii.cpp'
   ]
 
 gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
+  cpp_args: plugin_c_args,
   dependencies : [gst_dep],
   install : true,
   install_dir : plugins_install_dir,

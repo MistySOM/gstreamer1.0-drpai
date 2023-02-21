@@ -1,8 +1,9 @@
-project('gst-drpai', 'c', version : '1.19.0.1', license : 'LGPL')
+project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL')
 
 plugins_install_dir = join_paths('/usr/lib64', 'gstreamer-1.0')
 
 cc = meson.get_compiler('c')
+cxx = meson.get_compiler('cpp')
 
 gst_version = meson.project_version()
 

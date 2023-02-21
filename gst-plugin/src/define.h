@@ -19,7 +19,7 @@
 /***********************************************************************************************************************
 * File Name    : define.h
 * Version      : 7.20
-* Description  : RZ/V2L DRP-AI Sample Application for PyTorch ResNet Image version
+* Description  : RZ/V2L DRP-AI Sample Application for Darknet-PyTorch YOLO Image version
 ***********************************************************************************************************************/
 
 #ifndef DEFINE_MACRO_H
@@ -36,38 +36,178 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <iomanip>
+#include <cstring>
+#include <float.h>
+#include <math.h>
 
 /*****************************************
-* Static Variables for ResNet50
-* Following variables need to be changed in order to custormize the AI model
-*  - label_list = class labels to be classified
-*  - drpai_prefix = directory name of DRP-AI Object files (DRP-AI Translator output)
+* Common Static Variables
 *  - input_img = input image to DRP-AI (size and format are determined in DRP-AI Translator)
+*  - output_img = output image from the application with bounding box
 ******************************************/
-const static char* label_list     = "synset_words_imagenet.txt";
-const static char* drpai_prefix   = "resnet50_bmp";
+const static std::string input_img      = "sample.bmp";
+const static std::string output_img     = "sample_output.bmp";
+
+/*****************************************
+* Static Variables and Macro for each YOLO model
+******************************************/
+#if defined(YOLOV3)
+/*****************************************
+* YOLOv3
+******************************************/
+/* Directory name of DRP-AI Object files (DRP-AI Translator output) */
+const static std::string drpai_prefix   = "yolov3_bmp";
+/* Class labels to be classified */
+const static std::string label_list     = "coco-labels-2014_2017.txt";
+/* Empty since labels will be loaded from label_list file */
+static std::vector<std::string> label_file_map = {};
+
+/* Number of class to be detected */
+#define NUM_CLASS           (80)
+/* Number for [yolo] layer num parameter */
+#define NUM_BB              (3)
+/* Number of output layers. This value MUST match with the length of num_grids[] below */
+#define NUM_INF_OUT_LAYER   (3)
+/* Number of grids in the image. The length of this array MUST match with the NUM_INF_OUT_LAYER */
+const static uint8_t num_grids[] = { 13, 26, 52 };
+/* Number of DRP-AI output */
+const static uint32_t num_inf_out =  (NUM_CLASS + 5) * NUM_BB * num_grids[0] * num_grids[0]
+                                + (NUM_CLASS + 5) * NUM_BB * num_grids[1] * num_grids[1]
+                                + (NUM_CLASS + 5) * NUM_BB * num_grids[2] * num_grids[2];
+/* Anchor box information */
+const static double anchors[] =
+{
+    10, 13,
+    16, 30,
+    33, 23,
+    30, 61,
+    62, 45,
+    59, 119,
+    116, 90,
+    156, 198,
+    373, 326
+};
+#elif defined(YOLOV2)
+/*****************************************
+* YOLOv2
+******************************************/
+/* Directory name of DRP-AI Object files (DRP-AI Translator output) */
+const static std::string drpai_prefix   = "yolov2_bmp";
+/* Pascal VOC dataset label list */
+const static std::vector<std::string> label_file_map = { "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor" };
+
+/* Number of class to be detected */
+#define NUM_CLASS           (20)
+/* Number for [region] layer num parameter */
+#define NUM_BB              (5)
+/* Number of output layers. This value MUST match with the length of num_grids[] below */
+#define NUM_INF_OUT_LAYER   (1)
+/* Number of grids in the image. The length of this array MUST match with the NUM_INF_OUT_LAYER */
+const static uint8_t num_grids[] = { 13 };
+/* Number of DRP-AI output */
+const static uint32_t num_inf_out =  (NUM_CLASS + 5)* NUM_BB * num_grids[0] * num_grids[0];
+/* Anchor box information */
+const static double anchors[] =
+{
+    1.3221, 1.73145,
+    3.19275, 4.00944,
+    5.05587, 8.09892,
+    9.47112, 4.84053,
+    11.2364, 10.0071
+};
+
+#elif defined(TINYYOLOV3)
+/*****************************************
+* Tiny YOLOv3
+******************************************/
+/* Directory name of DRP-AI Object files (DRP-AI Translator output) */
+const static std::string drpai_prefix   = "tinyyolov3_bmp";
+/* Class labels to be classified */
+const static std::string label_list     = "coco-labels-2014_2017.txt";
+/* Empty since labels will be loaded from label_list file */
+static std::vector<std::string> label_file_map = {};
+/* Number of class to be detected */
+#define NUM_CLASS           (80)
+/* Number for [yolo] layer num parameter */
+#define NUM_BB              (3)
+/* Number of output layers. This value MUST match with the length of num_grids[] below */
+#define NUM_INF_OUT_LAYER   (2)
+/* Number of grids in the image. The length of this array MUST match with the NUM_INF_OUT_LAYER */
+const static uint8_t num_grids[] = { 13, 26 };
+/* Number of DRP-AI output */
+const static uint32_t num_inf_out =  (NUM_CLASS + 5)* NUM_BB * num_grids[0] * num_grids[0]
+                                + (NUM_CLASS + 5)* NUM_BB * num_grids[1] * num_grids[1];
+/* Anchor box information */
+const static double anchors[] =
+{
+    10, 14,
+    23, 27,
+    37, 58,
+    81, 82,
+    135, 169,
+    344, 319
+};
+#elif defined(TINYYOLOV2)
+/*****************************************
+* Tiny YOLOv2
+******************************************/
+/* Directory name of DRP-AI Object files (DRP-AI Translator output) */
+const static std::string drpai_prefix   = "tinyyolov2_bmp";
+/* Pascal VOC dataset label list */
+const static std::vector<std::string> label_file_map = { "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor" };
+
+/* Number of class to be detected */
+#define NUM_CLASS           (20)
+/* Number for [region] layer num parameter */
+#define NUM_BB              (5)
+/* Number of output layers. This value MUST match with the length of num_grids[] below */
+#define NUM_INF_OUT_LAYER   (1)
+/* Number of grids in the image. The length of this array MUST match with the NUM_INF_OUT_LAYER */
+const static uint8_t num_grids[] = { 13 };
+/* Number of DRP-AI output */
+const static uint32_t num_inf_out =  (NUM_CLASS + 5)* NUM_BB * num_grids[0] * num_grids[0];
+/* Anchor box information */
+const static double anchors[] =
+{
+    1.08, 1.19,
+    3.42, 4.41,
+    6.63, 11.38,
+    9.42, 5.11,
+    16.62, 10.52
+};
+#endif
 
 /*****************************************
 * Static Variables (No need to change)
 * Following variables are the file name of each DRP-AI Object file
 * drpai_file_path order must be same as the INDEX_* defined later.
 ******************************************/
-const static char* drpai_file_path[5] =
-{
-    "resnet50_bmp/drp_desc.bin",
-    "resnet50_bmp/resnet50_bmp_drpcfg.mem",
-    "resnet50_bmp/drp_param.bin",
-    "resnet50_bmp/aimac_desc.bin",
-    "resnet50_bmp/resnet50_bmp_weight.dat",
-};
-/*****************************************
-* Macro for ResNet
-******************************************/
-/*Number of class to be classified (Need to change to use the customized model.)*/
-#define NUM_CLASS               (1000)
+const static std::string drpai_address_file = drpai_prefix+"/"+drpai_prefix+"_addrmap_intm.txt";
+const static std::string drpai_file_path[5] =
+        {
+                drpai_prefix+"/drp_desc.bin",
+                drpai_prefix+"/"+drpai_prefix+"_drpcfg.mem",
+                drpai_prefix+"/drp_param.bin",
+                drpai_prefix+"/aimac_desc.bin",
+                drpai_prefix+"/"+drpai_prefix+"_weight.dat",
+        };
 
 /*****************************************
-* Macro for Application
+* Common Macro for YOLO
+******************************************/
+/* Thresholds */
+#define TH_PROB                 (0.5f)
+#define TH_NMS                  (0.5f)
+/* Size of input image to the model */
+#define MODEL_IN_W              (416)
+#define MODEL_IN_H              (416)
+
+/*****************************************
+* Common Macro for Application
 ******************************************/
 /*Maximum DRP-AI Timeout threshold*/
 #define DRPAI_TIMEOUT           (5)
@@ -80,6 +220,11 @@ const static char* drpai_file_path[5] =
 /*BMP Header size for Windows Bitmap v3*/
 #define FILEHEADERSIZE          (14)
 #define INFOHEADERSIZE_W_V3     (40)
+/*For drawing the bounding box on image*/
+#define CPU_DRAW_FONT_WIDTH     (6)
+#define CPU_DRAW_FONT_HEIGHT    (8)
+#define WHITE_DATA              (0xFFFFFFu)
+#define BLACK_DATA              (0x000000u)
 
 /*Buffer size for writing data to memory via DRP-AI Driver.*/
 #define BUF_SIZE                (1024)
