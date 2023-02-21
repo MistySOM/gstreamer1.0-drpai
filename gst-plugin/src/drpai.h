@@ -332,6 +332,11 @@ int initialize_drpai(struct drpai_instance_variables* instance) {
         fprintf(stderr,"[ERROR] Failed to load label file: %s\n", label_list);
         return -1;
     }
+    if (strcmp(instance->labels[0], "tench, Tinca tinca") != 0)
+    {
+        fprintf(stderr,"[ERROR] Labels are not valid: [%s]\n", instance->labels[0]);
+        return -1;
+    }
 
     memset(instance->drpai_output_buf, 0, NUM_CLASS * sizeof(float));
 
@@ -416,7 +421,7 @@ int8_t get_result(int8_t drpai_fd, unsigned long output_addr, uint32_t output_si
 * Return value  : 0 if succeeded
 *               not 0 otherwise
 ******************************************/
-void print_result(const float* floatarr, char** labels)
+void print_result(const float floatarr[NUM_CLASS], const char labels[NUM_CLASS][120])
 {
     /* Post-processing */
     ssize_t best_index = 0;
