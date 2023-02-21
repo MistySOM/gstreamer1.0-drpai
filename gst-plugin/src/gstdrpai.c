@@ -273,11 +273,6 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
         return GST_FLOW_ERROR;
     }
 
-    for(int i=0; i<filter->drpai_instance->drpai_address.data_in_size; i+=3) {
-//        filter->drpai_instance->img_buffer[0+i] = 255;
-        filter->drpai_instance->img_buffer[1+i] = 0;
-        filter->drpai_instance->img_buffer[2+i] = 0;
-    }
     memcpy(info.data, filter->drpai_instance->img_buffer, filter->drpai_instance->drpai_address.data_in_size);
     gst_buffer_unmap(buf, &info);
 

@@ -441,7 +441,7 @@ int process_drpai(struct drpai_instance_variables* instance) {
     /**********************************************************************
     * START Inference
     **********************************************************************/
-    printf("[START] DRP-AI\n");
+//    printf("[START] DRP-AI\n");
     errno = 0;
     int ret = ioctl(instance->drpai_fd, DRPAI_START, &instance->proc[0]);
     if (0 != ret)
@@ -496,7 +496,7 @@ int process_drpai(struct drpai_instance_variables* instance) {
             ret = -1;
             return ret;
         }
-        printf("[END] DRP-AI\n");
+//        printf("[END] DRP-AI\n");
     }
 
     /**********************************************************************
