@@ -541,13 +541,15 @@ int8_t DRPAI::print_result_yolo(Image& img)
 
     /* Render boxes on image and print their details */
     n = 1;
+    printf("DRP-AI detected %zu items:", det.size());
     for (i = 0;i < det.size(); i++)
     {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
 
         /* Print the box details on console */
-        print_box(det[i], n++);
+        //print_box(det[i], n++);
+        printf("\t%s (%.1f %%)", label_file_map[d.c].c_str(), det[i].prob);
 
         /* Draw the bounding box on the image */
         std::stringstream stream;
@@ -556,6 +558,7 @@ int8_t DRPAI::print_result_yolo(Image& img)
         img.draw_rect((int32_t) det[i].bbox.x, (int32_t)det[i].bbox.y,
                       (int32_t)det[i].bbox.w, (int32_t)det[i].bbox.h, result_str.c_str());
     }
+    printf("\n");
     return 0;
 }
 

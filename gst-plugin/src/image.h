@@ -56,8 +56,8 @@ class Image
         int32_t img_c;
         int32_t size;
 
-        int32_t front_color = BLACK_DATA;
-        int32_t back_color = WHITE_DATA;
+        int32_t front_color = RED_DATA;
+        int32_t back_color = BLACK_DATA;
         int32_t font_w = CPU_DRAW_FONT_WIDTH;
         int32_t font_h = CPU_DRAW_FONT_HEIGHT;
         void draw_point(int32_t x, int32_t y, int32_t color);

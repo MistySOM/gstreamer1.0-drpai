@@ -223,6 +223,7 @@ const static std::string drpai_file_path[5] =
 /*For drawing the bounding box on image*/
 #define CPU_DRAW_FONT_WIDTH     (6)
 #define CPU_DRAW_FONT_HEIGHT    (8)
+#define RED_DATA                (0xFF0000u)
 #define WHITE_DATA              (0xFFFFFFu)
 #define BLACK_DATA              (0x000000u)
 

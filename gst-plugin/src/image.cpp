@@ -29,8 +29,7 @@
 #include "ascii.h"
 
 Image::Image()
-{
-}
+= default;
 
 
 Image::~Image()
@@ -82,7 +81,6 @@ int32_t Image::get_C()
 void Image::set_H(int32_t h)
 {
     img_h = h;
-    return;
 }
 /*****************************************
 * Function Name : set_W
@@ -94,7 +92,6 @@ void Image::set_H(int32_t h)
 void Image::set_W(int32_t w)
 {
     img_w = w;
-    return;
 }
 
 /*****************************************
@@ -298,7 +295,6 @@ void Image::write_char(const uint8_t code, int32_t x,  int32_t y, int32_t color,
         }
         mask = (uint8_t) (mask >> 1);
     }
-    return;
 }
 
 
@@ -343,7 +339,6 @@ void Image::draw_point(int32_t x, int32_t y, int32_t color)
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 1] = (color >> 8)  & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 2] = color         & 0x000000FF;
-    return;
 }
 
 /*****************************************
@@ -446,7 +441,6 @@ void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const char * s
     draw_line(x_max+1, y_min-1, x_max+1, y_max+1, back_color);
     draw_line(x_max+1, y_max+1, x_min-1, y_max+1, back_color);
     draw_line(x_min-1, y_max+1, x_min-1, y_min-1, back_color);
-    return;
 }
 
 
@@ -473,5 +467,4 @@ uint8_t Image::at(int32_t a)
 void Image::set(int32_t a, uint8_t val)
 {
     img_buffer[a] = val;
-    return;
 }
