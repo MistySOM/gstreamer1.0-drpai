@@ -31,6 +31,7 @@ private:
     st_addr_t drpai_address{};
     float drpai_output_buf[num_inf_out]{};
     std::vector<detection> det;
+    std::vector<detection> last_det;
     std::vector<std::string> labels;
     drpai_data_t proc[DRPAI_INDEX_NUM]{};
 

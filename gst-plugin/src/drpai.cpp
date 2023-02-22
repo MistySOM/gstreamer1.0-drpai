@@ -542,7 +542,7 @@ int8_t DRPAI::print_result_yolo()
 
     /* Render boxes on image and print their details */
     n = 1;
-    printf("DRP-AI detected %zu items:  ", det.size());
+    printf("DRP-AI detected items:  ");
     for (const auto& detection: det)
     {
         /* Skip the overlapped bounding boxes */
@@ -672,7 +672,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
 
     /* Compute the result, draw the result on img and display it on console */
     const std::unique_lock<std::mutex> lock(output_mutex);
-    for (const auto& detection: det)
+    for (const auto& detection: last_det)
     {
         /* Skip the overlapped bounding boxes */
         if (detection.prob == 0) continue;
@@ -782,13 +782,17 @@ void DRPAI::thread_function() {
             return;
         }
 
-        const std::unique_lock<std::mutex> lock(output_mutex);
         ret = print_result_yolo();
         if (0 != ret)
         {
             fprintf(stderr, "[ERROR] Failed to run CPU Post Processing.\n");
             thread_state = Failed;
             return;
+        }
+
+        {
+            const std::unique_lock<std::mutex> lock(output_mutex);
+            last_det = det;
         }
     }
 }
