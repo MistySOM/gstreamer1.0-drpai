@@ -1,4 +1,4 @@
-plugin_c_args = ['-DHAVE_CONFIG_H', '-DYOLOV3']
+plugin_c_args = ['-DHAVE_CONFIG_H', '-DYOLOV3', '-lpthread']
 
 cdata = configuration_data()
 cdata.set_quoted('PACKAGE_VERSION', gst_version)
@@ -24,7 +24,7 @@ gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep],
+  dependencies : [gst_dep, pthread_dep],
   install : true,
   install_dir : plugins_install_dir,
 )
