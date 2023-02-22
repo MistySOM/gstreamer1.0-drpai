@@ -263,16 +263,11 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
-    Image img;
-    img.init(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
-    memcpy(img.img_buffer, info.data, info.size);
-
-    if (filter->drpai->process(img) == -1) {
+    if (filter->drpai->process(info.data) == -1) {
         gst_buffer_unref (buf);
         return GST_FLOW_ERROR;
     }
 
-    memcpy(info.data, img.img_buffer, info.size);
     gst_buffer_unmap(buf, &info);
 
     /* just push out the incoming buffer without touching it */

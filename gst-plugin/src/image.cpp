@@ -28,70 +28,12 @@
 #include "image.h"
 #include "ascii.h"
 
-Image::Image()
-= default;
-
-
 Image::~Image()
 {
-    munmap(img_buffer, size);
-    close(udmabuf_fd);
-}
-
-/*****************************************
-* Function Name : get_H
-* Description   : Function to get the image height
-*                 This function is NOT used currently.
-* Arguments     : -
-* Return value  : img_h = current image height
-******************************************/
-int32_t Image::get_H()
-{
-    return img_h;
-}
-/*****************************************
-* Function Name : get_W
-* Description   : Function to get the image width
-*                 This function is NOT used currently.
-* Arguments     : -
-* Return value  : img_w = current image width
-******************************************/
-int32_t Image::get_W()
-{
-    return img_w;
-}
-/*****************************************
-* Function Name : get_C
-* Description   : Function to get the number of image channel
-*                 This function is NOT used currently.
-* Arguments     : -
-* Return value  : img_c = current number of image channel
-******************************************/
-int32_t Image::get_C()
-{
-    return img_c;
-}
-/*****************************************
-* Function Name : set_H
-* Description   : Function to set the image height
-*                 This function is NOT used currently.
-* Arguments     : h = new image height to be set
-* Return value  : -
-******************************************/
-void Image::set_H(int32_t h)
-{
-    img_h = h;
-}
-/*****************************************
-* Function Name : set_W
-* Description   : Function to set the image width
-*                 This function is NOT used currently.
-* Arguments     : w = new image width to be set
-* Return value  : -
-******************************************/
-void Image::set_W(int32_t w)
-{
-    img_w = w;
+    if(udmabuf_fd != 0) {
+        munmap(img_buffer, size);
+        close(udmabuf_fd);
+    }
 }
 
 /*****************************************
@@ -105,13 +47,9 @@ void Image::set_W(int32_t w)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::init(uint32_t w, uint32_t h, uint32_t c)
+uint8_t Image::map_udmabuf()
 {
     int32_t i = 0;
-    img_w = w;
-    img_h = h;
-    img_c = c;
-    size = w * h * c;
     udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
     if (udmabuf_fd < 0)
     {

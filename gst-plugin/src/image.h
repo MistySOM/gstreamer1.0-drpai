@@ -30,19 +30,16 @@
 class Image
 {
     public:
-        Image();
+        Image(int32_t w, int32_t h, int32_t c):
+            img_w(w), img_h(h), img_c(c), size(w * h * c) {};
         ~Image();
 
         uint8_t * img_buffer{};
-        int32_t get_H();
-        int32_t get_W();
-        int32_t get_C();
-        void set_H(int32_t h);
-        void set_W(int32_t w);
+        int32_t get_size() const { return size; }
         uint8_t at(int32_t a);
         void set(int32_t a, uint8_t val);
 
-        uint8_t init(uint32_t w, uint32_t h, uint32_t c);
+        uint8_t map_udmabuf();
         uint8_t read_bmp(std::string filename);
         uint8_t save_bmp(std::string filename);
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
@@ -50,11 +47,11 @@ class Image
     private:
         uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
         uint8_t bmp_header[FILEHEADERSIZE+INFOHEADERSIZE_W_V3]{};
-        uint8_t udmabuf_fd{};
-        int32_t img_h{};
-        int32_t img_w{};
-        int32_t img_c{};
-        int32_t size{};
+        uint8_t udmabuf_fd = 0;
+        int32_t img_w;
+        int32_t img_h;
+        int32_t img_c;
+        int32_t size;
 
         int32_t front_color = RED_DATA;
         int32_t back_color = BLACK_DATA;
