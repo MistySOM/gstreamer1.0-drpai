@@ -542,21 +542,21 @@ int8_t DRPAI::print_result_yolo(Image& img)
     /* Render boxes on image and print their details */
     n = 1;
     printf("DRP-AI detected %zu items:  ", det.size());
-    for (i = 0;i < det.size(); i++)
+    for (const auto& detection: det)
     {
         /* Skip the overlapped bounding boxes */
-        if (det[i].prob == 0) continue;
+        if (detection.prob == 0) continue;
 
         /* Print the box details on console */
         //print_box(det[i], n++);
-        printf("%s (%.1f %%)\t", label_file_map[d.c].c_str(), det[i].prob*100);
+        printf("%s (%.1f %%)\t", label_file_map[detection.c].c_str(), detection.prob*100);
 
         /* Draw the bounding box on the image */
         std::stringstream stream;
-        stream << std::fixed << std::setprecision(2) << det[i].prob;
-        std::string result_str = label_file_map[det[i].c]+ " "+ stream.str();
-        img.draw_rect((int32_t) det[i].bbox.x, (int32_t)det[i].bbox.y,
-                      (int32_t)det[i].bbox.w, (int32_t)det[i].bbox.h, result_str);
+        stream << std::fixed << std::setprecision(2) << detection.prob*100;
+        std::string result_str = label_file_map[detection.c]+ " "+ stream.str();
+        img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
+                      (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, result_str);
     }
     printf("\n");
     return 0;
