@@ -45,7 +45,7 @@ Image::~Image()
 * Arguments     : -
 * Return value  : img_h = current image height
 ******************************************/
-uint32_t Image::get_H()
+int32_t Image::get_H()
 {
     return img_h;
 }
@@ -56,7 +56,7 @@ uint32_t Image::get_H()
 * Arguments     : -
 * Return value  : img_w = current image width
 ******************************************/
-uint32_t Image::get_W()
+int32_t Image::get_W()
 {
     return img_w;
 }
@@ -67,7 +67,7 @@ uint32_t Image::get_W()
 * Arguments     : -
 * Return value  : img_c = current number of image channel
 ******************************************/
-uint32_t Image::get_C()
+int32_t Image::get_C()
 {
     return img_c;
 }
@@ -78,7 +78,7 @@ uint32_t Image::get_C()
 * Arguments     : h = new image height to be set
 * Return value  : -
 ******************************************/
-void Image::set_H(uint32_t h)
+void Image::set_H(int32_t h)
 {
     img_h = h;
 }
@@ -89,7 +89,7 @@ void Image::set_H(uint32_t h)
 * Arguments     : w = new image width to be set
 * Return value  : -
 ******************************************/
-void Image::set_W(uint32_t w)
+void Image::set_W(int32_t w)
 {
     img_w = w;
 }
@@ -107,7 +107,7 @@ void Image::set_W(uint32_t w)
 ******************************************/
 uint8_t Image::init(uint32_t w, uint32_t h, uint32_t c)
 {
-    uint32_t i = 0;
+    int32_t i = 0;
     img_w = w;
     img_h = h;
     img_c = c;
@@ -263,10 +263,10 @@ uint8_t Image::save_bmp(std::string filename)
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(char code, uint32_t x, uint32_t y, int32_t color, int32_t backcolor)
+void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
 {
-    uint32_t height;
-    uint32_t width;
+    int32_t height;
+    int32_t width;
     int8_t * p_pattern;
     uint8_t mask = 0x80;
 
@@ -308,7 +308,7 @@ void Image::write_char(char code, uint32_t x, uint32_t y, int32_t color, int32_t
 *                 backcolor = character background color
 * Return Value  : -
 ******************************************/
-void Image::write_string(const std::string& pcode, uint32_t x,  uint32_t y, int32_t color, int32_t backcolor)
+void Image::write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor)
 {
     size_t i = 0;
 
@@ -331,7 +331,7 @@ void Image::write_string(const std::string& pcode, uint32_t x,  uint32_t y, int3
 *                 color = point color
 * Return Value  : -
 ******************************************/
-void Image::draw_point(uint32_t x, uint32_t y, uint32_t color)
+void Image::draw_point(int32_t x, int32_t y, int32_t color)
 {
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 1] = (color >> 8)  & 0x000000FF;
@@ -348,10 +348,10 @@ void Image::draw_point(uint32_t x, uint32_t y, uint32_t color)
 *                 color = line color
 * Return Value  : -
 ******************************************/
-void Image::draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t color)
+void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color)
 {
-    uint32_t dx = x1 - x0;
-    uint32_t dy = y1 - y0;
+    int32_t dx = x1 - x0;
+    int32_t dy = y1 - y0;
     int32_t sx = 1;
     int32_t sy = 1;
     float de;
@@ -415,12 +415,12 @@ void Image::draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const std::string& str)
+void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str)
 {
-    uint32_t x_min = x - round(w / 2.);
-    uint32_t y_min = y - round(h / 2.);
-    uint32_t x_max = x + round(w / 2.) - 1;
-    uint32_t y_max = y + round(h / 2.) - 1;
+    int32_t x_min = x - round(w / 2.);
+    int32_t y_min = y - round(h / 2.);
+    int32_t x_max = x + round(w / 2.) - 1;
+    int32_t y_max = y + round(h / 2.) - 1;
     /* Check the bounding box is in the image range */
     x_min = x_min < 1 ? 1 : x_min;
     x_max = ((img_w - 2) < x_max) ? (img_w - 2) : x_max;
@@ -448,7 +448,7 @@ void Image::draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const std:
 * Arguments     : a = index of img_buffer
 * Return Value  : value of img_buffer at index a
 ******************************************/
-uint8_t Image::at(uint32_t a)
+uint8_t Image::at(int32_t a)
 {
     return img_buffer[a];
 }
@@ -461,7 +461,7 @@ uint8_t Image::at(uint32_t a)
 *                 val = new value to be set
 * Return Value  : -
 ******************************************/
-void Image::set(uint32_t a, uint8_t val)
+void Image::set(int32_t a, uint8_t val)
 {
     img_buffer[a] = val;
 }

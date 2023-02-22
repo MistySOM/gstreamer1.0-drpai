@@ -34,36 +34,36 @@ class Image
         ~Image();
 
         uint8_t * img_buffer{};
-        uint32_t get_H();
-        uint32_t get_W();
-        uint32_t get_C();
-        void set_H(uint32_t h);
-        void set_W(uint32_t w);
-        uint8_t at(uint32_t a);
-        void set(uint32_t a, uint8_t val);
+        int32_t get_H();
+        int32_t get_W();
+        int32_t get_C();
+        void set_H(int32_t h);
+        void set_W(int32_t w);
+        uint8_t at(int32_t a);
+        void set(int32_t a, uint8_t val);
 
         uint8_t init(uint32_t w, uint32_t h, uint32_t c);
         uint8_t read_bmp(std::string filename);
         uint8_t save_bmp(std::string filename);
-        void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const std::string& str);
+        void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
 
     private:
         uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
         uint8_t bmp_header[FILEHEADERSIZE+INFOHEADERSIZE_W_V3]{};
         uint8_t udmabuf_fd{};
-        uint32_t img_h{};
-        uint32_t img_w{};
-        uint32_t img_c{};
-        uint32_t size{};
+        int32_t img_h{};
+        int32_t img_w{};
+        int32_t img_c{};
+        int32_t size{};
 
         int32_t front_color = RED_DATA;
         int32_t back_color = BLACK_DATA;
-        uint32_t font_w = CPU_DRAW_FONT_WIDTH;
-        uint32_t font_h = CPU_DRAW_FONT_HEIGHT;
-        void draw_point(uint32_t x, uint32_t y, uint32_t color);
-        void draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t color);
-        void write_char(char code, uint32_t x, uint32_t y, int32_t color, int32_t backcolor);
-        void write_string(const std::string& pcode, uint32_t x,  uint32_t y, int32_t color, int32_t backcolor);
+        int32_t font_w = CPU_DRAW_FONT_WIDTH;
+        int32_t font_h = CPU_DRAW_FONT_HEIGHT;
+        void draw_point(int32_t x, int32_t y, int32_t color);
+        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
+        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
+        void write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor);
 
 };
 
