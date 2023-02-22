@@ -671,7 +671,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
     img.img_buffer = img_data;
 
     /* Compute the result, draw the result on img and display it on console */
-    const std::lock_guard<std::mutex> lock(output_mutex);
+    const std::unique_lock<std::mutex> lock(output_mutex);
     for (const auto& detection: det)
     {
         /* Skip the overlapped bounding boxes */
@@ -711,6 +711,7 @@ void DRPAI::thread_function() {
     while (true) {
         {
             std::unique_lock<std::mutex> lock(state_mutex);
+            thread_state = Ready;
             v.wait(lock, [&] { return thread_state != Ready; });
             if (thread_state == Stopped)
                 return;
@@ -781,7 +782,7 @@ void DRPAI::thread_function() {
             return;
         }
 
-        const std::lock_guard<std::mutex> lock(output_mutex);
+        const std::unique_lock<std::mutex> lock(output_mutex);
         ret = print_result_yolo();
         if (0 != ret)
         {
