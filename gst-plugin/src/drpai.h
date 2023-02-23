@@ -44,6 +44,7 @@ private:
 
     /* Thread Section */
     ThreadState thread_state = Stopped;
+    bool thread_signal_close = false;
     std::thread* process_thread;
     std::mutex output_mutex;
     std::mutex state_mutex;

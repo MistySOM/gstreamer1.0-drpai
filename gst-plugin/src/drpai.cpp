@@ -641,7 +641,6 @@ int8_t DRPAI::initialize() {
     proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
 
-    thread_state = Ready;
     process_thread = new std::thread(&DRPAI::thread_function, this);
 
     printf("DRP-AI Ready!\n");
@@ -691,7 +690,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
 int8_t DRPAI::release() {
     {
 //        std::unique_lock<std::mutex> state_lock(state_mutex);
-        thread_state = Stopped;
+        thread_signal_close = true;
 //        v.notify_one();
     }
     process_thread->join();
@@ -712,9 +711,9 @@ void DRPAI::thread_function() {
     while (true) {
         {
 //            std::unique_lock<std::mutex> lock(state_mutex);
-//            thread_state = Ready;
+            thread_state = Ready;
 //            v.wait(lock, [&] { return thread_state != Ready; });
-            if (thread_state == Stopped)
+            if (thread_signal_close)
                 return;
         }
 
