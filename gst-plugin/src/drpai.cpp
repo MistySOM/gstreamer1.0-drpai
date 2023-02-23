@@ -508,7 +508,7 @@ int8_t DRPAI::print_result_yolo()
 #if defined(YOLOV3) || defined(TINYYOLOV3)
                         classes[i] = sigmoid(drpai_output_buf[yolo_index(n, offs, 5+i)]);
 #elif defined(YOLOV2) || defined(TINYYOLOV2)
-                        classes[i] = floatarr[yolo_index(n, offs, 5+i)];
+                        classes[i] = drpai_output_buf[yolo_index(n, offs, 5+i)];
 #endif
                     }
 

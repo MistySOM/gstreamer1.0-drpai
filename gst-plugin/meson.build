@@ -1,4 +1,4 @@
-plugin_c_args = ['-DHAVE_CONFIG_H', '-DTINYYOLOV3', '-lpthread']
+plugin_c_args = ['-DHAVE_CONFIG_H', '-DYOLOV2', '-lpthread']
 
 cdata = configuration_data()
 cdata.set_quoted('PACKAGE_VERSION', gst_version)
