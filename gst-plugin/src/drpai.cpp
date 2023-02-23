@@ -671,7 +671,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
     }
 
     if(!multithread)
-        if (thread_function_single())
+        if (thread_function_single() != 0)
             return -1;
 
     Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);

@@ -124,7 +124,7 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                                                          FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_MULTITHREAD,
                                     g_param_spec_boolean("multithread", "MultiThread", "Use MultiThreading",
-                                                         FALSE, G_PARAM_READWRITE));
+                                                         TRUE, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -157,7 +157,7 @@ gst_drpai_init(GstDRPAI *filter) {
     gst_element_add_pad(GST_ELEMENT (filter), filter->srcpad);
 
     filter->silent = FALSE;
-    filter->multithread = FALSE;
+    filter->multithread = TRUE;
 }
 
 static GstStateChangeReturn
