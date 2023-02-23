@@ -650,10 +650,11 @@ int8_t DRPAI::initialize() {
 int8_t DRPAI::process(uint8_t* img_data) {
 
     {
-//        std::unique_lock<std::mutex> state_lock(state_mutex);
+        std::unique_lock<std::mutex> state_lock(state_mutex);
         switch (thread_state) {
             case Failed:
-            case Stopped:
+            case Unknown:
+            case Closing:
                 return -1;
             case Processing:
                 break;
@@ -663,7 +664,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
                 img.map_udmabuf();
                 std::memcpy(img.img_buffer, img_data, img.get_size());
                 thread_state = Processing;
-//                v.notify_one();
+                v.notify_one();
         }
     }
 
@@ -671,7 +672,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
     img.img_buffer = img_data;
 
     /* Compute the result, draw the result on img and display it on console */
-//    const std::unique_lock<std::mutex> lock(output_mutex);
+    const std::unique_lock<std::mutex> lock(output_mutex);
     for (const auto& detection: last_det)
     {
         /* Skip the overlapped bounding boxes */
@@ -689,9 +690,9 @@ int8_t DRPAI::process(uint8_t* img_data) {
 
 int8_t DRPAI::release() {
     {
-//        std::unique_lock<std::mutex> state_lock(state_mutex);
-        thread_signal_close = true;
-//        v.notify_one();
+        std::unique_lock<std::mutex> state_lock(state_mutex);
+        thread_state = Closing;
+        v.notify_one();
     }
     process_thread->join();
     delete process_thread;
@@ -710,10 +711,10 @@ void DRPAI::thread_function() {
 
     while (true) {
         {
-//            std::unique_lock<std::mutex> lock(state_mutex);
+            std::unique_lock<std::mutex> lock(state_mutex);
             thread_state = Ready;
-//            v.wait(lock, [&] { return thread_state != Ready; });
-            if (thread_signal_close)
+            v.wait(lock, [&] { return thread_state != Ready; });
+            if (thread_state == Closing)
                 return;
         }
 
@@ -791,7 +792,7 @@ void DRPAI::thread_function() {
         }
 
         {
-//            const std::unique_lock<std::mutex> lock(output_mutex);
+            const std::unique_lock<std::mutex> lock(output_mutex);
             last_det = det;
         }
     }

@@ -19,7 +19,7 @@
 
 class DRPAI {
 
-    enum ThreadState { Stopped, Ready, Processing, Failed };
+    enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
 
 public:
     int8_t initialize();
@@ -43,8 +43,7 @@ private:
     std::vector<std::string> load_label_file(const std::string& label_file_name);
 
     /* Thread Section */
-    ThreadState thread_state = Stopped;
-    bool thread_signal_close = false;
+    ThreadState thread_state = Unknown;
     std::thread* process_thread;
     std::mutex output_mutex;
     std::mutex state_mutex;
