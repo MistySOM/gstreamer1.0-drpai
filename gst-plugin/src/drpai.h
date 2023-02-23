@@ -22,6 +22,8 @@ class DRPAI {
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
 
 public:
+    DRPAI(bool multithread):
+        multithread(multithread) {};
     int8_t initialize();
     int8_t process(uint8_t* img_data);
     int8_t release();
@@ -42,13 +44,16 @@ private:
     int8_t print_result_yolo();
     std::vector<std::string> load_label_file(const std::string& label_file_name);
 
+    bool multithread;
+
     /* Thread Section */
     ThreadState thread_state = Unknown;
-    std::thread* process_thread;
+    std::thread* process_thread = nullptr;
     std::mutex output_mutex;
     std::mutex state_mutex;
     std::condition_variable v;
-    void thread_function();
+    void thread_function_loop();
+    int8_t thread_function_single();
 };
 
 #endif //GSTREAMER1_0_DRPAI_DRPAI_H

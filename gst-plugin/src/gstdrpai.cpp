@@ -75,7 +75,8 @@ enum {
 
 enum {
     PROP_0,
-    PROP_SILENT
+    PROP_SILENT,
+    PROP_MULTITHREAD,
 };
 
 /* the capabilities of the inputs and outputs.
@@ -121,6 +122,9 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
     g_object_class_install_property(gobject_class, PROP_SILENT,
                                     g_param_spec_boolean("silent", "Silent", "Produce verbose output ?",
                                                          FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MULTITHREAD,
+                                    g_param_spec_boolean("multithread", "MultiThread", "Use MultiThreading",
+                                                         FALSE, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -153,6 +157,7 @@ gst_drpai_init(GstDRPAI *filter) {
     gst_element_add_pad(GST_ELEMENT (filter), filter->srcpad);
 
     filter->silent = FALSE;
+    filter->multithread = FALSE;
 }
 
 static GstStateChangeReturn
@@ -163,7 +168,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
-            obj->drpai = new DRPAI();
+            obj->drpai = new DRPAI(obj->multithread);
             if(obj->drpai->initialize() == -1)
                 return GST_STATE_CHANGE_FAILURE;
             break;
@@ -198,6 +203,9 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_SILENT:
             filter->silent = g_value_get_boolean(value);
             break;
+        case PROP_MULTITHREAD:
+            filter->multithread = g_value_get_boolean(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
             break;
@@ -212,6 +220,9 @@ gst_drpai_get_property(GObject *object, guint prop_id,
     switch (prop_id) {
         case PROP_SILENT:
             g_value_set_boolean(value, filter->silent);
+            break;
+        case PROP_MULTITHREAD:
+            g_value_set_boolean(value, filter->multithread);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
