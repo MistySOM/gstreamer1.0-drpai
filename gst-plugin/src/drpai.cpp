@@ -665,7 +665,8 @@ int8_t DRPAI::process(uint8_t* img_data) {
                 img.map_udmabuf();
                 std::memcpy(img.img_buffer, img_data, img.get_size());
                 thread_state = Processing;
-                v.notify_one();
+                if (multithread)
+                    v.notify_one();
         }
     }
 
