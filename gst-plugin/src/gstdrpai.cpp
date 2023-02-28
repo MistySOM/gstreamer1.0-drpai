@@ -83,11 +83,11 @@ enum {
  *
  * describe the real formats here.
  */
+auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
 static GstStaticPadTemplate sink_factory =
-        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS("ANY"));
-
+        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 static GstStaticPadTemplate src_factory =
-        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS("ANY"));
+        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 
 #define gst_drpai_parent_class parent_class
 

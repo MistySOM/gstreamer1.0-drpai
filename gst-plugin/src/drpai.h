@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 class DRPAI {
 
@@ -32,8 +33,8 @@ private:
     int8_t drpai_fd = 0;
     st_addr_t drpai_address{};
     float drpai_output_buf[num_inf_out]{};
-    std::vector<detection> det;
-    std::vector<detection> last_det;
+    std::vector<detection> det{};
+    std::vector<detection> last_det{};
     std::vector<std::string> labels;
     drpai_data_t proc[DRPAI_INDEX_NUM]{};
 
@@ -45,6 +46,9 @@ private:
     std::vector<std::string> load_label_file(const std::string& label_file_name);
 
     bool multithread;
+    std::chrono::time_point<std::chrono::steady_clock> last_video_frame_time;
+    std::chrono::time_point<std::chrono::steady_clock> last_drpai_time;
+    double video_rate=0, drpai_rate=0;
 
     /* Thread Section */
     ThreadState thread_state = Unknown;

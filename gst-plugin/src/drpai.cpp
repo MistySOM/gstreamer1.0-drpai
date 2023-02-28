@@ -5,6 +5,8 @@
 #include <memory>
 #include "drpai.h"
 
+#define NOW std::chrono::steady_clock::now()
+
 /*****************************************
 * Function Name : read_addrmap_txt
 * Description   : Loads address and size of DRP-AI Object files into struct addr.
@@ -643,15 +645,15 @@ int8_t DRPAI::initialize() {
 
     if (multithread)
         process_thread = new std::thread(&DRPAI::thread_function_loop, this);
+    else
+        thread_state = Ready;
 
     printf("DRP-AI Ready!\n");
     return 0;
 }
 
 int8_t DRPAI::process(uint8_t* img_data) {
-
     {
-        std::unique_lock<std::mutex> state_lock(state_mutex);
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -664,6 +666,8 @@ int8_t DRPAI::process(uint8_t* img_data) {
                 Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
                 img.map_udmabuf();
                 std::memcpy(img.img_buffer, img_data, img.get_size());
+                drpai_rate = 1.0 / std::chrono::duration<double>(NOW - last_drpai_time).count();
+                last_drpai_time = NOW;
                 thread_state = Processing;
                 if (multithread)
                     v.notify_one();
@@ -676,6 +680,14 @@ int8_t DRPAI::process(uint8_t* img_data) {
 
     Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
     img.img_buffer = img_data;
+    video_rate = 1.0/std::chrono::duration<double>(NOW - last_video_frame_time).count();
+    last_video_frame_time = NOW;
+
+    img.write_string("Video Rate: "+ std::to_string(int(video_rate))+" fps",
+                     0,0, WHITE_DATA, BLACK_DATA);
+    img.write_string("DRAPI Rate: "+ std::to_string(int(drpai_rate))+" fps",
+                     0,8, WHITE_DATA, BLACK_DATA);
+
 
     /* Compute the result, draw the result on img and display it on console */
     const std::unique_lock<std::mutex> lock(output_mutex);
@@ -725,11 +737,12 @@ void DRPAI::thread_function_loop() {
 int8_t DRPAI::thread_function_single() {
     {
         std::unique_lock<std::mutex> lock(state_mutex);
+        if (thread_state == Closing)
+            return -1;
+
         thread_state = Ready;
         if(multithread) {
             v.wait(lock, [&] { return thread_state != Ready; });
-            if (thread_state == Closing)
-                return -1;
         }
     }
 
