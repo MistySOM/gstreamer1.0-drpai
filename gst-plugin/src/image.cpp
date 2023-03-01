@@ -49,13 +49,12 @@ Image::~Image()
 ******************************************/
 uint8_t Image::map_udmabuf()
 {
-    int32_t i = 0;
     udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
     if (udmabuf_fd < 0)
     {
         return -1;
     }
-    img_buffer =(uint8_t*) mmap(NULL, size ,PROT_READ|PROT_WRITE, MAP_SHARED,  udmabuf_fd, 0);
+    img_buffer =(uint8_t*) mmap(nullptr, size ,PROT_READ|PROT_WRITE, MAP_SHARED,  udmabuf_fd, 0);
 
     if (img_buffer == MAP_FAILED)
     {
@@ -65,7 +64,7 @@ uint8_t Image::map_udmabuf()
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (i = 0 ; i < size; i++)
+        for (int32_t i = 0 ; i < size; i++)
         {
             img_buffer[i] = 0;
         }
@@ -82,28 +81,27 @@ uint8_t Image::map_udmabuf()
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::read_bmp(std::string filename)
+uint8_t Image::read_bmp(const std::string& filename)
 {
     uint32_t width = img_w;
     uint32_t height = img_h;
     uint32_t channel = img_c;
-    int32_t i = 0;
-    FILE *fp = NULL;
+    FILE *fp = nullptr;
     size_t ret = 0;
     uint8_t * bmp_line_data;
     /* Number of byte in single row */
     /* NOTE: Number of byte in single row of Windows Bitmap image must be aligned to 4 bytes. */
-    int32_t line_width = width * channel + width % 4;
+    uint32_t line_width = width * channel + width % 4;
 
     /*  Read header for Windows Bitmap v3 file. */
     fp = fopen(filename.c_str(), "rb");
-    if (NULL == fp)
+    if (nullptr == fp)
     {
         return -1;
     }
 
     /* Read all header */
-    ret = fread(bmp_header, sizeof(uint8_t), header_size, fp);
+    ret = fread(bmp_header.data(), sizeof(uint8_t), header_size, fp);
     if (!ret)
     {
         fclose(fp);
@@ -111,14 +109,14 @@ uint8_t Image::read_bmp(std::string filename)
     }
     /* Single row image data */
     bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
-    if (NULL == bmp_line_data)
+    if (nullptr == bmp_line_data)
     {
         free(bmp_line_data);
         fclose(fp);
         return -1;
     }
 
-    for (i = height-1; i >= 0; i--)
+    for (int32_t i = (int32_t)height-1; i >= 0; i--)
     {
         ret = fread(bmp_line_data, sizeof(uint8_t), line_width, fp);
         if (!ret)
@@ -127,7 +125,7 @@ uint8_t Image::read_bmp(std::string filename)
             fclose(fp);
             return -1;
         }
-        memcpy(img_buffer+i*width*channel, bmp_line_data, sizeof(uint8_t)*width*channel);
+        std::memcpy(img_buffer+i*width*channel, bmp_line_data, sizeof(uint8_t)*width*channel);
     }
 
     free(bmp_line_data);
@@ -145,10 +143,9 @@ uint8_t Image::read_bmp(std::string filename)
 * Return value  : 0 if suceeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::save_bmp(std::string filename)
+uint8_t Image::save_bmp(const std::string& filename) const
 {
-    int32_t i = 0;
-    FILE * fp = NULL;
+    FILE * fp = nullptr;
     uint8_t * bmp_line_data;
     uint32_t width = img_w;
     uint32_t height = img_h;
@@ -156,26 +153,26 @@ uint8_t Image::save_bmp(std::string filename)
     size_t ret = 0;
 
     /* Number of byte in single row */
-    int32_t line_width = width * channel + width % 4;
+    uint32_t line_width = width * channel + width % 4;
 
     fp = fopen(filename.c_str(), "wb");
-    if (NULL == fp)
+    if (nullptr == fp)
     {
         return -1;
     }
 
     /* Write header for Windows Bitmap v3 file. */
-    fwrite(bmp_header, sizeof(uint8_t), header_size, fp);
+    fwrite(bmp_header.data(), sizeof(uint8_t), header_size, fp);
 
     bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
-    if (NULL == bmp_line_data)
+    if (nullptr == bmp_line_data)
     {
         free(bmp_line_data);
         fclose(fp);
         return -1;
     }
 
-    for (i = height - 1; i >= 0; i--)
+    for (int32_t i = (int32_t)height - 1; i >= 0; i--)
     {
         memcpy(bmp_line_data, img_buffer + i*width*channel, sizeof(uint8_t)*width*channel);
         ret = fwrite(bmp_line_data, sizeof(uint8_t), line_width, fp);
@@ -247,27 +244,26 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
 * Return Value  : -
 ******************************************/
 void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
-                         int32_t color, int32_t backcolor, uint8_t margin)
+                         int32_t color, int32_t backcolor, int8_t margin)
 {
+    const auto str_size = (int32_t)pcode.size();
     if(margin > 0) {
-        uint32_t right = margin*2 + pcode.length() * font_w - 1;
-        uint32_t bottom = margin*2 + font_h - 1;
+        int32_t right = margin*2 + str_size * font_w - 1;
+        int32_t bottom = margin*2 + font_h - 1;
         draw_line(x, y, x + right, y, backcolor);
         draw_line(x, y+bottom, x+right, y+bottom, backcolor);
         draw_line(x, y, x, y+bottom, backcolor);
         draw_line(x+right, y, x+right, y+bottom, backcolor);
-        write_string(pcode, x+1, y+1, color, backcolor, margin-1);
+        write_string(pcode, x+1, y+1, color, backcolor, int8_t(margin-1));
         return;
     }
 
-    size_t i = 0;
+    x = std::max(0, x);
+    x = std::min(img_w - str_size*font_w - 2, x);
+    y = std::max(0, y);
+    y = std::min(img_h - font_h - 2, y);
 
-    x = x < 0 ? 2 : x;
-    x = (x > img_w - (i * font_w)) ? img_w - (i * font_w)-2 : x;
-    y = y < 0 ? 2 : y;
-    y = (y > img_h - font_h) ? img_h - font_h - 2 : y;
-
-    for (i = 0; i < pcode.length(); i++)
+    for (int32_t i = 0; i < str_size; i++)
     {
         write_char(pcode[i], (x + (i * font_w)), y, color, backcolor);
     }
@@ -325,13 +321,13 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
     if (dx > dy)
     {
         /* Horizontal Line */
-        for (i = dx, de = i / 2; i; i--)
+        for (i = dx, de = (float)i / 2; i; i--)
         {
             x0 += sx;
-            de += dy;
-            if (de > dx)
+            de += (float)dy;
+            if (de > (float)dx)
             {
-                de -= dx;
+                de -= (float)dx;
                 y0 += sy;
             }
             draw_point(x0, y0, color);
@@ -340,19 +336,18 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
     else
     {
         /* Vertical Line */
-        for (i = dy, de = i / 2; i; i--)
+        for (i = dy, de = (float)i / 2; i; i--)
         {
             y0 += sy;
-            de += dx;
-            if (de > dy)
+            de += (float)dx;
+            if (de > (float)dy)
             {
-                de -= dy;
+                de -= (float)dy;
                 x0 += sx;
             }
             draw_point(x0, y0, color);
         }
     }
-    return;
 }
 
 /*****************************************
@@ -367,10 +362,10 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
 ******************************************/
 void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str)
 {
-    int32_t x_min = x - round(w / 2.);
-    int32_t y_min = y - round(h / 2.);
-    int32_t x_max = x + round(w / 2.) - 1;
-    int32_t y_max = y + round(h / 2.) - 1;
+    int32_t x_min = x - (int32_t)round(w / 2.);
+    int32_t y_min = y - (int32_t)round(h / 2.);
+    int32_t x_max = x + (int32_t)round(w / 2.) - 1;
+    int32_t y_max = y + (int32_t)round(h / 2.) - 1;
     /* Check the bounding box is in the image range */
     x_min = x_min < 1 ? 1 : x_min;
     x_max = ((img_w - 2) < x_max) ? (img_w - 2) : x_max;
@@ -398,7 +393,7 @@ void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::str
 * Arguments     : a = index of img_buffer
 * Return Value  : value of img_buffer at index a
 ******************************************/
-uint8_t Image::at(int32_t a)
+uint8_t Image::at(int32_t a) const
 {
     return img_buffer[a];
 }

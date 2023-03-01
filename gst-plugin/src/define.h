@@ -28,29 +28,22 @@
 /*****************************************
 * includes
 ******************************************/
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <errno.h>
+#include <cerrno>
 #include <vector>
+#include <array>
 #include <map>
 #include <fstream>
 #include <iomanip>
 #include <cstring>
-#include <float.h>
-#include <math.h>
-
-/*****************************************
-* Common Static Variables
-*  - input_img = input image to DRP-AI (size and format are determined in DRP-AI Translator)
-*  - output_img = output image from the application with bounding box
-******************************************/
-const static std::string input_img      = "sample.bmp";
-const static std::string output_img     = "sample_output.bmp";
+#include <cfloat>
+#include <cmath>
 
 /*****************************************
 * Static Variables and Macro for each YOLO model
@@ -107,11 +100,11 @@ const static std::vector<std::string> label_file_map = { "aeroplane", "bicycle",
 /* Number of output layers. This value MUST match with the length of num_grids[] below */
 #define NUM_INF_OUT_LAYER   (1)
 /* Number of grids in the image. The length of this array MUST match with the NUM_INF_OUT_LAYER */
-const static uint8_t num_grids[] = { 13 };
+const static std::array<uint8_t, NUM_INF_OUT_LAYER> num_grids = { 13 };
 /* Number of DRP-AI output */
 const static uint32_t num_inf_out =  (NUM_CLASS + 5)* NUM_BB * num_grids[0] * num_grids[0];
 /* Anchor box information */
-const static double anchors[] =
+const static std::vector<float> anchors =
 {
     1.3221, 1.73145,
     3.19275, 4.00944,

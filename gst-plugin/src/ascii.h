@@ -26,7 +26,9 @@
 #ifndef ASCII_H
 #define ASCII_H
 
-const char g_ascii_table[][6] =
+#include <array>
+
+const static std::vector<std::array<char, 6>> g_ascii_table =
 {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},      /* ' '*/
     {0x00, 0x00, 0x79, 0x00, 0x00, 0x00},      /* ! */
