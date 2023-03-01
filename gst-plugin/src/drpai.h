@@ -46,8 +46,8 @@ private:
     std::vector<std::string> load_label_file(const std::string& label_file_name);
 
     bool multithread;
-    std::chrono::time_point<std::chrono::steady_clock> last_video_frame_time;
-    std::chrono::time_point<std::chrono::steady_clock> last_drpai_time;
+    std::chrono::time_point<std::chrono::steady_clock> frame_time;
+    int8_t video_frame_count = 0, drpai_frame_count = 0;
     double video_rate=0, drpai_rate=0;
 
     /* Thread Section */

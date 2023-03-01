@@ -246,8 +246,20 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
 *                 backcolor = character background color
 * Return Value  : -
 ******************************************/
-void Image::write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor)
+void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
+                         int32_t color, int32_t backcolor, uint8_t margin)
 {
+    if(margin > 0) {
+        uint32_t right = margin*2 + pcode.length() * font_w - 1;
+        uint32_t bottom = margin*2 + font_h - 1;
+        draw_line(x, y, x + right, y, backcolor);
+        draw_line(x, y+bottom, x+right, y+bottom, backcolor);
+        draw_line(x, y, x, y+bottom, backcolor);
+        draw_line(x+right, y, x+right, y+bottom, backcolor);
+        write_string(pcode, x+1, y+1, color, backcolor, margin-1);
+        return;
+    }
+
     size_t i = 0;
 
     x = x < 0 ? 2 : x;
@@ -366,7 +378,7 @@ void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::str
     y_max = ((img_h - 2) < y_max) ? (img_h - 2) : y_max;
 
     /* Draw the class and probability */
-    write_string(str, x_min + 1, y_min + 1, back_color,  front_color);
+    write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
     /* Draw the bounding box */
     draw_line(x_min, y_min, x_max, y_min, front_color);
     draw_line(x_max, y_min, x_max, y_max, front_color);

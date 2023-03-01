@@ -169,8 +169,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
             obj->drpai = new DRPAI(obj->multithread);
-            if(obj->drpai->initialize() == -1)
-                return GST_STATE_CHANGE_FAILURE;
+            obj->drpai->initialize();
             break;
         default:
             break;

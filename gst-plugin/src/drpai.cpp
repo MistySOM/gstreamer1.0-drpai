@@ -562,6 +562,12 @@ int8_t DRPAI::initialize() {
     printf("RZ/V2L DRP-AI Plugin\n");
     printf("Model : Darknet YOLO      | %s\n", drpai_prefix.c_str());
 
+    frame_time = NOW;
+    if (multithread)
+        process_thread = new std::thread(&DRPAI::thread_function_loop, this);
+    else
+        thread_state = Ready;
+
     int32_t ret = 0;
 
     /* Obtain udmabuf memory area starting address */
@@ -643,11 +649,6 @@ int8_t DRPAI::initialize() {
     proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
 
-    if (multithread)
-        process_thread = new std::thread(&DRPAI::thread_function_loop, this);
-    else
-        thread_state = Ready;
-
     printf("DRP-AI Ready!\n");
     return 0;
 }
@@ -663,11 +664,13 @@ int8_t DRPAI::process(uint8_t* img_data) {
                 break;
 
             case Ready:
-                Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
-                img.map_udmabuf();
-                std::memcpy(img.img_buffer, img_data, img.get_size());
-                drpai_rate = 1.0 / std::chrono::duration<double>(NOW - last_drpai_time).count();
-                last_drpai_time = NOW;
+                if(drpai_fd) {
+                    Image img(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
+                    img.map_udmabuf();
+                    std::memcpy(img.img_buffer, img_data, img.get_size());
+                }
+                //std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                drpai_frame_count++;
                 thread_state = Processing;
                 if (multithread)
                     v.notify_one();
@@ -678,16 +681,22 @@ int8_t DRPAI::process(uint8_t* img_data) {
         if (thread_function_single() != 0)
             return -1;
 
+    video_frame_count++;
     Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
     img.img_buffer = img_data;
-    video_rate = 1.0/std::chrono::duration<double>(NOW - last_video_frame_time).count();
-    last_video_frame_time = NOW;
 
-    img.write_string("Video Rate: "+ std::to_string(int(video_rate))+" fps",
-                     0,0, WHITE_DATA, BLACK_DATA);
-    img.write_string("DRAPI Rate: "+ std::to_string(int(drpai_rate))+" fps",
-                     0,8, WHITE_DATA, BLACK_DATA);
+    if (std::chrono::duration<double>(NOW - frame_time).count() >= 1) {
+        frame_time = NOW;
+        video_rate = video_frame_count;
+        drpai_rate = drpai_frame_count;
+        video_frame_count = 0;
+        drpai_frame_count = 0;
+    }
 
+    auto rate_str = "Video Rate: "+ std::to_string(int(video_rate))+" fps";
+    img.write_string(rate_str, 0,0, WHITE_DATA, BLACK_DATA,5);
+    rate_str = "DRAPI Rate: " + (drpai_fd? std::to_string(int(drpai_rate)) + " fps": "N/A");
+    img.write_string(rate_str, 0, 15, WHITE_DATA, BLACK_DATA,5);
 
     /* Compute the result, draw the result on img and display it on console */
     const std::unique_lock<std::mutex> lock(output_mutex);
@@ -746,82 +755,83 @@ int8_t DRPAI::thread_function_single() {
         }
     }
 
+    //std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    /**********************************************************************
-    * START Inference
-    **********************************************************************/
+    if(drpai_fd) {
+        /**********************************************************************
+        * START Inference
+        **********************************************************************/
 //    printf("[START] DRP-AI\n");
-    errno = 0;
-    int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]);
-    if (0 != ret) {
-        fprintf(stderr, "[ERROR] Failed to run DRPAI_START: errno=%d\n", errno);
-        thread_state = Failed;
-        return -1;
-    }
-
-    /**********************************************************************
-    * Wait until the DRP-AI finish (Thread will sleep)
-    **********************************************************************/
-    fd_set rfds;
-    int8_t ret_drpai;
-    drpai_status_t drpai_status;
-
-    FD_ZERO(&rfds);
-    FD_SET(drpai_fd, &rfds);
-    timeval tv { DRPAI_TIMEOUT, 0 };
-
-    ret_drpai = select(drpai_fd + 1, &rfds, NULL, NULL, &tv);
-    if (0 == ret_drpai) {
-        fprintf(stderr, "[ERROR] DRP-AI select() Timeout : errno=%d\n", errno);
-        thread_state = Failed;
-        return -1;
-    } else if (-1 == ret_drpai) {
-        fprintf(stderr, "[ERROR] DRP-AI select() Error : errno=%d\n", errno);
-        ret_drpai = ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status);
-        if (-1 == ret_drpai) {
-            fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
-        }
-        thread_state = Failed;
-        return -1;
-    } else {
-        /*Do nothing*/
-    }
-
-    if (FD_ISSET(drpai_fd, &rfds)) {
         errno = 0;
-        ret_drpai = ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status);
-        if (-1 == ret_drpai) {
-            fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+        int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]);
+        if (0 != ret) {
+            fprintf(stderr, "[ERROR] Failed to run DRPAI_START: errno=%d\n", errno);
             thread_state = Failed;
             return -1;
         }
+
+        /**********************************************************************
+        * Wait until the DRP-AI finish (Thread will sleep)
+        **********************************************************************/
+        fd_set rfds;
+        int8_t ret_drpai;
+        drpai_status_t drpai_status;
+
+        FD_ZERO(&rfds);
+        FD_SET(drpai_fd, &rfds);
+        timeval tv{DRPAI_TIMEOUT, 0};
+
+        ret_drpai = select(drpai_fd + 1, &rfds, NULL, NULL, &tv);
+        if (0 == ret_drpai) {
+            fprintf(stderr, "[ERROR] DRP-AI select() Timeout : errno=%d\n", errno);
+            thread_state = Failed;
+            return -1;
+        } else if (-1 == ret_drpai) {
+            fprintf(stderr, "[ERROR] DRP-AI select() Error : errno=%d\n", errno);
+            ret_drpai = ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status);
+            if (-1 == ret_drpai) {
+                fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+            }
+            thread_state = Failed;
+            return -1;
+        } else {
+            /*Do nothing*/
+        }
+
+        if (FD_ISSET(drpai_fd, &rfds)) {
+            errno = 0;
+            ret_drpai = ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status);
+            if (-1 == ret_drpai) {
+                fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+                thread_state = Failed;
+                return -1;
+            }
 //        printf("[END] DRP-AI\n");
-    }
+        }
 
-    /**********************************************************************
-    * CPU Post-processing
-    **********************************************************************/
+        /**********************************************************************
+        * CPU Post-processing
+        **********************************************************************/
 
-    /* Get the output data from memory */
-    ret = get_result(drpai_address.data_out_addr, drpai_address.data_out_size);
-    if (0 != ret)
-    {
-        fprintf(stderr, "[ERROR] Failed to get result from memory.\n");
-        thread_state = Failed;
-        return -1;
-    }
+        /* Get the output data from memory */
+        ret = get_result(drpai_address.data_out_addr, drpai_address.data_out_size);
+        if (0 != ret) {
+            fprintf(stderr, "[ERROR] Failed to get result from memory.\n");
+            thread_state = Failed;
+            return -1;
+        }
 
-    ret = print_result_yolo();
-    if (0 != ret)
-    {
-        fprintf(stderr, "[ERROR] Failed to run CPU Post Processing.\n");
-        thread_state = Failed;
-        return -1;
-    }
+        ret = print_result_yolo();
+        if (0 != ret) {
+            fprintf(stderr, "[ERROR] Failed to run CPU Post Processing.\n");
+            thread_state = Failed;
+            return -1;
+        }
 
-    {
-        const std::unique_lock<std::mutex> lock(output_mutex);
-        last_det = det;
+        {
+            const std::unique_lock<std::mutex> lock(output_mutex);
+            last_det = det;
+        }
     }
     return 0;
 }

@@ -43,7 +43,8 @@ class Image
         uint8_t read_bmp(std::string filename);
         uint8_t save_bmp(std::string filename);
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
-        void write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor);
+        void write_string(const std::string& pcode, int32_t x,  int32_t y,
+                          int32_t color, int32_t backcolor, uint8_t margin=0);
 
     private:
         uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
