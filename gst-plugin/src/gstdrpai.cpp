@@ -169,7 +169,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
             obj->drpai = new DRPAI(obj->multithread);
-            obj->drpai->initialize();
+            obj->drpai->open_resources();
             break;
         default:
             break;
@@ -181,7 +181,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     switch (transition) {
         case GST_STATE_CHANGE_READY_TO_NULL:
             /* close the device */
-            ret = obj->drpai->release();
+            ret = obj->drpai->release_resources();
             delete obj->drpai;
             if (ret == -1)
                 return GST_STATE_CHANGE_FAILURE;
@@ -273,7 +273,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
-    if (filter->drpai->process(info.data) == -1) {
+    if (filter->drpai->process_image(info.data) == -1) {
         gst_buffer_unref (buf);
         return GST_FLOW_ERROR;
     }

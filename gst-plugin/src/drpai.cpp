@@ -558,7 +558,7 @@ int8_t DRPAI::print_result_yolo()
     return 0;
 }
 
-int8_t DRPAI::initialize() {
+int8_t DRPAI::open_resources() {
     printf("RZ/V2L DRP-AI Plugin\n");
     printf("Model : Darknet YOLO      | %s\n", drpai_prefix.c_str());
 
@@ -649,11 +649,17 @@ int8_t DRPAI::initialize() {
     proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
 
+    ret = image_mapped_udma.map_udmabuf();
+    if (0 > ret) {
+        fprintf(stderr, "[ERROR] Failed to map Image buffer to UDMA.\n");
+        return -1;
+    }
+
     printf("DRP-AI Ready!\n");
     return 0;
 }
 
-int8_t DRPAI::process(uint8_t* img_data) {
+int8_t DRPAI::process_image(uint8_t* img_data) {
     {
         switch (thread_state) {
             case Failed:
@@ -664,11 +670,8 @@ int8_t DRPAI::process(uint8_t* img_data) {
                 break;
 
             case Ready:
-                if(drpai_fd) {
-                    Image img(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
-                    img.map_udmabuf();
-                    std::memcpy(img.img_buffer, img_data, img.get_size());
-                }
+                if(image_mapped_udma.img_buffer)
+                    std::memcpy(image_mapped_udma.img_buffer, img_data, image_mapped_udma.get_size());
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 drpai_frame_count++;
                 thread_state = Processing;
@@ -715,7 +718,7 @@ int8_t DRPAI::process(uint8_t* img_data) {
     return 0;
 }
 
-int8_t DRPAI::release() {
+int8_t DRPAI::release_resources() {
     if(process_thread) {
         {
             std::unique_lock<std::mutex> state_lock(state_mutex);

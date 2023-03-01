@@ -34,7 +34,7 @@ class Image
             img_w(w), img_h(h), img_c(c), size(w * h * c) {};
         ~Image();
 
-        uint8_t * img_buffer{};
+        uint8_t* img_buffer = nullptr;
         int32_t get_size() const { return size; }
         uint8_t at(int32_t a);
         void set(int32_t a, uint8_t val);
