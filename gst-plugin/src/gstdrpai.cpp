@@ -75,19 +75,21 @@ enum {
 
 enum {
     PROP_0,
-    PROP_SILENT,
     PROP_MULTITHREAD,
+    PROP_SHOW_FPS,
+    PROP_LOG_DETECTS,
+    PROP_STOP_ERROR,
 };
 
 /* the capabilities of the inputs and outputs.
  *
  * describe the real formats here.
  */
+auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
 static GstStaticPadTemplate sink_factory =
-        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS("ANY"));
-
+        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 static GstStaticPadTemplate src_factory =
-        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS("ANY"));
+        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 
 #define gst_drpai_parent_class parent_class
 
@@ -119,11 +121,17 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
 
     gstelement_class->change_state = gst_drpai_change_state;
 
-    g_object_class_install_property(gobject_class, PROP_SILENT,
-                                    g_param_spec_boolean("silent", "Silent", "Produce verbose output ?",
-                                                         FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_MULTITHREAD,
-                                    g_param_spec_boolean("multithread", "MultiThread", "Use MultiThreading",
+                                    g_param_spec_boolean("multithread", "MultiThread", "Use a separate thread for object detection.",
+                                                         TRUE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_LOG_DETECTS,
+                                    g_param_spec_boolean("log_detects", "Log Detects", "Print detected objects in standard output.",
+                                                         FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_SHOW_FPS,
+                                    g_param_spec_boolean("show_fps", "Show Frame Rates", "Render video and object detection frame rates at the corner of the video.",
+                                                         FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_STOP_ERROR,
+                                    g_param_spec_boolean("stop_error", "Stop On Errors", "Stop the gstreamer if kernel modules fail to open.",
                                                          TRUE, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
@@ -143,21 +151,21 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
  * initialize instance structure
  */
 static void
-gst_drpai_init(GstDRPAI *filter) {
-    filter->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
-    gst_pad_set_event_function (filter->sinkpad,
+gst_drpai_init(GstDRPAI *obj) {
+    obj->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
+    gst_pad_set_event_function (obj->sinkpad,
                                 GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
-    gst_pad_set_chain_function (filter->sinkpad,
+    gst_pad_set_chain_function (obj->sinkpad,
                                 GST_DEBUG_FUNCPTR(gst_drpai_chain));
-    GST_PAD_SET_PROXY_CAPS (filter->sinkpad);
-    gst_element_add_pad(GST_ELEMENT (filter), filter->sinkpad);
+    GST_PAD_SET_PROXY_CAPS (obj->sinkpad);
+    gst_element_add_pad(GST_ELEMENT (obj), obj->sinkpad);
 
-    filter->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
-    GST_PAD_SET_PROXY_CAPS (filter->srcpad);
-    gst_element_add_pad(GST_ELEMENT (filter), filter->srcpad);
+    obj->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
+    GST_PAD_SET_PROXY_CAPS (obj->srcpad);
+    gst_element_add_pad(GST_ELEMENT (obj), obj->srcpad);
 
-    filter->silent = FALSE;
-    filter->multithread = TRUE;
+    obj->drpai = new DRPAI();
+    obj->stop_error = TRUE;
 }
 
 static GstStateChangeReturn
@@ -168,9 +176,9 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             /* open the device */
-            obj->drpai = new DRPAI(obj->multithread);
-            if(obj->drpai->initialize() == -1)
-                return GST_STATE_CHANGE_FAILURE;
+            if ( obj->drpai->open_resources() == -1 )
+                if (obj->stop_error)
+                    return GST_STATE_CHANGE_FAILURE;
             break;
         default:
             break;
@@ -178,11 +186,11 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
 
     state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
 
-    int8_t ret;
+    int ret;
     switch (transition) {
         case GST_STATE_CHANGE_READY_TO_NULL:
             /* close the device */
-            ret = obj->drpai->release();
+            ret = obj->drpai->release_resources();
             delete obj->drpai;
             if (ret == -1)
                 return GST_STATE_CHANGE_FAILURE;
@@ -197,14 +205,20 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
 static void
 gst_drpai_set_property(GObject *object, guint prop_id,
                               const GValue *value, GParamSpec *pspec) {
-    GstDRPAI *filter = GST_PLUGIN_DRPAI(object);
+    GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
 
     switch (prop_id) {
-        case PROP_SILENT:
-            filter->silent = g_value_get_boolean(value);
-            break;
         case PROP_MULTITHREAD:
-            filter->multithread = g_value_get_boolean(value);
+            obj->drpai->multithread = g_value_get_boolean(value);
+            break;
+        case PROP_LOG_DETECTS:
+            obj->drpai->log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_SHOW_FPS:
+            obj->drpai->show_fps = g_value_get_boolean(value);
+            break;
+        case PROP_STOP_ERROR:
+            obj->stop_error = g_value_get_boolean(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -215,14 +229,20 @@ gst_drpai_set_property(GObject *object, guint prop_id,
 static void
 gst_drpai_get_property(GObject *object, guint prop_id,
                               GValue *value, GParamSpec *pspec) {
-    GstDRPAI *filter = GST_PLUGIN_DRPAI(object);
+    GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
 
     switch (prop_id) {
-        case PROP_SILENT:
-            g_value_set_boolean(value, filter->silent);
-            break;
         case PROP_MULTITHREAD:
-            g_value_set_boolean(value, filter->multithread);
+            g_value_set_boolean(value, obj->drpai->multithread);
+            break;
+        case PROP_LOG_DETECTS:
+            g_value_set_boolean(value, obj->drpai->log_detects);
+            break;
+        case PROP_SHOW_FPS:
+            g_value_set_boolean(value, obj->drpai->show_fps);
+            break;
+        case PROP_STOP_ERROR:
+            g_value_set_boolean(value, obj->stop_error);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -236,12 +256,12 @@ gst_drpai_get_property(GObject *object, guint prop_id,
 static gboolean
 gst_drpai_sink_event(GstPad *pad, GstObject *parent,
                             GstEvent *event) {
-    GstDRPAI *filter;
+    GstDRPAI *obj;
     gboolean ret;
 
-    filter = GST_PLUGIN_DRPAI(parent);
+    obj = GST_PLUGIN_DRPAI(parent);
 
-    GST_LOG_OBJECT (filter, "Received %s event: %" GST_PTR_FORMAT,
+    GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT,
                     GST_EVENT_TYPE_NAME(event), event);
 
     switch (GST_EVENT_TYPE (event)) {
@@ -267,22 +287,24 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
  */
 static GstFlowReturn
 gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
-    GstDRPAI *filter;
+    GstDRPAI *obj;
 
-    filter = GST_PLUGIN_DRPAI(parent);
+    obj = GST_PLUGIN_DRPAI(parent);
 
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
-    if (filter->drpai->process(info.data) == -1) {
-        gst_buffer_unref (buf);
-        return GST_FLOW_ERROR;
+    if (obj->drpai->process_image(info.data) == -1) {
+        if(obj->stop_error) {
+            gst_buffer_unref (buf);
+            return GST_FLOW_ERROR;
+        }
     }
 
     gst_buffer_unmap(buf, &info);
 
     /* just push out the incoming buffer without touching it */
-    return gst_pad_push(filter->srcpad, buf);
+    return gst_pad_push(obj->srcpad, buf);
 }
 
 

@@ -62,8 +62,7 @@ struct _GstDRPAI
 
   GstPad *sinkpad, *srcpad;
 
-  gboolean silent;
-  gboolean multithread;
+  gboolean stop_error;
 
   DRPAI *drpai;
 };

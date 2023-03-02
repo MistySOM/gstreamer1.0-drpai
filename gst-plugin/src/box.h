@@ -26,9 +26,9 @@
 #define BOX_H
 
 #include <vector>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cmath>
+#include <cstdlib>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -55,6 +55,6 @@ float box_iou(Box a, Box b);
 float overlap(float x1, float w1, float x2, float w2);
 float box_intersection(Box a, Box b);
 float box_union(Box a, Box b);
-void filter_boxes_nms(std::vector<detection> &det, int32_t size, float th_nms);
+void filter_boxes_nms(std::vector<detection> &det, float th_nms);
 
 #endif

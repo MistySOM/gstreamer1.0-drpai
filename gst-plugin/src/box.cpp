@@ -100,18 +100,14 @@ float box_iou(Box a, Box b)
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void filter_boxes_nms(std::vector<detection> &det, int32_t size, float th_nms)
+void filter_boxes_nms(std::vector<detection> &det, float th_nms)
 {
-    int32_t count = size;
-    int32_t i = 0;
-    int32_t j = 0;
-    Box a;
-    Box b;
-    float b_intersection = 0;
-    for (i = 0; i < count; i++)
+    std::size_t count = det.size();
+
+    for (std::size_t i = 0; i < count; i++)
     {
-        a = det[i].bbox;
-        for (j = 0; j < count; j++)
+        Box a = det[i].bbox;
+        for (std::size_t j = 0; j < count; j++)
         {
             if (i == j)
             {
@@ -121,8 +117,8 @@ void filter_boxes_nms(std::vector<detection> &det, int32_t size, float th_nms)
             {
                 continue;
             }
-            b = det[j].bbox;
-            b_intersection = box_intersection(a, b);
+            Box b = det[j].bbox;
+            float b_intersection = box_intersection(a, b);
             if ((box_iou(a, b)>th_nms) || (b_intersection >= a.h * a.w - 1) || (b_intersection >= b.h * b.w - 1))
             {
                 if (det[i].prob > det[j].prob)
@@ -136,5 +132,4 @@ void filter_boxes_nms(std::vector<detection> &det, int32_t size, float th_nms)
             }
         }
     }
-    return;
 }

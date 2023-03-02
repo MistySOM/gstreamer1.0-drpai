@@ -34,19 +34,21 @@ class Image
             img_w(w), img_h(h), img_c(c), size(w * h * c) {};
         ~Image();
 
-        uint8_t * img_buffer{};
-        int32_t get_size() const { return size; }
-        uint8_t at(int32_t a);
+        uint8_t* img_buffer = nullptr;
+        [[nodiscard]] std::size_t get_size() const { return size; }
+        [[nodiscard]] uint8_t at(int32_t a) const;
         void set(int32_t a, uint8_t val);
 
         uint8_t map_udmabuf();
-        uint8_t read_bmp(std::string filename);
-        uint8_t save_bmp(std::string filename);
+        uint8_t read_bmp(const std::string& filename);
+        uint8_t save_bmp(const std::string& filename) const;
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
+        void write_string(const std::string& pcode, int32_t x,  int32_t y,
+                          int32_t color, int32_t backcolor, int8_t margin=0);
 
     private:
         uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
-        uint8_t bmp_header[FILEHEADERSIZE+INFOHEADERSIZE_W_V3]{};
+        std::array<uint8_t, FILEHEADERSIZE+INFOHEADERSIZE_W_V3> bmp_header {};
         uint8_t udmabuf_fd = 0;
         int32_t img_w;
         int32_t img_h;
@@ -60,8 +62,6 @@ class Image
         void draw_point(int32_t x, int32_t y, int32_t color);
         void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
         void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
-        void write_string(const std::string& pcode, int32_t x,  int32_t y, int32_t color, int32_t backcolor);
-
 };
 
 #endif
