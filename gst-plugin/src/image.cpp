@@ -200,24 +200,15 @@ uint8_t Image::save_bmp(const std::string& filename) const
 ******************************************/
 void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
 {
-    int32_t height;
-    int32_t width;
-    int8_t * p_pattern;
-    uint8_t mask = 0x80;
-
-    if ((code >= 0x20) && (code <= 0x7e))
-    {
-        p_pattern = (int8_t *)&g_ascii_table[code - 0x20][0];
-    }
-    else
-    {
-        p_pattern = (int8_t *)&g_ascii_table[10][0]; /* '*' */
-    }
+    auto& p_pattern = ((code >= 0x20) && (code <= 0x7e)) ?
+                                        g_ascii_table[code - 0x20]:
+                                        g_ascii_table[10]; /* '*' */
 
     /* Drawing */
-    for (height = 0; height < font_h; height++)
+    uint8_t mask = 0x80;
+    for (int32_t height = 0; height < font_h; height++)
     {
-        for (width = 0; width < font_w; width++)
+        for (int32_t width = 0; width < font_w; width++)
         {
             if (p_pattern[width] & mask)
             {
@@ -228,7 +219,7 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
                 draw_point( width + x, height + y , backcolor );
             }
         }
-        mask = (uint8_t) (mask >> 1);
+        mask >>= 1;
     }
 }
 
@@ -247,25 +238,24 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
                          int32_t color, int32_t backcolor, int8_t margin)
 {
     const auto str_size = (int32_t)pcode.size();
-    if(margin > 0) {
-        int32_t right = margin*2 + str_size * font_w - 1;
-        int32_t bottom = margin*2 + font_h - 1;
-        draw_line(x, y, x + right, y, backcolor);
-        draw_line(x, y+bottom, x+right, y+bottom, backcolor);
-        draw_line(x, y, x, y+bottom, backcolor);
-        draw_line(x+right, y, x+right, y+bottom, backcolor);
-        write_string(pcode, x+1, y+1, color, backcolor, int8_t(margin-1));
-        return;
-    }
-
     x = std::max(0, x);
     x = std::min(img_w - str_size*font_w - 2, x);
     y = std::max(0, y);
     y = std::min(img_h - font_h - 2, y);
 
-    for (int32_t i = 0; i < str_size; i++)
+    int32_t right = margin * 2 + str_size * font_w - 1;
+    int32_t bottom = margin * 2 + font_h - 1;
+    for(; margin>0; margin--, x++, y++, right-=2, bottom-=2) {
+        draw_line(x, y, x + right, y, backcolor);
+        draw_line(x, y + bottom, x + right, y + bottom, backcolor);
+        draw_line(x, y, x, y + bottom, backcolor);
+        draw_line(x + right, y, x + right, y + bottom, backcolor);
+    }
+
+    for (auto& ch: pcode)
     {
-        write_char(pcode[i], (x + (i * font_w)), y, color, backcolor);
+        write_char(ch, x, y, color, backcolor);
+        x += font_w;
     }
 }
 
