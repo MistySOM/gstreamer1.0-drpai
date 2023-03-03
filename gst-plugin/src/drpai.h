@@ -11,13 +11,13 @@
 #include "define.h"
 #include "box.h"
 #include "image.h"
+#include "fps.h"
 #include <string>
 #include <vector>
 #include <array>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
 
 class DRPAI {
 
@@ -28,6 +28,8 @@ public:
     bool multithread = true;
     bool log_detects = false;
     bool show_fps = false;
+    fps video_rate{};
+    fps drpai_rate{};
     int open_resources();
     int process_image(uint8_t* img_data);
     int release_resources();
@@ -49,11 +51,6 @@ private:
     std::vector<detection> last_det{};
     int8_t get_result(uint32_t output_addr, uint32_t output_size);
     int8_t print_result_yolo();
-
-    /* FPS Section */
-    std::chrono::time_point<std::chrono::steady_clock> frame_time;
-    int8_t video_frame_count = 0, drpai_frame_count = 0;
-    double video_rate=0, drpai_rate=0;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
