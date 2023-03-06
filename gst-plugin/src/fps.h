@@ -25,10 +25,12 @@ public:
             frame_durations.pop_back();
         last_time = now;
 
-        auto s = int32_t(1000.f/max_rate) - int32_t(duration);
-        if (s > 0)
+        auto s = int32_t(1000.f/max_rate) - int32_t(duration) + last_sleep_duration;
+        if (s > 0) {
+            last_sleep_duration = s;
             //for some reason I had to add 25 milliseconds to this sleep to match the max_rate result. I don't know why.
-            std::this_thread::sleep_for(std::chrono::milliseconds(s+25));
+            std::this_thread::sleep_for(std::chrono::milliseconds(s + 25));
+        }
     }
 
     [[nodiscard]] float get_smooth_durations() const {
@@ -39,6 +41,7 @@ public:
     [[nodiscard]] float get_smooth_rate() const { return 1000.0f / get_smooth_durations(); }
 
 private:
+    int32_t last_sleep_duration = 0;
     std::chrono::time_point<std::chrono::steady_clock> last_time;
     std::list<uint32_t> frame_durations;
 };
