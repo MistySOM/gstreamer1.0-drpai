@@ -200,17 +200,19 @@ uint8_t Image::save_bmp(const std::string& filename) const
 ******************************************/
 void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
 {
-    auto& p_pattern = ((code >= 0x20) && (code <= 0x7e)) ?
-                                        g_ascii_table[code - 0x20]:
-                                        g_ascii_table[10]; /* '*' */
+    // Pick the pattern related to the ASCII code from the elements of the g_ascii_table array.
+    // The array doesn't include the non-printable characters, so we need to shift the code to match the element.
+    auto& p_pattern = ASCII_IS_PRINTABLE_CHAR(code) ?
+                                        g_ascii_table[code - ASCII_FIRST_PRINTABLE_CHAR]:
+                                        g_ascii_table[10]; /* Use '*' if it is an unprintable character */
 
     /* Drawing */
-    uint8_t mask = 0x80;
+    uint8_t row_mask = (1 << (font_h-1)); // the first row of pattern
     for (int32_t height = 0; height < font_h; height++)
     {
         for (int32_t width = 0; width < font_w; width++)
         {
-            if (p_pattern[width] & mask)
+            if (p_pattern[width] & row_mask)
             {
                 draw_point( width + x, height + y , color );
             }
@@ -219,7 +221,7 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
                 draw_point( width + x, height + y , backcolor );
             }
         }
-        mask >>= 1;
+        row_mask >>= 1; // go to next row of the pattern
     }
 }
 
