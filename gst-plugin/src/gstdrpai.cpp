@@ -148,8 +148,8 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                            0.001f, 120.f, 120.f, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_MAX_DRPAI_RATE,
         g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
-                           "Intentionally add thread sleeps to control the maximum DRPAI framerate.",
-                            0.001f, 120.f, 120.f, G_PARAM_READWRITE));
+                           "Intentionally add thread sleeps to control the maximum DRPAI framerate. Zero means disabled.",
+                            0.0f, 120.f, 120.f, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SMOOTH_VIDEO_RATE,
         g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
                              "Averages the last number of video framerates to show a more smooth number.",

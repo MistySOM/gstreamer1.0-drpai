@@ -516,6 +516,11 @@ int8_t DRPAI::print_result_yolo()
 }
 
 int DRPAI::open_resources() {
+    if (drpai_rate.max_rate == 0) {
+        printf("[WARNING] DRPAI is disabled by the zero max framerate.\n");
+        return 0;
+    }
+
     printf("RZ/V2L DRP-AI Plugin\n");
     printf("Model : Darknet YOLO      | %s\n", drpai_prefix.c_str());
 
@@ -607,7 +612,7 @@ int DRPAI::open_resources() {
 }
 
 int DRPAI::process_image(uint8_t* img_data) {
-    if (thread_state != Processing) {
+    if (drpai_rate.max_rate != 0 && thread_state != Processing) {
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -627,7 +632,7 @@ int DRPAI::process_image(uint8_t* img_data) {
         }
     }
 
-    if(!multithread)
+    if(drpai_rate.max_rate != 0 && !multithread)
         if (thread_function_single() != 0)
             return -1;
 
