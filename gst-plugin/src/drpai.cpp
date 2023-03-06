@@ -655,7 +655,6 @@ int DRPAI::process_image(uint8_t* img_data) {
     }
 
     /* Compute the result, draw the result on img and display it on console */
-    const std::unique_lock<std::mutex> lock(output_mutex);
     for (const auto& detection: last_det)
     {
         /* Skip the overlapped bounding boxes */
@@ -777,10 +776,7 @@ int8_t DRPAI::thread_function_single() {
             return -1;
         }
 
-        {
-            const std::unique_lock<std::mutex> lock(output_mutex);
-            last_det = det;
-        }
+        last_det = det;
     }
     return 0;
 }

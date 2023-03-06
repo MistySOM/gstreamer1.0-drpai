@@ -59,7 +59,6 @@ private:
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
     ThreadState thread_state = Unknown;
     std::thread* process_thread = nullptr;
-    std::mutex output_mutex;
     std::mutex state_mutex;
     std::condition_variable v;
     void thread_function_loop();

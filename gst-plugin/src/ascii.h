@@ -28,6 +28,10 @@
 
 #include <array>
 
+#define ASCII_FIRST_PRINTABLE_CHAR 0x20
+#define ASCII_LAST_PRINTABLE_CHAR 0x7e
+#define ASCII_IS_PRINTABLE_CHAR(code) ((code >= ASCII_FIRST_PRINTABLE_CHAR) && (code <= ASCII_LAST_PRINTABLE_CHAR))
+
 const static std::vector<std::array<char, 6>> g_ascii_table =
 {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00},      /* ' '*/
