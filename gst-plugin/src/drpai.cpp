@@ -5,8 +5,6 @@
 #include <memory>
 #include "drpai.h"
 
-#define NOW std::chrono::steady_clock::now()
-
 /*****************************************
 * Function Name : read_addrmap_txt
 * Description   : Loads address and size of DRP-AI Object files into struct addr.
@@ -518,10 +516,14 @@ int8_t DRPAI::print_result_yolo()
 }
 
 int DRPAI::open_resources() {
+    if (drpai_rate.max_rate == 0) {
+        printf("[WARNING] DRPAI is disabled by the zero max framerate.\n");
+        return 0;
+    }
+
     printf("RZ/V2L DRP-AI Plugin\n");
     printf("Model : Darknet YOLO      | %s\n", drpai_prefix.c_str());
 
-    frame_time = NOW;
     if (multithread)
         process_thread = new std::thread(&DRPAI::thread_function_loop, this);
     else
@@ -610,47 +612,37 @@ int DRPAI::open_resources() {
 }
 
 int DRPAI::process_image(uint8_t* img_data) {
-    {
+    if (drpai_rate.max_rate != 0 && thread_state != Processing) {
         switch (thread_state) {
             case Failed:
             case Unknown:
             case Closing:
                 return -1;
-            case Processing:
-                break;
 
             case Ready:
                 if(image_mapped_udma.img_buffer)
                     std::memcpy(image_mapped_udma.img_buffer, img_data, image_mapped_udma.get_size());
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                if(show_fps)
-                    drpai_frame_count++;
                 thread_state = Processing;
                 if (multithread)
                     v.notify_one();
+
+            default:
+                break;
         }
     }
 
-    if(!multithread)
+    if(drpai_rate.max_rate != 0 && !multithread)
         if (thread_function_single() != 0)
             return -1;
 
     Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
     img.img_buffer = img_data;
-
+    video_rate.inform_frame();
     if(show_fps) {
-        video_frame_count++;
-        if (std::chrono::duration<double>(NOW - frame_time).count() >= 1) {
-            frame_time = NOW;
-            video_rate = video_frame_count;
-            drpai_rate = drpai_frame_count;
-            video_frame_count = 0;
-            drpai_frame_count = 0;
-        }
-
-        auto rate_str = "Video Rate: " + std::to_string(int(video_rate)) + " fps";
+        auto rate_str = "Video Rate: " + std::to_string(int(video_rate.get_smooth_rate())) + " fps";
         img.write_string(rate_str, 0, 0, WHITE_DATA, BLACK_DATA, 5);
-        rate_str = "DRPAI Rate: " + (drpai_fd ? std::to_string(int(drpai_rate)) + " fps" : "N/A");
+        rate_str = "DRPAI Rate: " + (drpai_fd ? std::to_string(int(drpai_rate.get_smooth_rate())) + " fps" : "N/A");
         img.write_string(rate_str, 0, 15, WHITE_DATA, BLACK_DATA, 5);
     }
 
@@ -710,7 +702,7 @@ int8_t DRPAI::thread_function_single() {
         }
     }
 
-    //std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    drpai_rate.inform_frame();
 
     if(drpai_fd) {
         /**********************************************************************
