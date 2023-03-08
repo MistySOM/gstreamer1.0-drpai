@@ -89,7 +89,7 @@ const static double anchors[] =
 * YOLOv2
 ******************************************/
 /* Directory name of DRP-AI Object files (DRP-AI Translator output) */
-const static std::string drpai_prefix   = "yolov2_bmp";
+const static std::string drpai_prefix   = "yolov2";
 /* Pascal VOC dataset label list */
 const static std::vector<std::string> label_file_map = { "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor" };
 
