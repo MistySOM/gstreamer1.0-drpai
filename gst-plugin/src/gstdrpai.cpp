@@ -79,6 +79,11 @@ enum {
     PROP_SHOW_FPS,
     PROP_LOG_DETECTS,
     PROP_STOP_ERROR,
+
+    PROP_MAX_VIDEO_RATE,
+    PROP_MAX_DRPAI_RATE,
+    PROP_SMOOTH_VIDEO_RATE,
+    PROP_SMOOTH_DRPAI_RATE,
 };
 
 /* the capabilities of the inputs and outputs.
@@ -122,17 +127,37 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
     gstelement_class->change_state = gst_drpai_change_state;
 
     g_object_class_install_property(gobject_class, PROP_MULTITHREAD,
-                                    g_param_spec_boolean("multithread", "MultiThread", "Use a separate thread for object detection.",
-                                                         TRUE, G_PARAM_READWRITE));
+        g_param_spec_boolean("multithread", "MultiThread",
+                             "Use a separate thread for object detection.",
+                             TRUE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_LOG_DETECTS,
-                                    g_param_spec_boolean("log_detects", "Log Detects", "Print detected objects in standard output.",
-                                                         FALSE, G_PARAM_READWRITE));
+        g_param_spec_boolean("log_detects", "Log Detects",
+                             "Print detected objects in standard output.",
+                             FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SHOW_FPS,
-                                    g_param_spec_boolean("show_fps", "Show Frame Rates", "Render video and object detection frame rates at the corner of the video.",
-                                                         FALSE, G_PARAM_READWRITE));
+        g_param_spec_boolean("show_fps", "Show Frame Rates",
+                             "Render frame rates of video and DRPAI at the corner of the video.",
+                             FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_STOP_ERROR,
-                                    g_param_spec_boolean("stop_error", "Stop On Errors", "Stop the gstreamer if kernel modules fail to open.",
-                                                         TRUE, G_PARAM_READWRITE));
+        g_param_spec_boolean("stop_error", "Stop On Errors",
+                             "Stop the gstreamer if kernel modules fail to open.",
+                             TRUE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MAX_VIDEO_RATE,
+        g_param_spec_float("max_video_rate", "Max Video Framerate",
+                           "Force maximum video frame rate using thread sleeps.",
+                           0.001f, 120.f, 120.f, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MAX_DRPAI_RATE,
+        g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
+                           "Force maximum DRPAI frame rate using thread sleeps.",
+                            0.0f, 120.f, 120.f, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_SMOOTH_VIDEO_RATE,
+        g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
+                             "Number of last video frame rates to average for a more smooth value.",
+                             1, 1000, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_SMOOTH_DRPAI_RATE,
+        g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
+                             "Number of last DRPAI frame rates to average for a more smooth value.",
+                             1, 1000, 1, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -220,6 +245,18 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_STOP_ERROR:
             obj->stop_error = g_value_get_boolean(value);
             break;
+        case PROP_MAX_VIDEO_RATE:
+            obj->drpai->video_rate.max_rate = g_value_get_float(value);
+            break;
+        case PROP_MAX_DRPAI_RATE:
+            obj->drpai->drpai_rate.max_rate = g_value_get_float(value);
+            break;
+        case PROP_SMOOTH_VIDEO_RATE:
+            obj->drpai->video_rate.smooth_rate = g_value_get_uint(value);
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            obj->drpai->drpai_rate.smooth_rate = g_value_get_uint(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
             break;
@@ -243,6 +280,18 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             break;
         case PROP_STOP_ERROR:
             g_value_set_boolean(value, obj->stop_error);
+            break;
+        case PROP_MAX_VIDEO_RATE:
+            g_value_set_float(value, obj->drpai->video_rate.max_rate);
+            break;
+        case PROP_MAX_DRPAI_RATE:
+            g_value_set_float(value, obj->drpai->drpai_rate.max_rate);
+            break;
+        case PROP_SMOOTH_VIDEO_RATE:
+            g_value_set_uint(value, obj->drpai->video_rate.smooth_rate);
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            g_value_set_uint(value, obj->drpai->drpai_rate.smooth_rate);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
