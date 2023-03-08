@@ -43,92 +43,109 @@
 #include "config.h"
 #endif
 
-#include "gst-app.h"
+#include <gst/gst.h>
 
-static void
-handle_file_or_directory (const gchar * filename)
+static GstElement *pipeline;
+static GMainLoop *loop;
+
+static gboolean
+message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
 {
-  GError *err = NULL;
-  GDir *dir;
-  gchar *uri;
+    switch (GST_MESSAGE_TYPE (message)) {
+        case GST_MESSAGE_ERROR:{
+            GError *err = NULL;
+            gchar *name, *debug = NULL;
 
-  if ((dir = g_dir_open (filename, 0, NULL))) {
-    const gchar *entry;
+            name = gst_object_get_path_string (message->src);
+            gst_message_parse_error (message, &err, &debug);
 
-    while ((entry = g_dir_read_name (dir))) {
-      gchar *path;
+            g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+            if (debug != NULL)
+                g_printerr ("Additional debug info:\n%s\n", debug);
 
-      path = g_strconcat (filename, G_DIR_SEPARATOR_S, entry, NULL);
-      handle_file_or_directory (path);
-      g_free (path);
+            g_error_free (err);
+            g_free (debug);
+            g_free (name);
+
+            g_main_loop_quit (loop);
+            break;
+        }
+        case GST_MESSAGE_WARNING:{
+            GError *err = NULL;
+            gchar *name, *debug = NULL;
+
+            name = gst_object_get_path_string (message->src);
+            gst_message_parse_warning (message, &err, &debug);
+
+            g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+            if (debug != NULL)
+                g_printerr ("Additional debug info:\n%s\n", debug);
+
+            g_error_free (err);
+            g_free (debug);
+            g_free (name);
+            break;
+        }
+        case GST_MESSAGE_EOS:{
+            g_print ("Got EOS\n");
+            g_main_loop_quit (loop);
+            gst_element_set_state (pipeline, GST_STATE_NULL);
+            g_main_loop_unref (loop);
+            gst_object_unref (pipeline);
+            exit(0);
+            break;
+        }
+        default:
+            break;
     }
 
-    g_dir_close (dir);
-    return;
-  }
-
-  if (g_path_is_absolute (filename)) {
-    uri = g_filename_to_uri (filename, NULL, &err);
-  } else {
-    gchar *curdir, *absolute_path;
-
-    curdir = g_get_current_dir ();
-    absolute_path = g_strconcat ( curdir, G_DIR_SEPARATOR_S, filename, NULL);
-    uri = g_filename_to_uri (absolute_path, NULL, &err);
-    g_free (absolute_path);
-    g_free (curdir);
-  }
-
-  if (uri) {
-    /* great, we have a proper file:// URI, let's play it! */
-    play_uri (uri);
-  } else {
-    g_warning ("Failed to convert filename '%s' to URI: %s", filename,
-        err->message);
-    g_error_free (err);
-  }
-
-  g_free (uri);
+    return TRUE;
 }
 
-int
-main (int argc, char *argv[])
-{
-  gchar **filenames = NULL;
-  const GOptionEntry entries[] = {
-    /* you can add your won command line options here */
-    { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames,
-      "Special option that collects any remaining arguments for us" },
-    { NULL, }
-  };
-  GOptionContext *ctx;
-  GError *err = NULL;
-  gint i, num;
+int sigintHandler(int unused) {
+    g_print("You ctrl-c-ed! Sending EoS");
+    gst_element_send_event(pipeline, gst_event_new_eos());
+    return 0;
+}
 
-  ctx = g_option_context_new ("[FILE1] [FILE2] ...");
-  g_option_context_add_group (ctx, gst_init_get_option_group ());
-  g_option_context_add_main_entries (ctx, entries, NULL);
+int main (int argc, char *argv[]) {
+    signal(SIGINT, (__sighandler_t) sigintHandler);
+    gst_init(&argc, &argv);
 
-  if (!g_option_context_parse (ctx, &argc, &argv, &err)) {
-    g_print ("Error initializing: %s\n", GST_STR_NULL (err->message));
-    return -1;
-  }
-  g_option_context_free (ctx);
+    GstElement *v4l2src;
+    GstElement *videoconvert;
+    GstElement *autovideosink;
+    GstElement *drpai;
+    GstBus *bus;
 
-  if (filenames == NULL || *filenames == NULL) {
-    g_print ("Please specify a file to play\n\n");
-    return -1;
-  }
+    pipeline = gst_pipeline_new (NULL);
+    v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
+    videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
+    drpai = gst_element_factory_make("drpai", "drpai");
+    autovideosink = gst_element_factory_make ("autovideosink", "autovideosink");
+    if (!pipeline || !v4l2src || !videoconvert || !drpai || !autovideosink) {
+        g_error("Failed to create elements");
+        return -1;
+    }
 
+    g_object_set (v4l2src, "device", "/dev/video0", NULL);
 
+    gst_bin_add_many(GST_BIN(pipeline), v4l2src, videoconvert, drpai, autovideosink, NULL);
+    if (!gst_element_link_many(v4l2src, videoconvert, drpai, autovideosink, NULL)) {
+        g_error("Failed to link elements");
+        return -2;
+    }
 
-  num = g_strv_length (filenames);
+    loop = g_main_loop_new(NULL, FALSE);
 
-  for (i = 0; i < num; ++i) {
-    handle_file_or_directory (filenames[i]);
-  }
+    bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
+    gst_bus_add_signal_watch(bus);
+    g_signal_connect(G_OBJECT(bus), "message", G_CALLBACK(message_cb), NULL);
+    gst_object_unref(GST_OBJECT(bus));
 
-  g_strfreev (filenames);
+    gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-  return 0;
+    g_print("Starting loop");
+    g_main_loop_run(loop);
+    return 0;
 }
