@@ -136,7 +136,7 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                              FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SHOW_FPS,
         g_param_spec_boolean("show_fps", "Show Frame Rates",
-                             "Render video and object detection frame rates at the corner of the video.",
+                             "Render frame rates of video and DRPAI at the corner of the video.",
                              FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_STOP_ERROR,
         g_param_spec_boolean("stop_error", "Stop On Errors",
@@ -144,20 +144,20 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                              TRUE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_MAX_VIDEO_RATE,
         g_param_spec_float("max_video_rate", "Max Video Framerate",
-                           "Intentionally add thread sleeps to control the maximum video framerate.",
+                           "Force maximum video frame rate using thread sleeps.",
                            0.001f, 120.f, 120.f, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_MAX_DRPAI_RATE,
         g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
-                           "Intentionally add thread sleeps to control the maximum DRPAI framerate. Zero means disabled.",
+                           "Force maximum DRPAI frame rate using thread sleeps.",
                             0.0f, 120.f, 120.f, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SMOOTH_VIDEO_RATE,
         g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
-                             "Averages the last number of video framerates to show a more smooth number.",
-                             0, 1000, 1, G_PARAM_READWRITE));
+                             "Number of last video frame rates to average for a more smooth value.",
+                             1, 1000, 1, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SMOOTH_DRPAI_RATE,
         g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
-                             "Averages the last number of DRPAI framerates to show a more smooth number.",
-                             0, 1000, 1, G_PARAM_READWRITE));
+                             "Number of last DRPAI frame rates to average for a more smooth value.",
+                             1, 1000, 1, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
