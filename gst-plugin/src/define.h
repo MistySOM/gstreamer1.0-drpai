@@ -53,9 +53,9 @@
 * YOLOv3
 ******************************************/
 /* Directory name of DRP-AI Object files (DRP-AI Translator output) */
-const static std::string drpai_prefix   = "yolov3_bmp";
+const static std::string drpai_prefix   = "yolov3";
 /* Class labels to be classified */
-const static std::string label_list     = "coco-labels-2014_2017.txt";
+const static std::string label_list     = drpai_prefix + "/coco-labels-2014_2017.txt";
 /* Empty since labels will be loaded from label_list file */
 static std::vector<std::string> label_file_map = {};
 
