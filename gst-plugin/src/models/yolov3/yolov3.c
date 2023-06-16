@@ -92,40 +92,15 @@ int8_t post_process_output_layer(const float output_buf[], uint32_t output_len, 
             {
                 for (int32_t x = 0;x<num_grid;x++)
                 {
-                    int32_t offs = yolo_offset(num_grid, b, y, x);
-                    float tx = output_buf[offs];
-                    float ty = output_buf[yolo_index(n, offs, 1)];
-                    float tw = output_buf[yolo_index(n, offs, 2)];
-                    float th = output_buf[yolo_index(n, offs, 3)];
-                    float tc = output_buf[yolo_index(n, offs, 4)];
-
-                    /* Compute the bounding box */
-                    /*get_yolo_box/get_region_box in paper implementation*/
-                    float center_x = ((float)x + sigmoid(tx)) / (float) num_grid;
-                    float center_y = ((float)y + sigmoid(ty)) / (float) num_grid;
-                    float box_w = expf(tw) * anchors[anchor_offset+2*b+0] / MODEL_IN_W;
-                    float box_h = expf(th) * anchors[anchor_offset+2*b+1] / MODEL_IN_W;
-
-                    /* Adjustment for VGA size */
-                    /* correct_yolo/region_boxes */
-                    center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / (new_w / MODEL_IN_W);
-                    center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / (new_h / MODEL_IN_H);
-                    box_w *= (float) (MODEL_IN_W / new_w);
-                    box_h *= (float) (MODEL_IN_H / new_h);
-
-                    center_x = roundf(center_x * IN_WIDTH);
-                    center_y = roundf(center_y * IN_HEIGHT);
-                    box_w = roundf(box_w * IN_WIDTH);
-                    box_h = roundf(box_h * IN_HEIGHT);
-
+                    int32_t offs = yolo_offset(n, b, y, x);
+                    float tc = output_buf[yolo_index(num_grid, offs, 4)];
                     float objectness = sigmoid(tc);
 
-                    Box bb = {center_x, center_y, box_w, box_h};
                     float classes [NUM_CLASS];
                     /* Get the class prediction */
                     for (uint32_t i = 0; i < NUM_CLASS; i++)
                     {
-                        classes[i] = sigmoid(output_buf[yolo_index(n, offs, 5+i)]);
+                        classes[i] = sigmoid(output_buf[yolo_index(num_grid, offs, 5+i)]);
                     }
 
                     float max_pred = 0;
@@ -145,6 +120,32 @@ int8_t post_process_output_layer(const float output_buf[], uint32_t output_len, 
                     {
                         if(*det_len == det_array_size)
                             return 1;
+
+                        float tx = output_buf[offs];
+                        float ty = output_buf[yolo_index(num_grid, offs, 1)];
+                        float tw = output_buf[yolo_index(num_grid, offs, 2)];
+                        float th = output_buf[yolo_index(num_grid, offs, 3)];
+
+                        /* Compute the bounding box */
+                        /*get_yolo_box/get_region_box in paper implementation*/
+                        float center_x = ((float)x + sigmoid(tx)) / (float) num_grid;
+                        float center_y = ((float)y + sigmoid(ty)) / (float) num_grid;
+                        float box_w = expf(tw) * anchors[anchor_offset+2*b+0] / MODEL_IN_W;
+                        float box_h = expf(th) * anchors[anchor_offset+2*b+1] / MODEL_IN_W;
+
+                        /* Adjustment for VGA size */
+                        /* correct_yolo/region_boxes */
+                        center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / (new_w / MODEL_IN_W);
+                        center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / (new_h / MODEL_IN_H);
+                        box_w *= (float) (MODEL_IN_W / new_w);
+                        box_h *= (float) (MODEL_IN_H / new_h);
+
+                        center_x = roundf(center_x * IN_WIDTH);
+                        center_y = roundf(center_y * IN_HEIGHT);
+                        box_w = roundf(box_w * IN_WIDTH);
+                        box_h = roundf(box_h * IN_HEIGHT);
+
+                        Box bb = {center_x, center_y, box_w, box_h};
 
                         det[*det_len].bbox = bb;
                         det[*det_len].c = pred_class;
