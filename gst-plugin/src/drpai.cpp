@@ -255,40 +255,6 @@ int8_t DRPAI::load_label_file(const std::string& label_file_name)
 }
 
 /*****************************************
-* Function Name     : load_label_file
-* Description       : Load label list text file and return the label list that contains the label.
-* Arguments         : label_file_name = filename of label list. must be in txt format
-* Return value      : 0 if succeeded
-*                     not 0 if error occurred
-******************************************/
-int8_t DRPAI::load_data_out_list_file(const std::string& file_name)
-{
-    std::ifstream infile(file_name);
-
-    if (!infile.is_open())
-    {
-        return -1;
-    }
-
-    labels.clear();
-    const std::string find = "         Width  : ";
-    std::string line;
-    while (getline(infile,line))
-    {
-        if (line.find(find) != std::string::npos) {
-            std::size_t pos {};
-            uint8_t n = std::stoi(line, &pos);
-            num_grids.push_back(n);
-        }
-        if (infile.fail())
-        {
-            return -1;
-        }
-    }
-    return 0;
-}
-
-/*****************************************
 * Function Name : get_result
 * Description   : Get DRP-AI Output from memory via DRP-AI Driver
 * Arguments     : drpai_fd = file descriptor of DRP-AI Driver
@@ -463,14 +429,6 @@ int DRPAI::open_resources() {
     if (load_label_file(label_list) != 0)
     {
         std::cerr << "[ERROR] Failed to load label file: " << label_list << std::endl;
-        return -1;
-    }
-
-    /*Load Label from label_list file*/
-    const static std::string data_out_list = model_prefix + "/" + model_prefix + "_data_out_list.txt";
-    if (load_data_out_list_file(data_out_list) != 0)
-    {
-        std::cerr << "[ERROR] Failed to load grids: "<< data_out_list << std::endl;
         return -1;
     }
 

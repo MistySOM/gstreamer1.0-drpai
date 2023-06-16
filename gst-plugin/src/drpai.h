@@ -42,14 +42,12 @@ private:
 
     st_addr_t drpai_address{};
     std::vector<std::string> labels = {};
-    std::vector<uint8_t> num_grids = {}; // Number of grids in the image.
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
     int8_t read_addrmap_txt(const std::string& addr_file);
     int8_t load_drpai_data();
     int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
     int8_t load_label_file(const std::string& label_file_name);
-    int8_t load_data_out_list_file(const std::string &file_name);
 
     /* Output Section */
     std::vector<float> drpai_output_buf {};
