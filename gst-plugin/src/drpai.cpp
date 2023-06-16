@@ -413,7 +413,8 @@ int DRPAI::open_resources() {
         thread_state = Ready;
 
     char *error;
-    model_dynamic_library_handle = dlopen(model_prefix.c_str(), RTLD_NOW);
+    std::string model_library_path = model_prefix + "/lib" + model_prefix + ".so";
+    model_dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
     if (!model_dynamic_library_handle) {
         fprintf(stderr, "[ERROR] Failed to open model lib%s.so : error=%s\n", model_prefix.c_str(), dlerror());
         return -1;
