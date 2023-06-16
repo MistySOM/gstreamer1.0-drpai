@@ -9,9 +9,6 @@ cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
 cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
 configure_file(output : 'config.h', configuration : cdata)
 
-### gstaudio_dep = dependency('gstreamer-audio-1.0',
-###     fallback: ['gst-plugins-base', 'audio_dep'])
-
 # Plugin 1
 plugin_sources = [
   'src/gstdrpai.cpp',
@@ -24,36 +21,10 @@ gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep, thread_dep],
+  dependencies : [gst_dep, thread_dep, dl_dep],
   install : true,
   install_dir : plugins_install_dir,
 )
 
 subdir('src/models/yolov3')
 subdir('src/models/yolov2')
-
-# Plugin 2 (audio filter example)
-### audiofilter_sources = [
-###   'src/gstaudiofilter.c',
-###   ]
-
-### gstaudiofilterexample = library('gstaudiofilterexample',
-###   audiofilter_sources,
-###   c_args: plugin_c_args,
-###   dependencies : [gst_dep, gstaudio_dep],
-###   install : true,
-###   install_dir : plugins_install_dir,
-### )
-
-# The TEMPLATE Plugin
-### gstTEMPLATE_sources = [
-###  'src/gstTEMPLATE.c',
-###  ]
-
-###gstTEMPLATEexample = library('gstTEMPLATE',
-###  gstTEMPLATE_sources,
-###  c_args: plugin_c_args,
-###  dependencies : [gst_dep, gstbase_dep],
-###  install : true,
-###  install_dir : plugins_install_dir,
-###)

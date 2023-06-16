@@ -1,6 +1,4 @@
-project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL', default_options : [
-'buildtype=release'
-])
+project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL')
 
 plugins_install_dir = join_paths('/usr/lib64', 'gstreamer-1.0')
 
@@ -16,6 +14,7 @@ gst_dep = dependency('gstreamer-1.0', version : '>=1.16.3',
 gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.16.3',
   fallback : ['gstreamer', 'gst_base_dep'])
 thread_dep = dependency('threads')
+dl_dep = cxx.find_library('dl', required : true)
 m_dep = cc.find_library('m', required : true)
 
 subdir('gst-app')
