@@ -25,10 +25,7 @@
 #ifndef BOX_H
 #define BOX_H
 
-#include <vector>
-#include <cstdio>
-#include <cmath>
-#include <cstdlib>
+#include <inttypes.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -44,7 +41,7 @@ typedef struct
 typedef struct detection
 {
     Box bbox;
-    int32_t c;
+    uint32_t c;
     float prob;
 } detection;
 
@@ -55,6 +52,6 @@ float box_iou(Box a, Box b);
 float overlap(float x1, float w1, float x2, float w2);
 float box_intersection(Box a, Box b);
 float box_union(Box a, Box b);
-void filter_boxes_nms(std::vector<detection> &det, float th_nms);
+void filter_boxes_nms(detection det[], uint8_t size, float th_nms);
 
 #endif

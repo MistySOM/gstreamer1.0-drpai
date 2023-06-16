@@ -1,4 +1,4 @@
-plugin_c_args = ['-DHAVE_CONFIG_H', '-DYOLOV3', '-lpthread']
+plugin_c_args = ['-DHAVE_CONFIG_H']
 
 cdata = configuration_data()
 cdata.set_quoted('PACKAGE_VERSION', gst_version)
@@ -24,10 +24,13 @@ gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep, pthread_dep],
+  dependencies : [gst_dep, thread_dep],
   install : true,
   install_dir : plugins_install_dir,
 )
+
+subdir('src/models/yolov3')
+subdir('src/models/yolov2')
 
 # Plugin 2 (audio filter example)
 ### audiofilter_sources = [

@@ -16,6 +16,7 @@
 #include <vector>
 #include <array>
 #include <thread>
+#include <functional>
 #include <mutex>
 #include <condition_variable>
 
@@ -25,6 +26,7 @@ public:
     explicit DRPAI():
         image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {};
 
+    std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
     bool multithread = true;
     bool log_detects = false;
     bool show_fps = false;
@@ -36,21 +38,26 @@ public:
 
 private:
     int32_t drpai_fd = 0;
+    void* model_dynamic_library_handle = nullptr;
+
     st_addr_t drpai_address{};
-    std::vector<std::string> labels;
+    std::vector<std::string> labels = {};
+    std::vector<uint8_t> num_grids = {}; // Number of grids in the image.
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
     int8_t read_addrmap_txt(const std::string& addr_file);
     int8_t load_drpai_data();
-    int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size);
-    std::vector<std::string> load_label_file(const std::string& label_file_name);
+    int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+    int8_t load_label_file(const std::string& label_file_name);
+    int8_t load_data_out_list_file(const std::string &file_name);
 
     /* Output Section */
-    std::array<float, num_inf_out> drpai_output_buf {};
-    std::vector<detection> det{};
+    std::vector<float> drpai_output_buf {};
     std::vector<detection> last_det{};
     int8_t get_result(uint32_t output_addr, uint32_t output_size);
-    int8_t print_result_yolo();
+    int8_t extract_detections();
+    void print_box(detection d, int32_t i);
+    int8_t (*post_process_output)(const float output_buf[], uint32_t output_len, struct detection det[], uint8_t* det_len) = nullptr;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
