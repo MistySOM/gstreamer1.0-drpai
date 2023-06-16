@@ -1,0 +1,48 @@
+10  # driver version  v0.2 
+40  # driver version >v0.3
+# resize_hwc  [MASK : ON]
+# imagescaler  [MASK : ON]
+# maxpooling_k2_st2  [MASK : ON]
+# maxpooling_k2_st2  [MASK : ON]
+# maxpooling_k2_st2  [MASK : ON]
+# maxpooling_k2_st2  [MASK : ON]
+# maxpooling_k2_st2  [MASK : ON]
+# maxpooling_k2_st1  [MASK : ON]
+# transpose  [MASK : ON]
+# cast_fp16_fp32  [MASK : ON]
+# ============================
+# Address data in drp_param.bin
+# DRP LIB name[Layer Name]
+# [Start position], [Size(Byte)], [Param name], [Value]
+resize_hwc[post_0_0_resize_hwc]
+Start:0[Byte],Size:4[Byte],Param:raddr,Value:0x80000000
+Start:4[Byte],Size:4[Byte],Param:waddr,Value:0x800e1000
+imagescaler[post_0_0_imagescaler]
+Start:56[Byte],Size:4[Byte],Param:raddr,Value:0x800e1000
+Start:60[Byte],Size:4[Byte],Param:waddr,Value:0x8015fc00
+Start:104[Byte],Size:4[Byte],Param:ADD_ADDR,Value:0x8105b680
+Start:108[Byte],Size:4[Byte],Param:MUL_ADDR,Value:0x8105b688
+maxpooling_k2_st2[input.8]
+Start:120[Byte],Size:4[Byte],Param:raddr,Value:0x8025d400
+Start:124[Byte],Size:4[Byte],Param:waddr,Value:0x807a5400
+maxpooling_k2_st2[input.20]
+Start:176[Byte],Size:4[Byte],Param:raddr,Value:0x808f7400
+Start:180[Byte],Size:4[Byte],Param:waddr,Value:0x80b9b400
+maxpooling_k2_st2[input.32]
+Start:232[Byte],Size:4[Byte],Param:raddr,Value:0x80c44400
+Start:236[Byte],Size:4[Byte],Param:waddr,Value:0x80d96400
+maxpooling_k2_st2[input.44]
+Start:288[Byte],Size:4[Byte],Param:raddr,Value:0x80deac00
+Start:292[Byte],Size:4[Byte],Param:waddr,Value:0x80e93c00
+maxpooling_k2_st2[input.56]
+Start:344[Byte],Size:4[Byte],Param:raddr,Value:0x80ebe000
+Start:348[Byte],Size:4[Byte],Param:waddr,Value:0x80f12800
+maxpooling_k2_st1[input.68]
+Start:400[Byte],Size:4[Byte],Param:raddr,Value:0x80f27a00
+Start:404[Byte],Size:4[Byte],Param:waddr,Value:0x80f51e00
+transpose[post_0_0_transpose]
+Start:456[Byte],Size:4[Byte],Param:raddr,Value:0x81025200
+Start:460[Byte],Size:4[Byte],Param:waddr,Value:0x8102f70c
+cast_fp16_fp32[post_0_1_cast_fp16_fp32]
+Start:512[Byte],Size:4[Byte],Param:raddr,Value:0x8102f70c
+Start:516[Byte],Size:4[Byte],Param:waddr,Value:0x81039c40
