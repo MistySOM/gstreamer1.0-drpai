@@ -279,7 +279,6 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
     }
 
     /* Read the memory via DRP-AI Driver and store the output to buffer */
-    drpai_output_buf.clear();
     for (uint32_t i = 0; i < (drpai_data.size / BUF_SIZE); i++)
     {
         errno = 0;
@@ -288,8 +287,7 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
             std::cerr << "[ERROR] Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
             return -1;
         }
-
-        drpai_output_buf.insert(drpai_output_buf.end(), drpai_buf, drpai_buf + BUF_SIZE);
+        std::memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
     }
 
     if ( 0 != (drpai_data.size % BUF_SIZE))
@@ -300,8 +298,7 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
             std::cerr << "[ERROR] Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
             return -1;
         }
-
-        drpai_output_buf.insert(drpai_output_buf.end(), drpai_buf, drpai_buf + (drpai_data.size % BUF_SIZE));
+        std::memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
     }
     return 0;
 }
@@ -336,7 +333,7 @@ int8_t DRPAI::extract_detections()
         for (const auto &detection: last_det) {
             /* Print the box details on console */
             //print_box(detection, n++);
-            std::cout << labels[detection.c] << " (" << detection.prob * 100 << " %%\t";
+            std::cout << labels[detection.c] << " (" << detection.prob * 100 << "%)\t";
         }
         std::cout << std::endl;
     }
@@ -357,7 +354,7 @@ void DRPAI::print_box(detection d, int32_t i)
     std::cout << "Class           : " << labels[d.c] << std::endl;
     std::cout << "\x1b[0m";
     std::cout << "(X, Y, W, H)    : (" << d.bbox.x << ", " << d.bbox.y << ", " << d.bbox.w << ", " << d.bbox.h << ")" << std::endl;
-    std::cout << "Probability     : %" << d.prob*100 << " %%" << std::endl << std::endl;
+    std::cout << "Probability     : " << d.prob*100 << "%" << std::endl << std::endl;
 }
 
 int DRPAI::open_resources() {
@@ -423,6 +420,7 @@ int DRPAI::open_resources() {
         std::cerr << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
         return -1;
     }
+    drpai_output_buf.resize(drpai_address.data_out_size);
 
     /*Load Label from label_list file*/
     const static std::string label_list = model_prefix + "/" + model_prefix + "_labels.txt";
