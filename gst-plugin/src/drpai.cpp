@@ -352,12 +352,12 @@ int DRPAI::open_resources() {
         std::cerr << std::endl << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
         return -1;
     }
-    drpai_output_buf.resize(drpai_address.data_out_size);
-    std::cout << "\tFound output size: " << drpai_address.data_out_size << std::endl;
+    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+    std::cout << "\tFound output size: " << drpai_output_buf.size() << std::endl;
 
     if (post_process.dynamic_library_open(model_prefix) != 0)
         return -1;
-    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_address.data_out_size) != 0)
+    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_output_buf.size()) != 0)
         return -1;
 
     /* Obtain udmabuf memory area starting address */
