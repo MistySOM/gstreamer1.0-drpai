@@ -146,32 +146,48 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 
     /*Load Label from label_list file*/
     const static std::string label_list = prefix + "/" + prefix + "_labels.txt";
+    std::cout << "Loading : " << label_list;
     if (load_label_file(label_list) != 0)
     {
-        std::cerr << "[ERROR] Failed to load label file: " << label_list << std::endl;
+        std::cerr << std::endl << "[ERROR] Failed to load label file: " << label_list << std::endl;
         return -1;
     }
+    std::cout << "\tFound classes: " << labels.size() << std::endl;
 
     /*Load anchors from anchors file*/
     const static std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
+    std::cout << "Loading : " << anchors_list;
     if (load_anchors_file(anchors_list) != 0)
     {
-        std::cerr << "[ERROR] Failed to load label file: " << anchors_list << std::endl;
+        std::cerr << std::endl << "[ERROR] Failed to load anchors file: " << anchors_list << std::endl;
         return -1;
     }
+    std::cout << "\tFound anchors: " << anchors.size() << std::endl;
 
-    /*Load anchors from anchors file*/
-    const static std::string post_process_params_file = prefix + "/" + prefix + "_post_process_params.txt";
-    if (load_post_process_params_file(post_process_params_file) != 0)
+    /*Load grids from data_out_list file*/
+    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
+    std::cout << "Loading : " << data_out_list;
+    if (load_num_grids(data_out_list) != 0)
     {
-        std::cerr << "[ERROR] Failed to load post process params file: " << post_process_params_file << std::endl;
+        std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
         return -1;
     }
+    std::cout << "\tFound grids: " << num_grids.size();
 
     uint32_t sum_grids = 0;
     for (const auto& n: num_grids)
         sum_grids += n;
     num_bb = output_len / ((labels.size()+5)*sum_grids);
+    std::cout << "\tFound layers: " << num_bb << std::endl;
+
+    /*Load params from params file*/
+    const static std::string post_process_params_file = prefix + "/" + prefix + "_post_process_params.txt";
+    std::cout << "Loading : " << post_process_params_file << std::endl;
+    if (load_post_process_params_file(post_process_params_file) != 0)
+    {
+        std::cerr << "[ERROR] Failed to load post process params file: " << post_process_params_file << std::endl;
+        return -1;
+    }
 
     return 0;
 }
@@ -179,6 +195,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 int8_t post_process_release() {
     labels.clear();
     anchors.clear();
+    num_grids.clear();
     return 0;
 }
 
