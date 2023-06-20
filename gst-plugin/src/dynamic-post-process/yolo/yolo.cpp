@@ -128,9 +128,6 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
     {
         if (line.find(find) != std::string::npos) {
             std::size_t pos = line.find(':') + 2;
-
-            std::cout << std::endl << line << "\t Substring is: \"" << line.substr(pos) << "\"" << std::flush;
-
             num_grids.push_back(std::stoi(line.substr(pos)));
         }
         if (infile.fail())

@@ -344,6 +344,16 @@ int DRPAI::open_resources() {
     else
         thread_state = Ready;
 
+    /* Read DRP-AI Object files address and size */
+    std::string drpai_address_file = model_prefix + "/" + model_prefix + "_addrmap_intm.txt";
+    std::cout << "Loading : " << drpai_address_file << std::endl;
+    if ( read_addrmap_txt(drpai_address_file) != 0 )
+    {
+        std::cerr << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
+        return -1;
+    }
+    drpai_output_buf.resize(drpai_address.data_out_size);
+
     if (post_process.dynamic_library_open(model_prefix) != 0)
         return -1;
     if (post_process.post_process_initialize(model_prefix.c_str(), drpai_address.data_out_size) != 0)
@@ -372,15 +382,6 @@ int DRPAI::open_resources() {
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
-
-    /* Read DRP-AI Object files address and size */
-    std::string drpai_address_file = model_prefix + "/" + model_prefix + "_addrmap_intm.txt";
-    if ( read_addrmap_txt(drpai_address_file) != 0 )
-    {
-        std::cerr << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
-        return -1;
-    }
-    drpai_output_buf.resize(drpai_address.data_out_size);
 
     /* Open DRP-AI Driver */
     errno = 0;

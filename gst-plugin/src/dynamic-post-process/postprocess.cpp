@@ -21,6 +21,7 @@ int8_t PostProcess::dynamic_library_open(const std::string& prefix) {
     }
 
     char *error;
+    std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
     if (!dynamic_library_handle) {
         std::cerr << "[ERROR] Failed to open library " << dlerror() << std::endl;
