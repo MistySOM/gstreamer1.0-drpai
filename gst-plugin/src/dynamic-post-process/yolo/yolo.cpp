@@ -129,7 +129,7 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
         if (line.find(find) != std::string::npos) {
             auto pos = line.find(':') + 2;
 
-            std::cout << std::endl << line << "\t Substring is: \"" << line.substr(pos) << "\"";
+            std::cout << std::endl << line << "\t Substring is: \"" << line.substr(pos) << "\"" << std::flush;
 
             num_grids.push_back(std::stoi(line, &pos));
         }
@@ -169,9 +169,14 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
     std::cout << "Loading : " << data_out_list;
-    if (load_num_grids(data_out_list) != 0)
-    {
-        std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
+    try {
+        if (load_num_grids(data_out_list) != 0) {
+            std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
+            return -1;
+        }
+    }
+    catch (const std::invalid_argument & e) {
+        std::cerr << std::endl << "[ERROR] Failed to parse the value. error=" << e.what() << std::endl;
         return -1;
     }
     std::cout << "\tFound grids: " << num_grids.size();
