@@ -1,8 +1,0 @@
-[dynamic_library]
-libpostprocess-yolo.so
-
-[best_class_prediction_algorithm]
-sigmoid
-
-[anchor_divide_size]
-model_in
