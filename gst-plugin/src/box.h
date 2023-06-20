@@ -25,7 +25,7 @@
 #ifndef BOX_H
 #define BOX_H
 
-#include <inttypes.h>
+#include <cinttypes>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -43,6 +43,7 @@ typedef struct detection
     Box bbox;
     uint32_t c;
     float prob;
+    const char* name;
 } detection;
 
 /*****************************************

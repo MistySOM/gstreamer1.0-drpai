@@ -3,7 +3,6 @@
 //
 
 #include <memory>
-#include <dlfcn.h>
 #include <iostream>
 #include "drpai.h"
 
@@ -224,37 +223,6 @@ int8_t DRPAI::load_drpai_data()
 }
 
 /*****************************************
-* Function Name     : load_label_file
-* Description       : Load label list text file and return the label list that contains the label.
-* Arguments         : label_file_name = filename of label list. must be in txt format
-* Return value      : 0 if succeeded
-*                     not 0 if error occurred
-******************************************/
-int8_t DRPAI::load_label_file(const std::string& label_file_name)
-{
-    std::ifstream infile(label_file_name);
-
-    if (!infile.is_open())
-    {
-        return -1;
-    }
-
-    labels.clear();
-    std::string line;
-    while (getline(infile,line))
-    {
-        if (line.empty())
-            continue;
-        labels.push_back(line);
-        if (infile.fail())
-        {
-            return -1;
-        }
-    }
-    return 0;
-}
-
-/*****************************************
 * Function Name : get_result
 * Description   : Get DRP-AI Output from memory via DRP-AI Driver
 * Arguments     : drpai_fd = file descriptor of DRP-AI Driver
@@ -315,7 +283,8 @@ int8_t DRPAI::extract_detections()
 {
     uint8_t det_size = 10;
     detection det[det_size];
-    post_process_output(drpai_output_buf.data(), drpai_output_buf.size(), det, &det_size);
+    if (post_process.post_process_output(drpai_output_buf.data(), det, &det_size) != 0)
+        return -1;
 
     /* Non-Maximum Supression filter */
     filter_boxes_nms(det, det_size, TH_NMS);
@@ -333,7 +302,7 @@ int8_t DRPAI::extract_detections()
         for (const auto &detection: last_det) {
             /* Print the box details on console */
             //print_box(detection, n++);
-            std::cout << labels[detection.c] << " (" << detection.prob * 100 << "%)\t";
+            std::cout << detection.name << " (" << detection.prob * 100 << "%)\t";
         }
         std::cout << std::endl;
     }
@@ -351,7 +320,7 @@ void DRPAI::print_box(detection d, int32_t i)
 {
     std::cout << "Result " << i << " -----------------------------------------*" << std::endl;
     std::cout << "\x1b[1m";
-    std::cout << "Class           : " << labels[d.c] << std::endl;
+    std::cout << "Class           : " << d.name << std::endl;
     std::cout << "\x1b[0m";
     std::cout << "(X, Y, W, H)    : (" << d.bbox.x << ", " << d.bbox.y << ", " << d.bbox.w << ", " << d.bbox.h << ")" << std::endl;
     std::cout << "Probability     : " << d.prob*100 << "%" << std::endl << std::endl;
@@ -375,19 +344,9 @@ int DRPAI::open_resources() {
     else
         thread_state = Ready;
 
-    char *error;
     std::string model_library_path = model_prefix + "/lib" + model_prefix + ".so";
-    model_dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
-    if (!model_dynamic_library_handle) {
-        std::cerr << "[ERROR] Failed to open library " << dlerror() << std::endl;
+    if (post_process.dynamic_library_open(model_library_path) != 0)
         return -1;
-    }
-    dlerror();    /* Clear any existing error */
-    post_process_output = (typeof(post_process_output)) dlsym(model_dynamic_library_handle, "post_process_output_layer");
-    if ((error = dlerror()) != nullptr)  {
-        std::cerr << "[ERROR] Failed to locate function in " << model_library_path << ": error=" << error << std::endl;
-        exit(EXIT_FAILURE);
-    }
 
     /* Obtain udmabuf memory area starting address */
     char addr[1024];
@@ -421,14 +380,6 @@ int DRPAI::open_resources() {
         return -1;
     }
     drpai_output_buf.resize(drpai_address.data_out_size);
-
-    /*Load Label from label_list file*/
-    const static std::string label_list = model_prefix + "/" + model_prefix + "_labels.txt";
-    if (load_label_file(label_list) != 0)
-    {
-        std::cerr << "[ERROR] Failed to load label file: " << label_list << std::endl;
-        return -1;
-    }
 
     /* Open DRP-AI Driver */
     errno = 0;
@@ -514,7 +465,7 @@ int DRPAI::process_image(uint8_t* img_data) {
 
         /* Draw the bounding box on the image */
         std::stringstream stream;
-        stream << labels[detection.c] << " " << int(detection.prob*100) << "%";
+        stream << detection.name << " " << int(detection.prob * 100) << "%";
         img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
                       (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, stream.str());
     }
@@ -533,11 +484,7 @@ int DRPAI::release_resources() {
         delete process_thread;
     }
 
-    if (model_dynamic_library_handle && dlclose(model_dynamic_library_handle) != 0)
-    {
-        std::cerr << "[ERROR] Failed to close " << dlerror() << std::endl;
-        return -1;
-    }
+    post_process.dynamic_library_close();
 
     errno = 0;
     if (close(drpai_fd) != 0)

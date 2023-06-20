@@ -1,0 +1,8 @@
+[dynamic_library]
+libpostprocess-yolo.so
+
+[best_class_prediction_algorithm]
+softmax
+
+[anchor_divide_size]
+num_grid

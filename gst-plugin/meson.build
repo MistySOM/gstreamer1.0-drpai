@@ -9,13 +9,13 @@ cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
 cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
 configure_file(output : 'config.h', configuration : cdata)
 
-# Plugin 1
 plugin_sources = [
   'src/gstdrpai.cpp',
   'src/drpai.cpp',
   'src/image.cpp',
-  'src/box.cpp'
-  ]
+  'src/box.cpp',
+  'src/dynamic-post-process/postprocess.cpp'
+ ]
 
 gstplugindrpai = library('gstdrpai',
   plugin_sources,
@@ -23,8 +23,7 @@ gstplugindrpai = library('gstdrpai',
   cpp_args: plugin_c_args,
   dependencies : [gst_dep, thread_dep, dl_dep],
   install : true,
-  install_dir : plugins_install_dir,
+  install_dir : join_paths('/usr/lib64', 'gstreamer-1.0'),
 )
 
-subdir('src/models/yolov3')
-subdir('src/models/yolov2')
+subdir('src/dynamic-post-process/yolo')
