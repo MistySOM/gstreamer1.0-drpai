@@ -122,13 +122,12 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
         return -1;
     }
 
-    num_grids.clear();
     std::string find = "Width";
     std::string line;
     while (getline(infile,line))
     {
         if (line.find(find) != std::string::npos) {
-            auto pos = line.find(':');
+            auto pos = line.find(':') + 2;
             num_grids.push_back(std::stoi(line, &pos));
         }
         if (infile.fail())
