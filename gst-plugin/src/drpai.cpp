@@ -344,8 +344,9 @@ int DRPAI::open_resources() {
     else
         thread_state = Ready;
 
-    std::string model_library_path = model_prefix + "/lib" + model_prefix + ".so";
-    if (post_process.dynamic_library_open(model_library_path) != 0)
+    if (post_process.dynamic_library_open(model_prefix) != 0)
+        return -1;
+    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_address.data_out_size) != 0)
         return -1;
 
     /* Obtain udmabuf memory area starting address */
@@ -484,6 +485,7 @@ int DRPAI::release_resources() {
         delete process_thread;
     }
 
+    post_process.post_process_release();
     post_process.dynamic_library_close();
 
     errno = 0;

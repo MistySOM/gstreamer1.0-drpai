@@ -8,7 +8,6 @@
 #include <iostream>
 #include <cmath>
 #include <cfloat>
-#include <algorithm>
 #include "yolo.h"
 #include "../postprocess.h"
 
@@ -90,44 +89,20 @@ int8_t load_anchors_file(const std::string& anchors_file_name)
 ******************************************/
 int8_t load_post_process_params_file(const std::string& params_file_name)
 {
-    std::ifstream infile(params_file_name);
-
-    if (!infile.is_open())
-    {
+    std::string value;
+    if (get_param(params_file_name, "[best_class_prediction_algorithm]", value) != 0)
         return -1;
-    }
+    if (value == "sigmoid")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
+    else if (value == "softmax")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
 
-    std::string current_param;
-    std::string line;
-    while (getline(infile,line))
-    {
-        line.erase( remove( line.begin(), line.end(), ' ' ), line.end() );
-
-        if (line.empty())
-            continue;
-        else if (line.at(0) == '[') {
-            current_param = line;
-            continue;
-        } else {
-            if (current_param == "[best_class_prediction_algorithm]") {
-                if (line == "sigmoid")
-                    best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
-                else if (line == "softmax")
-                    best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
-            } else if (current_param == "[anchor_divide_size]") {
-                if (line == "model_in")
-                    anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
-                else if (line == "num_grid")
-                    anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
-            }
-            current_param.clear();
-        }
-        if (infile.fail())
-        {
-            return -1;
-        }
-    }
-    infile.close();
+    if (get_param(params_file_name, "[anchor_divide_size]", value) != 0)
+        return -1;
+    if (value == "model_in")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
+    else if (value == "num_grid")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
     return 0;
 }
 
@@ -165,7 +140,7 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
     return 0;
 }
 
-int8_t PostProcess::post_process_initialize(const char model_prefix[], uint32_t output_len) {
+int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
     std::string prefix { model_prefix };
     post_process_release();
 
@@ -201,7 +176,7 @@ int8_t PostProcess::post_process_initialize(const char model_prefix[], uint32_t 
     return 0;
 }
 
-int8_t PostProcess::post_process_release() {
+int8_t post_process_release() {
     labels.clear();
     anchors.clear();
     return 0;
@@ -288,7 +263,7 @@ void softmax(std::vector<float>& val)
 *                 1 if succeeded, but the detection array is not big enough
 *                 otherwise, succeeded
 ******************************************/
-int8_t PostProcess::post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
+int8_t post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
 {
     uint8_t det_array_size = *det_len;
     *det_len = 0;
