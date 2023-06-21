@@ -39,9 +39,9 @@ class Image
         [[nodiscard]] uint8_t at(int32_t a) const;
         void set(int32_t a, uint8_t val);
 
-        uint8_t map_udmabuf();
-        uint8_t read_bmp(const std::string& filename);
-        uint8_t save_bmp(const std::string& filename) const;
+        [[nodiscard]] uint8_t map_udmabuf();
+        [[nodiscard]] uint8_t read_bmp(const std::string& filename);
+        [[nodiscard]] uint8_t save_bmp(const std::string& filename) const;
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
                           int32_t color, int32_t backcolor, int8_t margin=0);

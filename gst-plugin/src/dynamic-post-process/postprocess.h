@@ -22,7 +22,7 @@ class PostProcess {
     void* dynamic_library_handle;
 public:
     PostProcess();
-    int8_t dynamic_library_open(const std::string& prefix);
+    [[nodiscard]] int8_t dynamic_library_open(const std::string& prefix);
     int8_t dynamic_library_close();
 
 #endif
@@ -36,7 +36,7 @@ public:
     * Return value      : 0 if succeeded
     *                     not 0 if error occurred
     ******************************************/
-    static int8_t get_param(const std::string& params_file_name, const std::string& param, std::string& value)
+    [[nodiscard]] static int8_t get_param(const std::string& params_file_name, const std::string& param, std::string& value)
     {
         std::ifstream infile(params_file_name);
         if (!infile.is_open()) return -1;

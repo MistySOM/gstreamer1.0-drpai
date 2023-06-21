@@ -5,14 +5,6 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_H
 #define GSTREAMER1_0_DRPAI_DRPAI_H
 
-/*DRPAI Driver Header*/
-#include "linux/drpai.h"
-/*Definition of Macros & other variables*/
-#include "define.h"
-#include "box.h"
-#include "image.h"
-#include "fps.h"
-#include "src/dynamic-post-process/postprocess.h"
 #include <string>
 #include <vector>
 #include <array>
@@ -20,6 +12,15 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
+
+/*DRPAI Driver Header*/
+#include "linux/drpai.h"
+/*Definition of Macros & other variables*/
+#include "define.h"
+#include "box.h"
+#include "image.h"
+#include "fps.h"
+#include "dynamic-post-process/postprocess.h"
 
 class DRPAI {
 
@@ -42,16 +43,16 @@ private:
     st_addr_t drpai_address{};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
-    int8_t read_addrmap_txt(const std::string& addr_file);
-    int8_t load_drpai_data();
-    int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+    [[nodiscard]] int8_t read_addrmap_txt(const std::string& addr_file);
+    [[nodiscard]] int8_t load_drpai_data();
+    [[nodiscard]] int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 
     /* Output Section */
     uint32_t detection_buffer_size = 10;
     std::vector<float> drpai_output_buf {};
     std::vector<detection> last_det{};
-    int8_t get_result(uint32_t output_addr, uint32_t output_size);
-    int8_t extract_detections();
+    [[nodiscard]] int8_t get_result(uint32_t output_addr, uint32_t output_size);
+    [[nodiscard]] int8_t extract_detections();
     void print_box(detection d, int32_t i);
     PostProcess post_process;
 
@@ -62,7 +63,7 @@ private:
     std::mutex state_mutex;
     std::condition_variable v;
     void thread_function_loop();
-    int8_t thread_function_single();
+    [[nodiscard]] int8_t thread_function_single();
 };
 
 #endif //GSTREAMER1_0_DRPAI_DRPAI_H
