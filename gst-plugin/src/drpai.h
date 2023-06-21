@@ -47,6 +47,7 @@ private:
     int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 
     /* Output Section */
+    uint32_t detection_buffer_size = 10;
     std::vector<float> drpai_output_buf {};
     std::vector<detection> last_det{};
     int8_t get_result(uint32_t output_addr, uint32_t output_size);

@@ -281,9 +281,12 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
 ******************************************/
 int8_t DRPAI::extract_detections()
 {
-    uint8_t det_size = 10;
+    uint8_t det_size = detection_buffer_size;
     detection det[det_size];
-    if (post_process.post_process_output(drpai_output_buf.data(), det, &det_size) != 0)
+    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
+    if (ret == 1)
+        detection_buffer_size += 5;
+    else if (ret < 0)
         return -1;
 
     /* Non-Maximum Supression filter */
