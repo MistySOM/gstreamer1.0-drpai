@@ -151,7 +151,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
         std::cerr << std::endl << "[ERROR] Failed to load label file: " << label_list << std::endl;
         return -1;
     }
-    std::cout << "\tFound classes: " << labels.size() << std::endl;
+    std::cout << "\t\tFound classes: " << labels.size() << std::endl;
 
     /*Load anchors from anchors file*/
     const static std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
@@ -161,11 +161,11 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
         std::cerr << std::endl << "[ERROR] Failed to load anchors file: " << anchors_list << std::endl;
         return -1;
     }
-    std::cout << "\tFound anchors: " << anchors.size() << std::endl;
+    std::cout << "\t\tFound anchors: " << anchors.size() << std::endl;
 
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "\tLoading : " << data_out_list << std::flush;
+    std::cout << "\t\tLoading : " << data_out_list << std::flush;
     try {
         if (load_num_grids(data_out_list) != 0) {
             std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
@@ -182,7 +182,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
     for (const auto& n: num_grids)
         sum_grids += n*n;
     num_bb = output_len / ((labels.size()+5)*sum_grids);
-    std::cout << "& num BB: " << num_bb << std::endl;
+    std::cout << " & num BB: " << num_bb << std::endl;
 
     /*Load params from params file*/
     const static std::string post_process_params_file = prefix + "/" + prefix + "_post_process_params.txt";

@@ -284,12 +284,15 @@ int8_t DRPAI::extract_detections()
     uint8_t det_size = detection_buffer_size;
     detection det[det_size];
     auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
-    if (ret == 1)
-        detection_buffer_size = det_size;
-    else if (ret < 0)
+    if (ret == 1) {
+        // if detected items are more than the array size
+        uint8_t tmp = detection_buffer_size;
+        detection_buffer_size = det_size;   // set a new array size for the next run
+        det_size = tmp;                     // but keep the array size valid
+    } else if (ret < 0) // if an error occurred
         return -1;
 
-    /* Non-Maximum Supression filter */
+    /* Non-Maximum Suppression filter */
     filter_boxes_nms(det, det_size, TH_NMS);
 
     last_det.clear();
@@ -356,7 +359,6 @@ int DRPAI::open_resources() {
         return -1;
     }
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
-    std::cout << "\tFound output size: " << drpai_output_buf.size() << std::endl;
 
     if (post_process.dynamic_library_open(model_prefix) != 0)
         return -1;
