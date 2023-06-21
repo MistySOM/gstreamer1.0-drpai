@@ -165,7 +165,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "\t\tLoading : " << data_out_list << std::flush;
+    std::cout << "\tLoading : " << data_out_list << std::flush;
     try {
         if (load_num_grids(data_out_list) != 0) {
             std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
@@ -347,7 +347,7 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
                     float probability = max_pred * objectness;
                     if (probability > TH_PROB)
                     {
-                        if(*det_len >= det_array_size)
+                        if(*det_len < det_array_size)
                         {
                             float tx = output_buf[offs];
                             float ty = output_buf[yolo_index(num_grid, offs, 1)];

@@ -352,7 +352,7 @@ int DRPAI::open_resources() {
 
     /* Read DRP-AI Object files address and size */
     std::string drpai_address_file = model_prefix + "/" + model_prefix + "_addrmap_intm.txt";
-    std::cout << "Loading : " << drpai_address_file << std::flush;
+    std::cout << "Loading : " << drpai_address_file << std::endl;
     if ( read_addrmap_txt(drpai_address_file) != 0 )
     {
         std::cerr << std::endl << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
