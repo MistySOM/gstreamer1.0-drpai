@@ -285,7 +285,7 @@ int8_t DRPAI::extract_detections()
     detection det[det_size];
     auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
     if (ret == 1)
-        detection_buffer_size += 5;
+        detection_buffer_size = det_size;
     else if (ret < 0)
         return -1;
 

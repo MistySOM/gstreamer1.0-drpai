@@ -145,7 +145,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 
     /*Load Label from label_list file*/
     const static std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "Loading : " << label_list << std::flush;
+    std::cout << "\tLoading : " << label_list << std::flush;
     if (load_label_file(label_list) != 0)
     {
         std::cerr << std::endl << "[ERROR] Failed to load label file: " << label_list << std::endl;
@@ -155,7 +155,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 
     /*Load anchors from anchors file*/
     const static std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
-    std::cout << "Loading : " << anchors_list << std::flush;
+    std::cout << "\tLoading : " << anchors_list << std::flush;
     if (load_anchors_file(anchors_list) != 0)
     {
         std::cerr << std::endl << "[ERROR] Failed to load anchors file: " << anchors_list << std::endl;
@@ -165,7 +165,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
 
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "Loading : " << data_out_list << std::flush;
+    std::cout << "\tLoading : " << data_out_list << std::flush;
     try {
         if (load_num_grids(data_out_list) != 0) {
             std::cerr << std::endl << "[ERROR] Failed to load data out file: " << data_out_list << std::endl;
@@ -176,17 +176,17 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
         std::cerr << std::endl << "[ERROR] Failed to parse the value. error=" << e.what() << std::endl;
         return -1;
     }
-    std::cout << "\tFound grids: " << num_grids.size();
+    std::cout << "\tFound num grids: " << num_grids.size();
 
     uint32_t sum_grids = 0;
     for (const auto& n: num_grids)
         sum_grids += n*n;
     num_bb = output_len / ((labels.size()+5)*sum_grids);
-    std::cout << ", BB: " << num_bb << std::endl;
+    std::cout << "& num BB: " << num_bb << std::endl;
 
     /*Load params from params file*/
     const static std::string post_process_params_file = prefix + "/" + prefix + "_post_process_params.txt";
-    std::cout << "Loading : " << post_process_params_file << std::endl;
+    std::cout << "\tLoading : " << post_process_params_file << std::endl;
     if (load_post_process_params_file(post_process_params_file) != 0)
     {
         std::cerr << "[ERROR] Failed to load post process params file: " << post_process_params_file << std::endl;
@@ -347,52 +347,54 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
                     float probability = max_pred * objectness;
                     if (probability > TH_PROB)
                     {
-                        if(*det_len == det_array_size)
-                            return 1;
+                        if(*det_len >= det_array_size)
+                        {
+                            float tx = output_buf[offs];
+                            float ty = output_buf[yolo_index(num_grid, offs, 1)];
+                            float tw = output_buf[yolo_index(num_grid, offs, 2)];
+                            float th = output_buf[yolo_index(num_grid, offs, 3)];
 
-                        float tx = output_buf[offs];
-                        float ty = output_buf[yolo_index(num_grid, offs, 1)];
-                        float tw = output_buf[yolo_index(num_grid, offs, 2)];
-                        float th = output_buf[yolo_index(num_grid, offs, 3)];
+                            /* Compute the bounding box */
+                            /*get_yolo_box/get_region_box in paper implementation*/
+                            float center_x = ((float) x + sigmoid(tx)) / (float) num_grid;
+                            float center_y = ((float) y + sigmoid(ty)) / (float) num_grid;
+                            float box_w = expf(tw) * anchors[anchor_offset + 2 * b + 0];
+                            float box_h = expf(th) * anchors[anchor_offset + 2 * b + 1];
+                            if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_MODEL_IN) {
+                                box_w /= MODEL_IN_W;
+                                box_h /= MODEL_IN_H;
+                            } else if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_NUM_GRID) {
+                                box_w /= (float) num_grid;
+                                box_h /= (float) num_grid;
+                            }
 
-                        /* Compute the bounding box */
-                        /*get_yolo_box/get_region_box in paper implementation*/
-                        float center_x = ((float)x + sigmoid(tx)) / (float) num_grid;
-                        float center_y = ((float)y + sigmoid(ty)) / (float) num_grid;
-                        float box_w = expf(tw) * anchors[anchor_offset+2*b+0];
-                        float box_h = expf(th) * anchors[anchor_offset+2*b+1];
-                        if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_MODEL_IN) {
-                            box_w /= MODEL_IN_W;
-                            box_h /= MODEL_IN_H;
+                            /* Adjustment for VGA size */
+                            /* correct_yolo/region_boxes */
+                            center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / (new_w / MODEL_IN_W);
+                            center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / (new_h / MODEL_IN_H);
+                            box_w *= (float) (MODEL_IN_W / new_w);
+                            box_h *= (float) (MODEL_IN_H / new_h);
+
+                            center_x = roundf(center_x * IN_WIDTH);
+                            center_y = roundf(center_y * IN_HEIGHT);
+                            box_w = roundf(box_w * IN_WIDTH);
+                            box_h = roundf(box_h * IN_HEIGHT);
+
+                            Box bb = {center_x, center_y, box_w, box_h};
+
+                            det[*det_len].bbox = bb;
+                            det[*det_len].c = pred_class;
+                            det[*det_len].prob = probability;
+                            det[*det_len].name = labels.at(pred_class).c_str();
                         }
-                        else if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_NUM_GRID) {
-                            box_w /= (float)num_grid;
-                            box_h /= (float)num_grid;
-                        }
-
-                        /* Adjustment for VGA size */
-                        /* correct_yolo/region_boxes */
-                        center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / (new_w / MODEL_IN_W);
-                        center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / (new_h / MODEL_IN_H);
-                        box_w *= (float) (MODEL_IN_W / new_w);
-                        box_h *= (float) (MODEL_IN_H / new_h);
-
-                        center_x = roundf(center_x * IN_WIDTH);
-                        center_y = roundf(center_y * IN_HEIGHT);
-                        box_w = roundf(box_w * IN_WIDTH);
-                        box_h = roundf(box_h * IN_HEIGHT);
-
-                        Box bb = {center_x, center_y, box_w, box_h};
-
-                        det[*det_len].bbox = bb;
-                        det[*det_len].c = pred_class;
-                        det[*det_len].prob = probability;
-                        det[*det_len].name = labels.at(pred_class).c_str();
                         (*det_len)++;
                     }
                 }
             }
         }
     }
+
+    if(*det_len > det_array_size)
+        return 1;
     return 0;
 }
