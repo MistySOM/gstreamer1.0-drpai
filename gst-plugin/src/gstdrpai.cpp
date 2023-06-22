@@ -76,6 +76,7 @@ enum {
 enum {
     PROP_0,
     PROP_MULTITHREAD,
+    PROP_MODEL,
     PROP_SHOW_FPS,
     PROP_LOG_DETECTS,
     PROP_STOP_ERROR,
@@ -130,6 +131,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_boolean("multithread", "MultiThread",
                              "Use a separate thread for object detection.",
                              TRUE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_MODEL,
+        g_param_spec_string("model", "Model",
+                             "The name of the pretrained model and the directory prefix.",
+                             nullptr, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_LOG_DETECTS,
         g_param_spec_boolean("log_detects", "Log Detects",
                              "Print detected objects in standard output.",
@@ -236,6 +241,9 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_MULTITHREAD:
             obj->drpai->multithread = g_value_get_boolean(value);
             break;
+        case PROP_MODEL:
+            obj->drpai->model_prefix = g_value_get_string(value);
+            break;
         case PROP_LOG_DETECTS:
             obj->drpai->log_detects = g_value_get_boolean(value);
             break;
@@ -271,6 +279,9 @@ gst_drpai_get_property(GObject *object, guint prop_id,
     switch (prop_id) {
         case PROP_MULTITHREAD:
             g_value_set_boolean(value, obj->drpai->multithread);
+            break;
+        case PROP_MODEL:
+            g_value_set_string(value, obj->drpai->model_prefix.c_str());
             break;
         case PROP_LOG_DETECTS:
             g_value_set_boolean(value, obj->drpai->log_detects);

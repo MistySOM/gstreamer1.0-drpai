@@ -100,14 +100,12 @@ float box_iou(Box a, Box b)
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void filter_boxes_nms(std::vector<detection> &det, float th_nms)
+void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
 {
-    std::size_t count = det.size();
-
-    for (std::size_t i = 0; i < count; i++)
+    for (uint8_t i = 0; i < size; i++)
     {
         Box a = det[i].bbox;
-        for (std::size_t j = 0; j < count; j++)
+        for (uint8_t j = 0; j < size; j++)
         {
             if (i == j)
             {
