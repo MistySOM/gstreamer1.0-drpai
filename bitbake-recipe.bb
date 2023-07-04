@@ -13,16 +13,15 @@ DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai"
 S = "${WORKDIR}/git"
 PV = "1.0"
 
-do_install_append() {
-    install -d ${D}${ROOT_HOME}/yolov2
-    install -m 0755 ${S}/models/yolov2/* ${D}${ROOT_HOME}/yolov2
-}
-
-FILES_${PN} = "${libdir}/gstreamer-1.0/libgstdrpai.so ${ROOT_HOME}/yolov2"
+FILES_${PN} = "${libdir}/gstreamer-1.0/libgstdrpai.so"
 FILES_${PN}-dev = "${libdir}/gstreamer-1.0/libgstdrpai.la"
 FILES_${PN}-staticdev = "${libdir}/gstreamer-1.0/libgstdrpai.a"
 FILES_${PN}-dbg = " \
     ${libdir}/gstreamer-1.0/.debug \
     ${prefix}/src"
 
-RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
+PACKAGES += "${PN}-postprocess-yolo"
+
+FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-yolo.so"
+
+RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf ${PN}-postprocess-yolo"
