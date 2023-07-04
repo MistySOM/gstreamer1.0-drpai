@@ -4,11 +4,11 @@
 
 MistySOM RZV2L contains the DRPAI hardware module which is able to run artificial Neural Networks 
 with the focus on low power consumption. To check if this hardware module is present on your device,
-you can look for both `/dev/drpai0` and `/dev/udmabuf0` devices on your linux shell. 
+you can look for both `/dev/drpai0` and `/dev/udmabuf0` devices on your Linux shell. 
 The Userland Direct Memory Access (UDMA) kernel module is required to provide the trained AI model and 
 the input image to the DRPAI hardware. After activating the hardware, it will use the trained model to
 generate the output which can be read by the UDMA module. While DRPAI is running, the running thread will
-go to sleep. Of course the sleep time varies based on the size of the AI model.
+go to sleep. Of course, the sleep time varies based on the size of the AI model.
 
 MistyWest team has prepared this GStreamer plugin which can receive any kind of video input,
 such as a file (filesrc), a network stream (udpsrc), or a camera device (v4l2src) and outputs a video 
@@ -31,7 +31,7 @@ The plugin also provides you with the following parameters:
 
 | Name                  | Type                | Default | Description                                                          |
 |-----------------------|---------------------|--------:|----------------------------------------------------------------------|
-| **model**             | String              |     --- | The name of the pretrained model and the directory prefix.                                                                     |
+| **model**             | String              |     --- | The name of the pre-trained model and the directory prefix.          |
 | **multithread**       | Boolean             |    true | Use a separate thread for object detection.                          |
 | **log-detects**       | Boolean             |   false | Print detected objects in standard output.                           |
 | **show-fps**          | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.    |
@@ -53,7 +53,7 @@ the command on your home directory `/home/user`, the plugin loads the TVM compil
 
 Depending on the model you use, even though their input layers are the same, their output layers can be
 very different and require additional post-processing to interpret the array of floating point numbers
-to a data structure that is usable to render the bounding boxes for each inferred object. Therefore, 
+to a data structure that is used to render the bounding boxes for each inferred object. Therefore, 
 the plugin uses a shared library that needs to be included with the model and its path is mentioned in 
 the `{model}/{model}_process_params.txt` file like this:
 ```
@@ -68,12 +68,12 @@ libpostprocess-yolo.so
 
 The plugin already includes a post-processor library that supports `yolov2`, `yolov3`, `tinyyolov2`, 
 and `tinyyolov3` models. This post-processor library leverages many similarities between these models and
-switch its behaviour based on other parameters that are mentioned in `{model}/{model}_process_params.txt` 
+switches its behaviour based on other parameters that are mentioned in `{model}/{model}_process_params.txt` 
 file such as the `[best_class_prediction_algorithm]` and `[anchor_divide_size]`. 
 
 The library also loads the list of all class labels in `{model}/{model}_labels.txt` and the list of all 
 box anchors in `{model}/{model}_anchors.txt`. This means these 3 files need to be manually included 
-alongside the output of DRPAI TVM translator.
+alongside the output of the DRPAI TVM translator.
 
 #### Make your own Post-Processor Library
 
