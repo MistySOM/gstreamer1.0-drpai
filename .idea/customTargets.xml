@@ -4,8 +4,11 @@
     <target id="d0b651e8-83c4-4059-9dd3-3d1042348acf" name="Ninja" defaultType="TOOL">
       <configuration id="9600d2ec-2d64-48f8-86eb-7f39b3251394" name="Ninja">
         <build type="TOOL">
-          <tool actionId="Tool_External Tools_Ninja" />
+          <tool actionId="Tool_External Tools_Ninja Build" />
         </build>
+        <clean type="TOOL">
+          <tool actionId="Tool_External Tools_Ninja Clean" />
+        </clean>
       </configuration>
     </target>
   </component>

@@ -3,6 +3,7 @@
 //
 
 #include <memory>
+#include <iostream>
 #include "drpai.h"
 
 /*****************************************
@@ -17,7 +18,7 @@ int8_t DRPAI::read_addrmap_txt(const std::string& addr_file)
     std::ifstream ifs(addr_file);
     if (ifs.fail())
     {
-        fprintf(stderr, "[ERROR] Failed to open address map list : %s\n", addr_file.c_str());
+        std::cerr << "[ERROR] Failed to open address map list : " << addr_file << std::endl;
         return -1;
     }
 
@@ -94,19 +95,19 @@ int8_t DRPAI::read_addrmap_txt(const std::string& addr_file)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t size)
+int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const
 {
     int8_t ret_load_data = 0;
     int32_t obj_fd;
     uint8_t drpai_buf[BUF_SIZE];
     drpai_data_t drpai_data;
 
-    printf("Loading : %s\n", data.c_str());
+    std::cout << "Loading : " << data << std::endl;
     errno = 0;
     obj_fd = open(data.c_str(), O_RDONLY);
     if (0 > obj_fd)
     {
-        fprintf(stderr, "[ERROR] Failed to open: %s errno=%d\n", data.c_str(), errno);
+        std::cerr << "[ERROR] Failed to open: " << data << " errno=" << errno << std::endl;
         ret_load_data = -1;
         goto end;
     }
@@ -117,7 +118,7 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
     errno = 0;
     if ( ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data) == -1 )
     {
-        fprintf(stderr, "[ERROR] Failed to run DRPAI_ASSIGN: errno=%d\n", errno);
+        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN: errno=" << errno << std::endl;
         ret_load_data = -1;
         goto end;
     }
@@ -127,13 +128,13 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
         errno = 0;
         if ( read(obj_fd, drpai_buf, BUF_SIZE) < 0 )
         {
-            fprintf(stderr, "[ERROR] Failed to read: %s errno=%d\n", data.c_str(), errno);
+            std::cerr << "[ERROR] Failed to read: " << data << " errno=" << errno << std::endl;
             ret_load_data = -1;
             goto end;
         }
         if ( write(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
         {
-            fprintf(stderr, "[ERROR] Failed to write via DRP-AI Driver: errno=%d\n", errno);
+            std::cerr << "[ERROR] Failed to write via DRP-AI Driver: errno=" << errno << std::endl;
             ret_load_data = -1;
             goto end;
         }
@@ -143,13 +144,13 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
         errno = 0;
         if ( read(obj_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) < 0 )
         {
-            fprintf(stderr, "[ERROR] Failed to read: %s errno=%d\n", data.c_str(), errno);
+            std::cerr << "[ERROR] Failed to read: " << data << " errno=" << errno << std::endl;
             ret_load_data = -1;
             goto end;
         }
         if ( write(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) == -1 )
         {
-            fprintf(stderr, "[ERROR] Failed to write via DRP-AI Driver: errno=%d\n", errno);
+            std::cerr << "[ERROR] Failed to write via DRP-AI Driver: errno=" << errno << std::endl;
             ret_load_data = -1;
             goto end;
         }
@@ -173,6 +174,15 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
 ******************************************/
 int8_t DRPAI::load_drpai_data()
 {
+    const static std::string drpai_file_path[5] =
+    {
+            model_prefix + "/drp_desc.bin",
+            model_prefix + "/" + model_prefix + "_drpcfg.mem",
+            model_prefix + "/drp_param.bin",
+            model_prefix + "/aimac_desc.bin",
+            model_prefix + "/" + model_prefix + "_weight.dat",
+    };
+
     uint32_t addr = 0;
     uint32_t size = 0;
     for (int32_t i = 0; i < 5; i++ )
@@ -205,42 +215,11 @@ int8_t DRPAI::load_drpai_data()
 
         if ( load_data_to_mem(drpai_file_path[i], addr, size) != 0 )
         {
-            fprintf(stderr,"[ERROR] Failed to load data from memory: %s\n",drpai_file_path[i].c_str());
+            std::cerr <<"[ERROR] Failed to load data from memory: " << drpai_file_path[i] << std::endl;
             return -1;
         }
     }
     return 0;
-}
-
-/*****************************************
-* Function Name     : load_label_file
-* Description       : Load label list text file and return the label list that contains the label.
-* Arguments         : label_file_name = filename of label list. must be in txt format
-* Return value      : vector<string> list = list contains labels
-*                     empty if error occured
-******************************************/
-std::vector<std::string> DRPAI::load_label_file(const std::string& label_file_name)
-{
-    std::vector<std::string> list = {};
-    std::vector<std::string> empty = {};
-    std::ifstream infile(label_file_name);
-
-    if (!infile.is_open())
-    {
-        return list;
-    }
-
-    std::string line;
-    while (getline(infile,line))
-    {
-        list.push_back(line);
-        if (infile.fail())
-        {
-            return empty;
-        }
-    }
-
-    return list;
 }
 
 /*****************************************
@@ -263,7 +242,7 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
     /* Assign the memory address and size to be read */
     if ( ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data) == -1 )
     {
-        fprintf(stderr, "[ERROR] Failed to run DRPAI_ASSIGN: errno=%d\n", errno);
+        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN: errno=" << errno << std::endl;
         return -1;
     }
 
@@ -273,10 +252,9 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
         errno = 0;
         if ( read(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
         {
-            fprintf(stderr, "[ERROR] Failed to read via DRP-AI Driver: errno=%d\n", errno);
+            std::cerr << "[ERROR] Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
             return -1;
         }
-
         std::memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
     }
 
@@ -285,88 +263,56 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
         errno = 0;
         if ( read(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) == -1 )
         {
-            fprintf(stderr, "[ERROR] Failed to read via DRP-AI Driver: errno=%d\n", errno);
+            std::cerr << "[ERROR] Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
             return -1;
         }
-
         std::memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
     }
     return 0;
 }
 
 /*****************************************
-* Function Name : sigmoid
-* Description   : Helper function for YOLO Post Processing
-* Arguments     : x = input argument for the calculation
-* Return value  : sigmoid result of input x
+* Function Name : extract_detections
+* Description   : Process CPU post-processing for YOLO (drawing bounding boxes) and print the result on console.
+* Arguments     : floatarr = float DRP-AI output data
+*                 img = image to draw the detection result
+* Return value  : 0 if succeeded
+*                 not 0 otherwise
 ******************************************/
-float sigmoid(float x)
+int8_t DRPAI::extract_detections()
 {
-    return 1.0f/(1.0f + std::exp(-x));
-}
+    uint8_t det_size = detection_buffer_size;
+    detection det[det_size];
+    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
+    if (ret == 1) {
+        // if detected items are more than the array size
+        uint8_t tmp = detection_buffer_size;
+        detection_buffer_size = det_size;   // set a new array size for the next run
+        det_size = tmp;                     // but keep the array size valid
+    } else if (ret < 0) // if an error occurred
+        return -1;
 
-/*****************************************
-* Function Name : softmax
-* Description   : Helper function for YOLO Post Processing
-* Arguments     : val[] = array to be computed softmax
-* Return value  : -
-******************************************/
-void softmax(std::array<float, NUM_CLASS>& val)
-{
-    float max_num = -FLT_MAX;
-    float sum = 0;
-    int32_t i;
-    for ( i = 0 ; i<NUM_CLASS ; i++ )
-    {
-        max_num = std::max(max_num, val[i]);
+    /* Non-Maximum Suppression filter */
+    filter_boxes_nms(det, det_size, TH_NMS);
+
+    last_det.clear();
+    for (uint8_t i = 0; i<det_size; i++) {
+        /* Skip the overlapped bounding boxes */
+        if (det[i].prob == 0) continue;
+        last_det.push_back(det[i]);
     }
 
-    for ( i = 0 ; i<NUM_CLASS ; i++ )
-    {
-        val[i]= std::exp(val[i] - max_num);
-        sum+= val[i];
+    /* Render boxes on image and print their details */
+    if(log_detects) {
+        std::cout << "DRP-AI detected items:  ";
+        for (const auto &detection: last_det) {
+            /* Print the box details on console */
+            //print_box(detection, n++);
+            std::cout << detection.name << " (" << detection.prob * 100 << "%)\t";
+        }
+        std::cout << std::endl;
     }
-
-    for ( i = 0 ; i<NUM_CLASS ; i++ )
-    {
-        val[i]= val[i]/sum;
-    }
-}
-
-/*****************************************
-* Function Name : yolo_index
-* Description   : Get the index of the bounding box attributes based on the input offset.
-* Arguments     : n = output layer number.
-*                 offs = offset to access the bounding box attributesd.
-*                 channel = channel to access each bounding box attribute.
-* Return value  : index to access the bounding box attribute.
-******************************************/
-int32_t yolo_index(uint8_t n, int32_t offs, int32_t channel)
-{
-    uint8_t num_grid = num_grids[n];
-    return offs + channel * num_grid * num_grid;
-}
-
-/*****************************************
-* Function Name : yolo_offset
-* Description   : Get the offset nuber to access the bounding box attributes
-*                 To get the actual value of bounding box attributes, use yolo_index() after this function.
-* Arguments     : n = output layer number [0~2].
-*                 b = Number to indicate which bounding box in the region [0~2]
-*                 y = Number to indicate which region [0~13]
-*                 x = Number to indicate which region [0~13]
-* Return value  : offset to access the bounding box attributes.
-******************************************/
-int32_t yolo_offset(uint8_t n, int32_t b, int32_t y, int32_t x)
-{
-    uint8_t num = num_grids[n];
-    int32_t prev_layer_num = 0;
-
-    for (int32_t i = 0 ; i < n; i++)
-    {
-        prev_layer_num += NUM_BB *(NUM_CLASS + 5)* num_grids[i] * num_grids[i];
-    }
-    return prev_layer_num + b *(NUM_CLASS + 5)* num * num + y * num + x;
+    return 0;
 }
 
 /*****************************************
@@ -376,158 +322,48 @@ int32_t yolo_offset(uint8_t n, int32_t b, int32_t y, int32_t x)
 *                 i = result number
 * Return value  : -
 ******************************************/
-void print_box(detection d, int32_t i)
+void DRPAI::print_box(detection d, int32_t i)
 {
-    printf("Result %d -----------------------------------------*\n", i);
-    printf("\x1b[1m");
-    printf("Class           : %s\n",label_file_map[d.c].c_str());
-    printf("\x1b[0m");
-    printf("(X, Y, W, H)    : (%d, %d, %d, %d)\n",
-           (int32_t) d.bbox.x, (int32_t) d.bbox.y, (int32_t) d.bbox.w, (int32_t) d.bbox.h);
-    printf("Probability     : %.1f %%\n\n",  d.prob*100);
-}
-
-/*****************************************
-* Function Name : print_result_yolo
-* Description   : Process CPU post-processing for YOLO (drawing bounding boxes) and print the result on console.
-* Arguments     : floatarr = float DRP-AI output data
-*                 img = image to draw the detection result
-* Return value  : 0 if succeeded
-*                 not 0 otherwise
-******************************************/
-int8_t DRPAI::print_result_yolo()
-{
-    /* Following variables are required for correct_yolo/region_boxes in Darknet implementation*/
-    /* Note: This implementation refers to the "darknet detector test" */
-    float new_w, new_h;
-    float correct_w = 1.;
-    float correct_h = 1.;
-    if ((float) (MODEL_IN_W / correct_w) < (float) (MODEL_IN_H/correct_h) )
-    {
-        new_w = (float) MODEL_IN_W;
-        new_h = correct_h * MODEL_IN_W / correct_w;
-    }
-    else
-    {
-        new_w = correct_w * MODEL_IN_H / correct_h;
-        new_h = MODEL_IN_H;
-    }
-
-    /* Clear the detected result list */
-    det.clear();
-
-    for (int32_t n = 0; n<NUM_INF_OUT_LAYER; n++)
-    {
-        uint8_t num_grid = num_grids[n];
-        uint8_t anchor_offset = 2 * NUM_BB * (NUM_INF_OUT_LAYER - (n + 1));
-
-        for (int32_t b = 0;b<NUM_BB;b++)
-        {
-            for (int32_t y = 0;y<num_grid;y++)
-            {
-                for (int32_t x = 0;x<num_grid;x++)
-                {
-                    int32_t offs = yolo_offset(n, b, y, x);
-                    float tx = drpai_output_buf[offs];
-                    float ty = drpai_output_buf[yolo_index(n, offs, 1)];
-                    float tw = drpai_output_buf[yolo_index(n, offs, 2)];
-                    float th = drpai_output_buf[yolo_index(n, offs, 3)];
-                    float tc = drpai_output_buf[yolo_index(n, offs, 4)];
-
-                    /* Compute the bounding box */
-                    /*get_yolo_box/get_region_box in paper implementation*/
-                    float center_x = ((float)x + sigmoid(tx)) / (float) num_grid;
-                    float center_y = ((float)y + sigmoid(ty)) / (float) num_grid;
-#if defined(YOLOV3) || defined(TINYYOLOV3)
-                    float box_w = (float) exp(tw) * anchors[anchor_offset+2*b+0] / (float) MODEL_IN_W;
-                    float box_h = (float) exp(th) * anchors[anchor_offset+2*b+1] / (float) MODEL_IN_W;
-#elif defined(YOLOV2) || defined(TINYYOLOV2)
-                    float box_w = std::exp(tw) * anchors[anchor_offset+2*b+0] / (float) num_grid;
-                    float box_h = std::exp(th) * anchors[anchor_offset+2*b+1] / (float) num_grid;
-#endif
-                    /* Adjustment for VGA size */
-                    /* correct_yolo/region_boxes */
-                    center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / ((float) new_w / MODEL_IN_W);
-                    center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / ((float) new_h / MODEL_IN_H);
-                    box_w *= (float) (MODEL_IN_W / new_w);
-                    box_h *= (float) (MODEL_IN_H / new_h);
-
-                    center_x = std::round(center_x * DRPAI_IN_WIDTH);
-                    center_y = std::round(center_y * DRPAI_IN_HEIGHT);
-                    box_w = std::round(box_w * DRPAI_IN_WIDTH);
-                    box_h = std::round(box_h * DRPAI_IN_HEIGHT);
-
-                    float objectness = sigmoid(tc);
-
-                    Box bb = {center_x, center_y, box_w, box_h};
-                    std::array<float, NUM_CLASS> classes {};
-                    /* Get the class prediction */
-                    for (uint32_t i = 0;i < NUM_CLASS;i++)
-                    {
-#if defined(YOLOV3) || defined(TINYYOLOV3)
-                        classes[i] = sigmoid(drpai_output_buf[yolo_index(n, offs, 5+i)]);
-#elif defined(YOLOV2) || defined(TINYYOLOV2)
-                        classes[i] = drpai_output_buf[yolo_index(n, offs, 5+i)];
-#endif
-                    }
-
-#if defined(YOLOV2) || defined(TINYYOLOV2)
-                    softmax(classes);
-#endif
-                    float max_pred = 0;
-                    int32_t pred_class = -1;
-                    for (int32_t i = 0; i < NUM_CLASS; i++)
-                    {
-                        if (classes[i] > max_pred)
-                        {
-                            pred_class = i;
-                            max_pred = classes[i];
-                        }
-                    }
-
-                    /* Store the result into the list if the probability is more than the threshold */
-                    float probability = max_pred * objectness;
-                    if (probability > TH_PROB)
-                    {
-                        detection d = {bb, pred_class, probability};
-                        det.push_back(d);
-                    }
-                }
-            }
-        }
-    }
-    /* Non-Maximum Supression filter */
-    filter_boxes_nms(det, TH_NMS);
-
-    /* Render boxes on image and print their details */
-    if(log_detects) {
-        printf("DRP-AI detected items:  ");
-        for (const auto &detection: det) {
-            /* Skip the overlapped bounding boxes */
-            if (detection.prob == 0) continue;
-
-            /* Print the box details on console */
-            //print_box(detection, n++);
-            printf("%s (%.1f %%)\t", label_file_map[detection.c].c_str(), detection.prob * 100);
-        }
-        printf("\n");
-    }
-    return 0;
+    std::cout << "Result " << i << " -----------------------------------------*" << std::endl;
+    std::cout << "\x1b[1m";
+    std::cout << "Class           : " << d.name << std::endl;
+    std::cout << "\x1b[0m";
+    std::cout << "(X, Y, W, H)    : (" << d.bbox.x << ", " << d.bbox.y << ", " << d.bbox.w << ", " << d.bbox.h << ")" << std::endl;
+    std::cout << "Probability     : " << d.prob*100 << "%" << std::endl << std::endl;
 }
 
 int DRPAI::open_resources() {
     if (drpai_rate.max_rate == 0) {
-        printf("[WARNING] DRPAI is disabled by the zero max framerate.\n");
+        std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
+        return 0;
+    }
+    if (model_prefix.empty()) {
+        std::cerr << "[ERROR] The model parameter needs to be set." << std::endl;
         return 0;
     }
 
-    printf("RZ/V2L DRP-AI Plugin\n");
-    printf("Model : Darknet YOLO      | %s\n", drpai_prefix.c_str());
+    std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
+    std::cout << "Model : Darknet YOLO      | " << model_prefix << std::endl;
 
     if (multithread)
         process_thread = new std::thread(&DRPAI::thread_function_loop, this);
     else
         thread_state = Ready;
+
+    /* Read DRP-AI Object files address and size */
+    std::string drpai_address_file = model_prefix + "/" + model_prefix + "_addrmap_intm.txt";
+    std::cout << "Loading : " << drpai_address_file << std::endl;
+    if ( read_addrmap_txt(drpai_address_file) != 0 )
+    {
+        std::cerr << std::endl << "[ERROR] Failed to read addressmap text file: " << drpai_address_file << std::endl;
+        return -1;
+    }
+    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+
+    if (post_process.dynamic_library_open(model_prefix) != 0)
+        return -1;
+    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_output_buf.size()) != 0)
+        return -1;
 
     /* Obtain udmabuf memory area starting address */
     char addr[1024];
@@ -535,12 +371,12 @@ int DRPAI::open_resources() {
     auto fd = open("/sys/class/u-dma-buf/udmabuf0/phys_addr", O_RDONLY);
     if (0 > fd)
     {
-        fprintf(stderr, "[ERROR] Failed to open udmabuf0/phys_addr : errno=%d\n", errno);
+        std::cerr << "[ERROR] Failed to open udmabuf0/phys_addr : errno=" << errno << std::endl;
         return -1;
     }
     if ( read(fd, addr, 1024) < 0 )
     {
-        fprintf(stderr, "[ERROR] Failed to read udmabuf0/phys_addr : errno=%d\n", errno);
+        std::cerr << "[ERROR] Failed to read udmabuf0/phys_addr : errno=" << errno << std::endl;
         close(fd);
         return -1;
     }
@@ -553,36 +389,19 @@ int DRPAI::open_resources() {
     /* Inference preparation                                              */
     /**********************************************************************/
 
-    /* Read DRP-AI Object files address and size */
-    if ( read_addrmap_txt(drpai_address_file) != 0 )
-    {
-        fprintf(stderr, "[ERROR] Failed to read addressmap text file: %s\n", drpai_address_file.c_str());
-        return -1;
-    }
-
-#if defined(YOLOV3) || defined(TINYYOLOV3)
-    /*Load Label from label_list file*/
-    label_file_map = load_label_file(label_list);
-    if (label_file_map.empty())
-    {
-        fprintf(stderr,"[ERROR] Failed to load label file: %s\n", label_list.c_str());
-        return -1;
-    }
-#endif
-
     /* Open DRP-AI Driver */
     errno = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
     if (0 > drpai_fd)
     {
-        fprintf(stderr, "[ERROR] Failed to open DRP-AI Driver: errno=%d\n", errno);
+        std::cerr << "[ERROR] Failed to open DRP-AI Driver: errno=" << errno << std::endl;
         return -1;
     }
 
     /* Load DRP-AI Data from Filesystem to Memory via DRP-AI Driver */
     if ( load_drpai_data() < 0)
     {
-        fprintf(stderr, "[ERROR] Failed to load DRP-AI Object files.\n");
+        std::cerr << "[ERROR] Failed to load DRP-AI Object files." << std::endl;
         return -1;
     }
 
@@ -603,11 +422,11 @@ int DRPAI::open_resources() {
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
 
     if (image_mapped_udma.map_udmabuf() < 0) {
-        fprintf(stderr, "[ERROR] Failed to map Image buffer to UDMA.\n");
+        std::cerr << "[ERROR] Failed to map Image buffer to UDMA." << std::endl;
         return -1;
     }
 
-    printf("DRP-AI Ready!\n");
+    std::cout <<"DRP-AI Ready!" << std::endl;
     return 0;
 }
 
@@ -654,7 +473,7 @@ int DRPAI::process_image(uint8_t* img_data) {
 
         /* Draw the bounding box on the image */
         std::stringstream stream;
-        stream << label_file_map[detection.c] << " " << int(detection.prob*100) << "%";
+        stream << detection.name << " " << int(detection.prob * 100) << "%";
         img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
                       (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, stream.str());
     }
@@ -673,14 +492,16 @@ int DRPAI::release_resources() {
         delete process_thread;
     }
 
+    post_process.post_process_release();
+    post_process.dynamic_library_close();
+
     errno = 0;
-    int ret = close(drpai_fd);
-    if (0 != ret)
+    if (close(drpai_fd) != 0)
     {
-        fprintf(stderr, "[ERROR] Failed to close DRP-AI Driver: errno=%d\n", errno);
-        ret = -1;
+        std::cerr << "[ERROR] Failed to close DRP-AI Driver: errno=" << errno << std::endl;
+        return -1;
     }
-    return ret;
+    return 0;
 }
 
 void DRPAI::thread_function_loop() {
@@ -708,11 +529,10 @@ int8_t DRPAI::thread_function_single() {
         /**********************************************************************
         * START Inference
         **********************************************************************/
-//    printf("[START] DRP-AI\n");
         errno = 0;
         int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]);
         if (0 != ret) {
-            fprintf(stderr, "[ERROR] Failed to run DRPAI_START: errno=%d\n", errno);
+            std::cerr << "[ERROR] Failed to run DRPAI_START: errno=" << errno << std::endl;
             thread_state = Failed;
             return -1;
         }
@@ -729,13 +549,13 @@ int8_t DRPAI::thread_function_single() {
 
         switch (select(drpai_fd + 1, &rfds, nullptr, nullptr, &tv)) {
             case 0:
-                fprintf(stderr, "[ERROR] DRP-AI select() Timeout : errno=%d\n", errno);
+                std::cerr << "[ERROR] DRP-AI select() Timeout : errno=" << errno << std::endl;
                 thread_state = Failed;
                 return -1;
             case -1:
-                fprintf(stderr, "[ERROR] DRP-AI select() Error : errno=%d\n", errno);
+                std::cerr << "[ERROR] DRP-AI select() Error : errno=" << errno << std::endl;
                 if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1) {
-                    fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+                    std::cerr << "[ERROR] Failed to run DRPAI_GET_STATUS : errno=" << errno << std::endl;
                 }
                 thread_state = Failed;
                 return -1;
@@ -744,11 +564,10 @@ int8_t DRPAI::thread_function_single() {
         if (FD_ISSET(drpai_fd, &rfds)) {
             errno = 0;
             if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1) {
-                fprintf(stderr, "[ERROR] Failed to run DRPAI_GET_STATUS : errno=%d\n", errno);
+                std::cerr << "[ERROR] Failed to run DRPAI_GET_STATUS : errno=" << errno << std::endl;
                 thread_state = Failed;
                 return -1;
             }
-//        printf("[END] DRP-AI\n");
         }
 
         /**********************************************************************
@@ -757,18 +576,16 @@ int8_t DRPAI::thread_function_single() {
 
         /* Get the output data from memory */
         if (get_result(drpai_address.data_out_addr, drpai_address.data_out_size) != 0) {
-            fprintf(stderr, "[ERROR] Failed to get result from memory.\n");
+            std::cerr << "[ERROR] Failed to get result from memory." << std::endl;
             thread_state = Failed;
             return -1;
         }
 
-        if (print_result_yolo() != 0) {
-            fprintf(stderr, "[ERROR] Failed to run CPU Post Processing.\n");
+        if (extract_detections() != 0) {
+            std::cerr << "[ERROR] Failed to run CPU Post Processing." << std::endl;
             thread_state = Failed;
             return -1;
         }
-
-        last_det = det;
     }
     return 0;
 }
