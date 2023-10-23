@@ -26,6 +26,7 @@
 #define BOX_H
 
 #include <cinttypes>
+#include <string>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -40,10 +41,17 @@ typedef struct
 ******************************************/
 typedef struct detection
 {
-    Box bbox;
-    uint32_t c;
-    float prob;
-    const char* name;
+    Box bbox {};
+    uint32_t c = 0;
+    float prob = 0;
+    const char* name = nullptr;
+
+    [[nodiscard]] virtual std::string print() const {
+        return std::string(name) + " (" + std::to_string(prob * 100) + "%)";
+    }
+
+    virtual ~detection() = default;
+
 } detection;
 
 /*****************************************

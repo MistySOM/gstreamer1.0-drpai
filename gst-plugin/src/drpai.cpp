@@ -299,16 +299,22 @@ int8_t DRPAI::extract_detections()
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
-        last_det.push_back(det[i]);
+
+        if(det_history.active) {
+            auto h = det_history.add_to_history(det[i]);
+            last_det.push_back(h);
+        }
+        else
+            last_det.push_back(det[i]);
     }
 
-    /* Render boxes on image and print their details */
+    /* Print details */
     if(log_detects) {
         std::cout << "DRP-AI detected items:  ";
         for (const auto &detection: last_det) {
             /* Print the box details on console */
             //print_box(detection, n++);
-            std::cout << detection.name << " (" << detection.prob * 100 << "%)\t";
+            std::cout << detection.print() + "\t";
         }
         std::cout << std::endl;
     }

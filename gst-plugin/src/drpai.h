@@ -21,6 +21,7 @@
 #include "image.h"
 #include "fps.h"
 #include "dynamic-post-process/postprocess.h"
+#include "history.h"
 
 class DRPAI {
 
@@ -55,6 +56,7 @@ private:
     [[nodiscard]] int8_t extract_detections();
     void print_box(detection d, int32_t i);
     PostProcess post_process;
+    history det_history;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };

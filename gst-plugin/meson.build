@@ -14,6 +14,7 @@ plugin_sources = [
   'src/drpai.cpp',
   'src/image.cpp',
   'src/box.cpp',
+  'src/history.cpp',
   'src/dynamic-post-process/postprocess.cpp'
  ]
 
