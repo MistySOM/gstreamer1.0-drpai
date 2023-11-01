@@ -27,13 +27,18 @@
 
 #include <cinttypes>
 #include <string>
+#include <fmt/core.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
 ******************************************/
-typedef struct
+typedef struct Box
 {
     float x, y, w, h;
+
+    [[nodiscard]] std::string to_string_json() const {
+        return fmt::format(R"({{ "x"={}, "y"={}, "width"={}", "height"={} }})", x,y,w,h);
+    }
 } Box;
 
 /*****************************************
@@ -46,12 +51,15 @@ typedef struct detection
     float prob = 0;
     const char* name = nullptr;
 
-    [[nodiscard]] virtual std::string print() const {
-        return std::string(name) + " (" + std::to_string(prob * 100) + "%)";
+    [[nodiscard]] virtual std::string to_string_hr() const {
+        return fmt::format("{} ({}%)", name, prob*100);
     }
-
-    virtual ~detection() = default;
-
+    [[nodiscard]] virtual std::string to_string_json() const {
+        return fmt::format("{{{}}}", to_string_json_inline());
+    }
+    [[nodiscard]] virtual std::string to_string_json_inline() const {
+        return fmt::format(R"("class"="{}", "probability"={}, "box"={})", name, prob, bbox.to_string_json());
+    }
 } detection;
 
 /*****************************************

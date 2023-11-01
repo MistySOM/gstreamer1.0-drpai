@@ -1,0 +1,54 @@
+//
+// Created by matin on 21/10/23.
+//
+
+#ifndef BUILDDIR_TRACKER_H
+#define BUILDDIR_TRACKER_H
+
+#include "box.h"
+#include <chrono>
+#include <list>
+#include <fmt/chrono.h>
+
+using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
+
+struct tracked_detection: detection {
+    const uint32_t id;
+    tracking_time seen_first;
+    tracking_time seen_last;
+
+    tracked_detection(uint32_t id, const detection& det, const tracking_time& time):
+        detection(det), id(id), seen_first(time), seen_last(time) {}
+
+    [[nodiscard]] std::string to_string_hr() const override {
+        return fmt::format("{}.{}", id, detection::to_string_hr());
+    }
+
+    [[nodiscard]] std::string to_string_json() const override {
+        using namespace std::literals::chrono_literals;
+        return fmt::format(R"({{ "id"={}, "seen_first"="{}", "seen_last"="{}", {} }})", id, seen_first, seen_last,
+                           detection::to_string_json_inline());
+    }
+};
+
+class tracker {
+
+public:
+    bool active;
+
+    tracker(bool active, float time_threshold, float iou_threshold):
+        active(active), time_threshold(time_threshold), iou_threshold(iou_threshold) {}
+
+    tracked_detection& track(const detection& det);
+
+    [[nodiscard]] uint32_t count() const { return items.size(); }
+    [[nodiscard]] uint32_t count(uint32_t c) const;
+
+private:
+    std::list<tracked_detection> items;
+    float time_threshold;
+    float iou_threshold;
+};
+
+
+#endif //BUILDDIR_TRACKER_H

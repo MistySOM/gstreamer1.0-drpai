@@ -1,5 +1,4 @@
-project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL',
-    default_options : ['c_std=c2x', 'cpp_std=c++20'])
+project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL')
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
@@ -13,6 +12,7 @@ gst_dep = dependency('gstreamer-1.0', version : '>=1.16.3',
 gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.16.3',
   fallback : ['gstreamer', 'gst_base_dep'])
 thread_dep = dependency('threads')
+fmt_dep = dependency('fmt')
 dl_dep = cxx.find_library('dl', required : true)
 
 subdir('gst-app')

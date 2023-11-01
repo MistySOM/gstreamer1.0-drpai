@@ -300,21 +300,17 @@ int8_t DRPAI::extract_detections()
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
 
-        if(det_history.active) {
-            auto h = det_history.add_to_history(det[i]);
-            last_det.push_back(h);
-        }
-        else
-            last_det.push_back(det[i]);
+        auto& h = det_tracker.active ? det_tracker.track(det[i]): det[i];
+        last_det.push_back(h);
     }
 
     /* Print details */
     if(log_detects) {
         std::cout << "DRP-AI detected items:  ";
-        for (const auto &detection: last_det) {
+        for (const auto& detection: last_det) {
             /* Print the box details on console */
             //print_box(detection, n++);
-            std::cout << detection.print() + "\t";
+            std::cout << detection.to_string_hr() + "\t";
         }
         std::cout << std::endl;
     }

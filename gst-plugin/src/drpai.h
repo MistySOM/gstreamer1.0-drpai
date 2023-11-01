@@ -21,13 +21,14 @@
 #include "image.h"
 #include "fps.h"
 #include "dynamic-post-process/postprocess.h"
-#include "history.h"
+#include "tracker.h"
 
 class DRPAI {
 
 public:
     explicit DRPAI():
-        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {};
+        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR),
+        det_tracker(true, 2, 0.75) {};
 
     std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
     bool multithread = true;
@@ -51,12 +52,12 @@ private:
     /* Output Section */
     uint32_t detection_buffer_size = 10;
     std::vector<float> drpai_output_buf {};
-    std::vector<detection> last_det{};
+    std::vector<detection> last_det {};
+    PostProcess post_process;
+    tracker det_tracker;
     [[nodiscard]] int8_t get_result(uint32_t output_addr, uint32_t output_size);
     [[nodiscard]] int8_t extract_detections();
     void print_box(detection d, int32_t i);
-    PostProcess post_process;
-    history det_history;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
