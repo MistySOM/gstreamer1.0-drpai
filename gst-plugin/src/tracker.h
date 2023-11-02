@@ -43,11 +43,10 @@ public:
     tracker(bool active, float time_threshold, float iou_threshold):
         active(active), time_threshold(time_threshold), iou_threshold(iou_threshold) {
         if (active)
-            std::cout<< "Detection Tracking is Active!";
+            std::cout << "Detection Tracking is Active!" << std::endl;
     }
 
-    tracked_detection& track(const detection& det);
-
+    [[nodiscard]] tracked_detection& track(const detection& det);
     [[nodiscard]] uint32_t count() const { return items.size(); }
     [[nodiscard]] uint32_t count(uint32_t c) const;
 
