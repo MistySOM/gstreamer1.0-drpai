@@ -60,7 +60,7 @@ typedef struct detection
     const char* name = nullptr;
 
     [[nodiscard]] std::string to_string_hr() const {
-        return std::string(name) + " (" + std::to_string(prob*100) + "%)";
+        return std::string(name) + " (" + std::to_string(int(prob*100)) + "%)";
     }
     [[nodiscard]] std::string to_string_json() const {
         return "{ " + to_string_json_inline() + " }";

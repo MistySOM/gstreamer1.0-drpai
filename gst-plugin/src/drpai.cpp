@@ -483,17 +483,20 @@ int DRPAI::process_image(uint8_t* img_data) {
     }
 
     /* Compute the result, draw the result on img and display it on console */
-    for (const auto& detection: last_det)
-    {
-        /* Skip the overlapped bounding boxes */
-        if (detection.prob == 0) continue;
-
-        /* Draw the bounding box on the image */
-        std::stringstream stream;
-        stream << detection.name << " " << int(detection.prob * 100) << "%";
-        img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
-                      (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, stream.str());
-    }
+    if (det_tracker.active)
+        for (const auto& tracked: last_tracked_detection)
+        {
+            /* Draw the bounding box on the image */
+            img.draw_rect((int32_t)tracked.last_detection.bbox.x, (int32_t)tracked.last_detection.bbox.y,
+                          (int32_t)tracked.last_detection.bbox.w, (int32_t)tracked.last_detection.bbox.h, tracked.to_string_hr());
+        }
+    else
+        for (const auto& detection: last_det)
+        {
+            /* Draw the bounding box on the image */
+            img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
+                          (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, detection.to_string_hr());
+        }
 
     return 0;
 }
