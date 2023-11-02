@@ -8,7 +8,6 @@
 #include "box.h"
 #include <chrono>
 #include <list>
-#include <iostream>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 std::string to_string(const tracking_time& time);
@@ -41,10 +40,7 @@ public:
     bool active;
 
     tracker(bool active, float time_threshold, float iou_threshold):
-        active(active), time_threshold(time_threshold), iou_threshold(iou_threshold) {
-        if (active)
-            std::cout << "Detection Tracking is Active!" << std::endl;
-    }
+        active(active), time_threshold(time_threshold), iou_threshold(iou_threshold) {}
 
     [[nodiscard]] tracked_detection& track(const detection& det);
     [[nodiscard]] uint32_t count() const { return items.size(); }

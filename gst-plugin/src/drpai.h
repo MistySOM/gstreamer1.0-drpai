@@ -28,7 +28,7 @@ class DRPAI {
 public:
     explicit DRPAI():
         image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR),
-        det_tracker(true, 2, 0.75) {};
+        det_tracker(tracker(true, 2, 0.75)) {};
 
     std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
     bool multithread = true;

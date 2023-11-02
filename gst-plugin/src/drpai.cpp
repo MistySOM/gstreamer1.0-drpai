@@ -429,6 +429,8 @@ int DRPAI::open_resources() {
     }
 
     std::cout <<"DRP-AI Ready!" << std::endl;
+    if (det_tracker.active)
+        std::cout << "Detection Tracking is Active!" << std::endl;
     return 0;
 }
 
