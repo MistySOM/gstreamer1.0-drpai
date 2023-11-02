@@ -12,25 +12,24 @@
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 std::string to_string(const tracking_time& time);
 
-struct tracked_detection: detection {
+struct tracked_detection {
     const uint32_t id;
+    detection last_detection;
     tracking_time seen_first;
     tracking_time seen_last;
 
     tracked_detection(uint32_t id, const detection& det, const tracking_time& time):
-        detection(det), id(id), seen_first(time), seen_last(time) {}
+            id(id), last_detection(det), seen_first(time), seen_last(time) {}
 
-    ~tracked_detection() override = default;
-
-    [[nodiscard]] std::string to_string_hr() const override {
-        return std::to_string(id) + "." + detection::to_string_hr();
+    [[nodiscard]] std::string to_string_hr() const {
+        return std::to_string(id) + "." + last_detection.to_string_hr();
     }
 
-    [[nodiscard]] std::string to_string_json() const override {
+    [[nodiscard]] std::string to_string_json() const {
         return "{ \"id\"=" + std::to_string(id) +
                ", \"seen_first\"=" + to_string(seen_first) +
                ", \"seen_last\"=" + to_string(seen_last) +
-               detection::to_string_json_inline() + " }";
+               last_detection.to_string_json_inline() + " }";
     }
 };
 

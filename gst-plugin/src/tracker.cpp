@@ -15,11 +15,10 @@ tracked_detection& tracker::track(const detection& det) {
     const auto now = std::chrono::system_clock::now();
 
     for(auto& item: items) {
-      if(item.c == det.c) {
+      if(item.last_detection.c == det.c) {
           if(std::chrono::duration<double>(item.seen_last - now).count() < time_threshold) {
-              if (item.bbox.iou_with(det.bbox) > iou_threshold) {
-                  item.bbox = det.bbox;
-                  item.prob = det.prob;
+              if (item.last_detection.bbox.iou_with(det.bbox) > iou_threshold) {
+                  item.last_detection = det;
                   item.seen_last = now;
                   return item;
               }
@@ -37,7 +36,7 @@ tracked_detection& tracker::track(const detection& det) {
 uint32_t tracker::count(uint32_t c) const {
     uint32_t r = 0;
     for(const auto& item: items)
-        if (item.c == c)
+        if (item.last_detection.c == c)
             ++r;
     return r;
 }

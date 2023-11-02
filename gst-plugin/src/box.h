@@ -59,15 +59,13 @@ typedef struct detection
     float prob = 0;
     const char* name = nullptr;
 
-    virtual ~detection() = default;
-
-    [[nodiscard]] virtual std::string to_string_hr() const {
+    [[nodiscard]] std::string to_string_hr() const {
         return std::string(name) + " (" + std::to_string(prob*100) + "%)";
     }
-    [[nodiscard]] virtual std::string to_string_json() const {
+    [[nodiscard]] std::string to_string_json() const {
         return "{ " + to_string_json_inline() + " }";
     }
-    [[nodiscard]] virtual std::string to_string_json_inline() const {
+    [[nodiscard]] std::string to_string_json_inline() const {
         return "\"class\"=" + std::string(name) +
                ", \"probability\"=" + std::to_string(prob) +
                ", \"box\"=" + bbox.to_string_json();

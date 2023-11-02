@@ -296,21 +296,34 @@ int8_t DRPAI::extract_detections()
     filter_boxes_nms(det, det_size, TH_NMS);
 
     last_det.clear();
+    last_tracked_detection.clear();
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
 
-        auto& h = det_tracker.active ? det_tracker.track(det[i]): det[i];
-        last_det.push_back(h);
+        if (det_tracker.active)
+            last_tracked_detection.push_back(det_tracker.track(det[i]));
+        else
+            last_det.push_back(det[i]);
     }
 
     /* Print details */
     if(log_detects) {
-        std::cout << "DRP-AI detected items:  ";
-        for (const auto& detection: last_det) {
-            /* Print the box details on console */
-            //print_box(detection, n++);
-            std::cout << detection.to_string_hr() + "\t";
+        if (det_tracker.active) {
+            std::cout << "DRP-AI tracked items:  ";
+            for (const auto &detection: last_tracked_detection) {
+                /* Print the box details on console */
+                //print_box(detection, n++);
+                std::cout << detection.to_string_hr() + "\t";
+            }
+        }
+        else {
+            std::cout << "DRP-AI detected items:  ";
+            for (const auto &detection: last_det) {
+                /* Print the box details on console */
+                //print_box(detection, n++);
+                std::cout << detection.to_string_hr() + "\t";
+            }
         }
         std::cout << std::endl;
     }
