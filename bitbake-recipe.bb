@@ -1,9 +1,9 @@
 SUMMARY = "GStreamer DRP-AI plugin"
 SECTION = "multimedia"
 LICENSE = "MIT"
-SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master"
+SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=feature/history"
 SRCREV = "${AUTOREV}"
-LIC_FILES_CHKSUM = "file://COPYING.MIT;md5=bba6cdb9c2b03c849ed4975ed9ed90dc"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 MESON_BUILDTYPE = "release"
 
 inherit meson
@@ -19,9 +19,22 @@ FILES_${PN}-staticdev = "${libdir}/gstreamer-1.0/libgstdrpai.a"
 FILES_${PN}-dbg = " \
     ${libdir}/gstreamer-1.0/.debug \
     ${prefix}/src"
+RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
+
+
 
 PACKAGES += "${PN}-postprocess-yolo"
-
 FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-yolo.so"
+RDEPENDS_${PN} += "${PN}-postprocess-yolo"
 
-RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf ${PN}-postprocess-yolo"
+
+
+PACKAGES += "${PN}-models-yolov3"
+SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"
+SRC_URI[sha256sum] = "9499f0d4a494cbf116c7e12d06a00adc2d0a2c6eed7309bdacac1961841daebb"
+do_install_append() {
+    install -d ${D}${ROOT_HOME}/yolov3
+    install -m 0755 ${WORKDIR}/models/yolov3/* ${D}${ROOT_HOME}/yolov3
+}
+FILES_${PN}-models-yolov3 = "${ROOT_HOME}/yolov3"
+RDEPENDS_${PN} += "${PN}-models-yolov3"
