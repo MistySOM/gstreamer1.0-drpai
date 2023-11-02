@@ -36,7 +36,7 @@
 *                 w2 = size of second line
 * Return value  : overlapped line size
 ******************************************/
-float overlap(float x1, float w1, float x2, float w2)
+float Box::overlap(float x1, float w1, float x2, float w2)
 {
     float l1 = x1 - w1/2;
     float l2 = x2 - w2/2;
@@ -54,15 +54,15 @@ float overlap(float x1, float w1, float x2, float w2)
 *                 b = Box 2
 * Return value  : area of intersection
 ******************************************/
-float box_intersection(Box a, Box b)
+float Box::intersection_with(const Box& b) const
 {
-    float w = overlap(a.x, a.w, b.x, b.w);
-    float h = overlap(a.y, a.h, b.y, b.h);
-    if(w < 0 || h < 0)
+    float _w = overlap(x, w, b.x, b.w);
+    float _h = overlap(y, h, b.y, b.h);
+    if(_w < 0 || _h < 0)
     {
         return 0;
     }
-    float area = w*h;
+    float area = _w*_h;
     return area;
 }
 
@@ -73,10 +73,10 @@ float box_intersection(Box a, Box b)
 *                 b = Box 2
 * Return value  : area of union
 ******************************************/
-float box_union(Box a, Box b)
+float Box::union_with(const Box& b) const
 {
-    float i = box_intersection(a, b);
-    float u = a.w*a.h + b.w*b.h - i;
+    float i = intersection_with(b);
+    float u = area() + b.area() - i;
     return u;
 }
 
@@ -87,9 +87,9 @@ float box_union(Box a, Box b)
 *                 b = Box 2
 * Return value  : IoU
 ******************************************/
-float box_iou(Box a, Box b)
+float Box::iou_with(const Box& b) const
 {
-    return box_intersection(a, b)/box_union(a, b);
+    return intersection_with(b)/union_with(b);
 }
 
 /*****************************************
@@ -116,8 +116,8 @@ void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
                 continue;
             }
             Box b = det[j].bbox;
-            float b_intersection = box_intersection(a, b);
-            if ((box_iou(a, b)>th_nms) || (b_intersection >= a.h * a.w - 1) || (b_intersection >= b.h * b.w - 1))
+            float b_intersection = a.intersection_with(b);
+            if ((a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
                 if (det[i].prob > det[j].prob)
                 {

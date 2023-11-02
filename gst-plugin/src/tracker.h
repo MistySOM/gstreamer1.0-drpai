@@ -8,9 +8,9 @@
 #include "box.h"
 #include <chrono>
 #include <list>
-#include <fmt/chrono.h>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
+std::string to_string(const tracking_time& time);
 
 struct tracked_detection: detection {
     const uint32_t id;
@@ -20,14 +20,17 @@ struct tracked_detection: detection {
     tracked_detection(uint32_t id, const detection& det, const tracking_time& time):
         detection(det), id(id), seen_first(time), seen_last(time) {}
 
+    ~tracked_detection() override = default;
+
     [[nodiscard]] std::string to_string_hr() const override {
-        return fmt::format("{}.{}", id, detection::to_string_hr());
+        return std::to_string(id) + "." + detection::to_string_hr();
     }
 
     [[nodiscard]] std::string to_string_json() const override {
-        using namespace std::literals::chrono_literals;
-        return fmt::format(R"({{ "id"={}, "seen_first"="{}", "seen_last"="{}", {} }})", id, seen_first, seen_last,
-                           detection::to_string_json_inline());
+        return "{ \"id\"=" + std::to_string(id) +
+               ", \"seen_first\"=" + to_string(seen_first) +
+               ", \"seen_last\"=" + to_string(seen_last) +
+               detection::to_string_json_inline() + " }";
     }
 };
 

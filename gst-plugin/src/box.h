@@ -27,7 +27,6 @@
 
 #include <cinttypes>
 #include <string>
-#include <fmt/core.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -37,8 +36,17 @@ typedef struct Box
     float x, y, w, h;
 
     [[nodiscard]] std::string to_string_json() const {
-        return fmt::format(R"({{ "x"={}, "y"={}, "width"={}", "height"={} }})", x,y,w,h);
+        return "{ \"x\"=" + std::to_string(x) +
+               ", \"y\"=" + std::to_string(y) +
+               ", \"width\"=" + std::to_string(w) +
+               ", \"height\"=" + std::to_string(h) + " }";
     }
+
+    [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
+    [[nodiscard]] float intersection_with(const Box& b) const;
+    [[nodiscard]] float iou_with(const Box& b) const;
+    [[nodiscard]] float union_with(const Box& b) const;
+    [[nodiscard]] float area() const { return w*h; };
 } Box;
 
 /*****************************************
@@ -51,24 +59,24 @@ typedef struct detection
     float prob = 0;
     const char* name = nullptr;
 
+    virtual ~detection() = default;
+
     [[nodiscard]] virtual std::string to_string_hr() const {
-        return fmt::format("{} ({}%)", name, prob*100);
+        return std::string(name) + " (" + std::to_string(prob*100) + "%)";
     }
     [[nodiscard]] virtual std::string to_string_json() const {
-        return fmt::format("{{{}}}", to_string_json_inline());
+        return "{ " + to_string_json_inline() + " }";
     }
     [[nodiscard]] virtual std::string to_string_json_inline() const {
-        return fmt::format(R"("class"="{}", "probability"={}, "box"={})", name, prob, bbox.to_string_json());
+        return "\"class\"=" + std::string(name) +
+               ", \"probability\"=" + std::to_string(prob) +
+               ", \"box\"=" + bbox.to_string_json();
     }
 } detection;
 
 /*****************************************
 * Functions
 ******************************************/
-float box_iou(Box a, Box b);
-float overlap(float x1, float w1, float x2, float w2);
-float box_intersection(Box a, Box b);
-float box_union(Box a, Box b);
 void filter_boxes_nms(detection det[], uint8_t size, float th_nms);
 
 #endif

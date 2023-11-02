@@ -4,13 +4,20 @@
 
 #include "tracker.h"
 
+std::string to_string(const tracking_time& time) {
+    std::time_t t = std::chrono::system_clock::to_time_t(time);
+    std::string ts = std::ctime(&t);
+    ts.resize(ts.size()-1);
+    return ts;
+}
+
 tracked_detection& tracker::track(const detection& det) {
     const auto now = std::chrono::system_clock::now();
 
     for(auto& item: items) {
       if(item.c == det.c) {
           if(std::chrono::duration<double>(item.seen_last - now).count() < time_threshold) {
-              if (box_iou(item.bbox, det.bbox) > iou_threshold) {
+              if (item.bbox.iou_with(det.bbox) > iou_threshold) {
                   item.bbox = det.bbox;
                   item.prob = det.prob;
                   item.seen_last = now;

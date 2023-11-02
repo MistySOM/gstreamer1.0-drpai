@@ -12,7 +12,6 @@ gst_dep = dependency('gstreamer-1.0', version : '>=1.16.3',
 gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.16.3',
   fallback : ['gstreamer', 'gst_base_dep'])
 thread_dep = dependency('threads')
-fmt_dep = dependency('fmt')
 dl_dep = cxx.find_library('dl', required : true)
 
 subdir('gst-app')
