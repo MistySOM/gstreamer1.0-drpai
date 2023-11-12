@@ -29,12 +29,15 @@ RDEPENDS_${PN} += "${PN}-postprocess-yolo"
 
 
 
-PACKAGES += "${PN}-models-yolov3"
 SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"
 SRC_URI[sha256sum] = "9499f0d4a494cbf116c7e12d06a00adc2d0a2c6eed7309bdacac1961841daebb"
 do_install_append() {
-    install -d ${D}${ROOT_HOME}/yolov3
-    install -m 0755 ${WORKDIR}/models/yolov3/* ${D}${ROOT_HOME}/yolov3
+    install -d ${D}${ROOT_HOME}
+    cp -r ${WORKDIR}/models ${D}${ROOT_HOME}
 }
-FILES_${PN}-models-yolov3 = "${ROOT_HOME}/yolov3"
-RDEPENDS_${PN} += "${PN}-models-yolov3"
+PACKAGES += "${PN}-models ${PN}-models-yolov3 ${PN}-models-tinyyolov3 ${PN}-models-yolov2 ${PN}-models-tinyyolov2"
+FILES_${PN}-models-yolov3 = "${ROOT_HOME}/models/yolov3"
+FILES_${PN}-models-tinyyolov3 = "${ROOT_HOME}/models/tinyyolov3"
+FILES_${PN}-models-yolov2 = "${ROOT_HOME}/models/yolov2"
+FILES_${PN}-models-tinyyolov2 = "${ROOT_HOME}/models/tinyyolov2"
+RDEPENDS_${PN}-models = "${PN}-models-yolov3 ${PN}-models-tinyyolov3 ${PN}-models-yolov2 ${PN}-models-tinyyolov2"
