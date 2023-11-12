@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-x86:
+  build:
 
     runs-on: ubuntu-latest
 
@@ -31,7 +31,7 @@ jobs:
 
   build-aarch64-yocto-rpm:
   
-    needs: build-x86
+    needs: build
     runs-on: DC02
     
     steps:    
