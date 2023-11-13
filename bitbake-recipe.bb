@@ -3,7 +3,7 @@ SECTION = "multimedia"
 LICENSE = "MIT"
 SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master"
 SRCREV = "${AUTOREV}"
-LIC_FILES_CHKSUM = "file://COPYING.MIT;md5=bba6cdb9c2b03c849ed4975ed9ed90dc"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 MESON_BUILDTYPE = "release"
 
 inherit meson
