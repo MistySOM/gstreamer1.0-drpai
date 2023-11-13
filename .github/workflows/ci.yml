@@ -50,8 +50,8 @@ jobs:
       run: |
         rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
         cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
-        echo "SRC_URI = \"file://${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
-        echo "S = \"\${WORKDIR}/${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        echo "SRC_URI = \"file://\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        echo "S = \"\${WORKDIR}/\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
         mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
 
     - name: Change the build to only gstreamer1.0-drpai
