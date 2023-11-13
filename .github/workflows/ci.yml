@@ -49,7 +49,7 @@ jobs:
     - run: |
         rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
         cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
-        echo "SRC_URI = \"file:///home/yocto/rzg_vlp_v3.0.0/meta-mistysom/recipes-drpai/gstreamer1.0-drpai\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        echo "SRC_URI = \"file:///home/yocto/rzv_vlp_v3.0.0/meta-mistysom/recipes-drpai/gstreamer1.0-drpai\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
         echo "S = \"\${WORKDIR}/git/gst-plugin/\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
         mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
         sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai/g' rzv2l/Build/exec.sh
