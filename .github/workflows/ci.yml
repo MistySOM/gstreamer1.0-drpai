@@ -37,8 +37,8 @@ jobs:
     steps:    
     - uses: actions/checkout@v3
       with:
-        repository: MistySOM/rzg2l
-        path: rzg2l
+        repository: MistySOM/rzv2l
+        path: rzv2l
         ref: master
         submodules: true
 
@@ -47,25 +47,25 @@ jobs:
         path: gstreamer1.0-drpai
 
     - run: |
-        rm -rf rzg2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
-        cp -r gstreamer1.0-drpai rzg2l/Build/meta-mistysom/recipes-drpai/
-        echo "SRC_URI = \"file:///home/yocto/rzg_vlp_v3.0.0/meta-mistysom/recipes-drpai/gstreamer1.0-drpai\"" >> rzg2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
-        echo "S = \"\${WORKDIR}/git/gst-plugin/\"" >> rzg2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
-        mv rzg2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzg2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
-        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai/g' rzg2l/Build/exec.sh
-        sed -i -e 's/\/tmp\/deploy\/images/\/tmp\/deploy\/rpm\/aarch64/g' rzg2l/Build/exec.sh
+        rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
+        cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
+        echo "SRC_URI = \"file:///home/yocto/rzg_vlp_v3.0.0/meta-mistysom/recipes-drpai/gstreamer1.0-drpai\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        echo "S = \"\${WORKDIR}/git/gst-plugin/\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
+        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai/g' rzv2l/Build/exec.sh
+        sed -i -e 's/\/tmp\/deploy\/images/\/tmp\/deploy\/rpm\/aarch64/g' rzv2l/Build/exec.sh
 
     - name: Build the Docker image
-      run: cd rzg2l/Build && ./build.sh;
+      run: cd rzv2l/Build && ./build.sh;
     
     - name: Run the Docker image and build output files
-      run: cd rzg2l/Build && ./run.sh -c /home/github/rzg2l-cache;
+      run: cd rzv2l/Build && ./run.sh -c /home/github/rzv2l-cache;
 
     - name: List files that are generated
-      run: ls -lah rzg2l/Build/output/
+      run: ls -lah rzv2l/Build/output/
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: output-files
-        path: rzg2l/Build/output/
+        path: rzv2l/Build/output/
