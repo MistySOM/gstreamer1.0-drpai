@@ -50,7 +50,7 @@ jobs:
       run: |
         rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
         cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
-        sed -i -e 's/git:\/\/github.com\/MistySOM\/gstreamer1.0-drpai.git;branch=master/file:\/\/\${THISDIR}' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        sed -i -e 's/git:\/\/github.com\/MistySOM\/gstreamer1.0-drpai.git;branch=master/file:\/\/\${THISDIR}/g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
         echo "S = \"\${WORKDIR}/\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
         mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
 
