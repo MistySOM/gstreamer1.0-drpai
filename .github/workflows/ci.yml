@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "master", "develop" ]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 jobs:
   build:
 
@@ -25,3 +28,48 @@ jobs:
       
     - name: gst-inspect
       run: gst-inspect-1.0 build/gst-plugin/libgstdrpai.so
+
+  build-aarch64-yocto-rpm:
+  
+    needs: build
+    runs-on: DC02
+    
+    steps:    
+    - uses: actions/checkout@v3
+      with:
+        repository: MistySOM/rzv2l
+        path: rzv2l
+        ref: master
+        submodules: true
+
+    - uses: actions/checkout@v3
+      with:
+        path: gstreamer1.0-drpai
+
+    - name: Replace the RZV2L gstreamer1.0-drpai with the current one.
+      run: |
+        rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
+        cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
+        echo "SRC_URI = \"file://\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        echo "S = \"\${WORKDIR}/\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
+        mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
+
+    - name: Change the build to only gstreamer1.0-drpai
+      run: |
+        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai/g' rzv2l/Build/exec.sh
+        sed -i -e 's/\/tmp\/deploy\/images\//\/tmp\/deploy\/rpm\/aarch64\/gstreamer1.0-drpai*/g' rzv2l/Build/exec.sh
+
+    - name: Build the Docker image
+      run: cd rzv2l/Build && ./build.sh;
+    
+    - name: Run the Docker image and build output files
+      run: cd rzv2l/Build && ./run.sh -c /home/github/rzv2l-cache;
+
+    - name: List files that are generated
+      run: ls -lah rzv2l/Build/output/
+      
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: rpm-files
+        path: rzv2l/Build/output/
