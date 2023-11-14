@@ -31,11 +31,13 @@ public:
         image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {}
 
     std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
+    std::vector<std::string> filter_classes {};
     bool multithread = true;
     bool log_detects = false;
     bool show_fps = false;
     fps video_rate{};
     fps drpai_rate{};
+    Box filter_region { 0, 0, DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT};
     tracker det_tracker;
 
     int open_resources();
@@ -48,7 +50,7 @@ private:
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
     [[nodiscard]] int8_t read_addrmap_txt(const std::string& addr_file);
-    [[nodiscard]] int8_t load_drpai_data();
+    [[nodiscard]] int8_t load_drpai_data() const;
     [[nodiscard]] int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 
     /* Output Section */

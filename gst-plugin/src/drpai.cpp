@@ -172,7 +172,7 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-int8_t DRPAI::load_drpai_data()
+int8_t DRPAI::load_drpai_data() const
 {
     const static std::string drpai_file_path[5] =
     {
@@ -271,6 +271,14 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
     return 0;
 }
 
+bool in(const std::string& search, const std::vector<std::string>& array) {
+    for (auto& item: array) {
+        if (item == search)
+            return true;
+    }
+    return false;
+}
+
 /*****************************************
 * Function Name : extract_detections
 * Description   : Process CPU post-processing for YOLO (drawing bounding boxes) and print the result on console.
@@ -300,6 +308,10 @@ int8_t DRPAI::extract_detections()
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
+
+        /* Skip the bounding boxes outside of region of interest */
+        if (!filter_classes.empty() && !in(det[i].name, filter_classes)) continue;
+        if (filter_region.intersection_with(det[i].bbox) == 0) continue;
 
         if (det_tracker.active)
             last_tracked_detection.push_back(det_tracker.track(det[i]));
