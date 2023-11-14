@@ -16,7 +16,7 @@ tracked_detection& tracker::track(const detection& det) {
 
     for(auto& item: items) {
       if(item.last_detection.c == det.c) {
-          if(std::chrono::duration<double>(item.seen_last - now).count() < time_threshold) {
+          if(std::chrono::duration<double>(now - item.seen_last).count() < time_threshold) {
               if (item.last_detection.bbox.iou_with(det.bbox) > iou_threshold) {
 
                   ++item.smoothed;
