@@ -47,6 +47,13 @@ typedef struct Box
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float union_with(const Box& b) const;
     [[nodiscard]] float area() const { return w*h; };
+
+    [[nodiscard]] Box operator*(float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] Box operator/(float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
+    [[nodiscard]] Box average_with(float my_weight, float other_weight, const Box& other) const {
+        return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
+    }
 } Box;
 
 /*****************************************

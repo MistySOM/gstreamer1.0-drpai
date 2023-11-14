@@ -27,8 +27,8 @@ class DRPAI {
 
 public:
     explicit DRPAI():
-        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR),
-        det_tracker(true, 2, 0.25) {};
+        det_tracker(true, 2, 0.25, 1),
+        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {}
 
     std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
     bool multithread = true;
@@ -36,6 +36,8 @@ public:
     bool show_fps = false;
     fps video_rate{};
     fps drpai_rate{};
+    tracker det_tracker;
+
     int open_resources();
     int process_image(uint8_t* img_data);
     int release_resources();
@@ -55,7 +57,6 @@ private:
     std::vector<detection> last_det {};
     std::vector<tracked_detection> last_tracked_detection {};
     PostProcess post_process;
-    tracker det_tracker;
     [[nodiscard]] int8_t get_result(uint32_t output_addr, uint32_t output_size);
     [[nodiscard]] int8_t extract_detections();
     void print_box(detection d, int32_t i);

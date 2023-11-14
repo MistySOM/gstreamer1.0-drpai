@@ -18,8 +18,14 @@ tracked_detection& tracker::track(const detection& det) {
       if(item.last_detection.c == det.c) {
           if(std::chrono::duration<double>(item.seen_last - now).count() < time_threshold) {
               if (item.last_detection.bbox.iou_with(det.bbox) > iou_threshold) {
-                  item.last_detection = det;
+
+                  ++item.smoothed;
+                  if (item.smoothed > bbox_smooth_rate)
+                      item.smoothed = bbox_smooth_rate;
+                  item.last_detection.bbox = item.last_detection.bbox.average_with((float)item.smoothed-1, 1, det.bbox);
+                  item.last_detection.prob = det.prob;
                   item.seen_last = now;
+
                   return item;
               }
           }
