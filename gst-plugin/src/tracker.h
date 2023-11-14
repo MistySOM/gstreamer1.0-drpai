@@ -39,11 +39,11 @@ class tracker {
 public:
     bool active;
     float time_threshold;
-    float iou_threshold;
+    float doa_threshold;
     uint16_t bbox_smooth_rate;
 
-    tracker(bool active, float time_threshold, float iou_threshold, uint16_t bbox_smooth_rate):
-        active(active), time_threshold(time_threshold), iou_threshold(iou_threshold),
+    tracker(bool active, float time_threshold, float doa_threshold, uint16_t bbox_smooth_rate):
+        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
     [[nodiscard]] tracked_detection& track(const detection& det);

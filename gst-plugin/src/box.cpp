@@ -26,6 +26,7 @@
 * Includes
 ******************************************/
 #include "box.h"
+#include "math.h"
 
 /*****************************************
 * Function Name : overlap
@@ -90,6 +91,17 @@ float Box::union_with(const Box& b) const
 float Box::iou_with(const Box& b) const
 {
     return intersection_with(b)/union_with(b);
+}
+
+float Box::doa_with(const Box& b) const
+{
+    float my_center_x = x+w/2;
+    float my_center_y = y+h/2;
+    float b_center_x = b.x+b.w/2;
+    float b_center_y = b.y+b.h/2;
+    double distance = std::pow(my_center_x-b_center_x, 2) + std::pow(my_center_y-b_center_y, 2);
+    double avg_area = (area() + b.area()) / 2.0;
+    return (float)(distance/avg_area);
 }
 
 /*****************************************

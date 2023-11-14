@@ -46,6 +46,7 @@ typedef struct Box
     [[nodiscard]] float intersection_with(const Box& b) const;
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float union_with(const Box& b) const;
+    [[nodiscard]] float doa_with(const Box& b) const;
     [[nodiscard]] float area() const { return w*h; };
 
     [[nodiscard]] Box operator*(float a) const { return Box {x*a, y*a, w*a, h*a}; }

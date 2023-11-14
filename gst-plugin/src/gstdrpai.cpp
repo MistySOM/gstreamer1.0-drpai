@@ -89,7 +89,7 @@ enum {
     PROP_SMOOTH_BBOX_RATE,
 
     PROP_TRACK_SECONDS,
-    PROP_TRACK_IOU_THRESHOLD,
+    PROP_TRACK_DOA_THRESHOLD,
 
     PROP_FILTER_CLASS,
     PROP_FILTER_LEFT,
@@ -186,10 +186,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_float("track_seconds", "Track Seconds",
                            "Number of seconds to wait for a tracked undetected object to forget it.",
                            0.001, 100, 2, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACK_IOU_THRESHOLD,
-        g_param_spec_float("track_iou_thresh", "Track IOU Threshold",
-                           "The threshold of IOU for tracking bounding-boxes. (1=exact overlap, 0.1=loose overlap)",
-                           0, 1, 0.25, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_TRACK_DOA_THRESHOLD,
+        g_param_spec_float("track_doa_thresh", "Track DOA Threshold",
+                           "The threshold of Distance Over Areas (DOA) for tracking bounding-boxes.",
+                           0.001, 1000, 2.25, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_FILTER_CLASS,
         g_param_spec_string("filter_class", "Filter Class",
                             "A comma-separated list of classes to filter the detection.",
@@ -321,8 +321,8 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_TRACK_SECONDS:
             obj->drpai->det_tracker.time_threshold = g_value_get_float(value);
             break;
-        case PROP_TRACK_IOU_THRESHOLD:
-            obj->drpai->det_tracker.iou_threshold = g_value_get_float(value);
+        case PROP_TRACK_DOA_THRESHOLD:
+            obj->drpai->det_tracker.doa_threshold = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
             std::string csv_classes = g_value_get_string(value);
@@ -395,8 +395,8 @@ gst_drpai_get_property(GObject *object, guint prop_id,
         case PROP_TRACK_SECONDS:
             g_value_set_float(value, obj->drpai->det_tracker.time_threshold);
             break;
-        case PROP_TRACK_IOU_THRESHOLD:
-            g_value_set_float(value, obj->drpai->det_tracker.iou_threshold);
+        case PROP_TRACK_DOA_THRESHOLD:
+            g_value_set_float(value, obj->drpai->det_tracker.doa_threshold);
             break;
         case PROP_FILTER_CLASS: {
             std::string ss;
