@@ -46,3 +46,13 @@ uint32_t tracker::count(uint32_t c) const {
             ++r;
     return r;
 }
+
+uint32_t tracker::count(float duration) const {
+    const auto now = std::chrono::system_clock::now();
+
+    uint32_t r = 0;
+    for(const auto& item: items)
+        if(std::chrono::duration<double>(now - item.seen_last).count() < duration)
+            ++r;
+    return r;
+}

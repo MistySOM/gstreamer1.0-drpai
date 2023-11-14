@@ -49,6 +49,7 @@ public:
     [[nodiscard]] tracked_detection& track(const detection& det);
     [[nodiscard]] uint32_t count() const { return items.size(); }
     [[nodiscard]] uint32_t count(uint32_t c) const;
+    [[nodiscard]] uint32_t count(float duration) const;
 
 private:
     std::list<tracked_detection> items;

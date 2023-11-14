@@ -493,7 +493,7 @@ int DRPAI::process_image(uint8_t* img_data) {
         rate_str = "DRPAI Rate: " + (drpai_fd ? std::to_string(int(drpai_rate.get_smooth_rate())) + " fps" : "N/A");
         img.write_string(rate_str, 0, 15, WHITE_DATA, BLACK_DATA, 5);
         if (det_tracker.active) {
-            rate_str = "Tracked Items: " + std::to_string(det_tracker.count());
+            rate_str = "Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f));
             img.write_string(rate_str, 0, 30, WHITE_DATA, BLACK_DATA, 5);
         }
     }
