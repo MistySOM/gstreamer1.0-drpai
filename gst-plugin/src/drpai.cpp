@@ -311,7 +311,7 @@ int8_t DRPAI::extract_detections()
 
         /* Skip the bounding boxes outside of region of interest */
         if (!filter_classes.empty() && !in(det[i].name, filter_classes)) continue;
-        if (filter_region.intersection_with(det[i].bbox) == 0) continue;
+        if ((filter_region & det[i].bbox) == 0) continue;
 
         if (det_tracker.active)
             last_tracked_detection.push_back(det_tracker.track(det[i]));

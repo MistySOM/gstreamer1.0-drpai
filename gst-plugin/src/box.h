@@ -27,6 +27,7 @@
 
 #include <cinttypes>
 #include <string>
+#include <math.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -43,12 +44,17 @@ typedef struct Box
     }
 
     [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
-    [[nodiscard]] float intersection_with(const Box& b) const;
     [[nodiscard]] float iou_with(const Box& b) const;
-    [[nodiscard]] float union_with(const Box& b) const;
     [[nodiscard]] float doa_with(const Box& b) const;
     [[nodiscard]] float area() const { return w*h; };
 
+    [[nodiscard]] float operator&(const Box& b) const; // intersection
+    [[nodiscard]] float operator|(const Box& b) const; // union
+    [[nodiscard]] float operator%(const Box& b) const { // euclidean distance
+        auto dx = x - b.x;
+        auto dy = y - b.y;
+        return std::sqrt(dx*dx + dy*dy);
+    }
     [[nodiscard]] Box operator*(float a) const { return Box {x*a, y*a, w*a, h*a}; }
     [[nodiscard]] Box operator/(float a) const { return Box {x/a, y/a, w/a, h/a}; }
     [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
