@@ -61,6 +61,7 @@
 #endif
 
 #include <gst/gst.h>
+#include <iostream>
 #include "gstdrpai.h"
 #include "drpai.h"
 
@@ -250,33 +251,42 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     GstStateChangeReturn state_change_ret = GST_STATE_CHANGE_SUCCESS;
     auto *obj = (GstDRPAI*) &element->object;
 
-    switch (transition) {
-        case GST_STATE_CHANGE_NULL_TO_READY:
-            /* open the device */
-            if ( obj->drpai->open_resources() == -1 )
-                if (obj->stop_error)
-                    return GST_STATE_CHANGE_FAILURE;
-            break;
-        default:
-            break;
+    try {
+
+        switch (transition) {
+            case GST_STATE_CHANGE_NULL_TO_READY:
+                /* open the device */
+                obj->drpai->open_resources();
+                break;
+            default:
+                break;
+        }
+    }
+    catch (std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        if (obj->stop_error)
+            return GST_STATE_CHANGE_FAILURE;
     }
 
     state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
 
-    int ret;
-    switch (transition) {
-        case GST_STATE_CHANGE_READY_TO_NULL:
-            /* close the device */
-            ret = obj->drpai->release_resources();
-            delete obj->drpai;
-            if (ret == -1)
-                return GST_STATE_CHANGE_FAILURE;
-            break;
-        default:
-            break;
+    try {
+        switch (transition) {
+            case GST_STATE_CHANGE_READY_TO_NULL:
+                /* close the device */
+                obj->drpai->release_resources();
+                break;
+            default:
+                break;
+        }
+        delete obj->drpai;
+        return state_change_ret;
     }
-
-    return state_change_ret;
+    catch (std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        delete obj->drpai;
+        return GST_STATE_CHANGE_FAILURE;
+    }
 }
 
 static void

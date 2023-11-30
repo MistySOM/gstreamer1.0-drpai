@@ -40,18 +40,20 @@ public:
     Box filter_region { 0, 0, DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT};
     tracker det_tracker;
 
-    int open_resources();
+    void open_resources();
+    void release_resources();
     int process_image(uint8_t* img_data);
-    int release_resources();
 
 private:
     int32_t drpai_fd = 0;
     st_addr_t drpai_address{};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
-    [[nodiscard]] int8_t read_addrmap_txt(const std::string& addr_file);
-    [[nodiscard]] int8_t load_drpai_data() const;
-    [[nodiscard]] int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+    void read_addrmap_txt(const std::string& addr_file);
+    void load_drpai_data() const;
+    void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+    void drpai_start() const;
+    void drpai_wait() const;
 
     /* Output Section */
     uint32_t detection_buffer_size = 10;
@@ -59,8 +61,8 @@ private:
     std::vector<detection> last_det {};
     std::vector<tracked_detection> last_tracked_detection {};
     PostProcess post_process;
-    [[nodiscard]] int8_t get_result(uint32_t output_addr, uint32_t output_size);
-    [[nodiscard]] int8_t extract_detections();
+    void get_result(uint32_t output_addr, uint32_t output_size);
+    void extract_detections();
     void print_box(detection d, int32_t i);
 
     /* Thread Section */
@@ -70,7 +72,7 @@ private:
     std::mutex state_mutex;
     std::condition_variable v;
     void thread_function_loop();
-    [[nodiscard]] int8_t thread_function_single();
+    void thread_function_single();
 };
 
 #endif //GSTREAMER1_0_DRPAI_DRPAI_H

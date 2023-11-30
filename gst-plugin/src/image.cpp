@@ -240,6 +240,8 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
                          int32_t color, int32_t backcolor, int8_t margin)
 {
     const auto str_size = (int32_t)pcode.size();
+    if (str_size == 0) return;
+
     x = std::max(0, x);
     x = std::min(img_w - str_size*font_w - 2, x);
     y = std::max(0, y);
