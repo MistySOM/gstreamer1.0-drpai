@@ -461,12 +461,13 @@ int DRPAI::process_image(uint8_t* img_data) {
         img.write_string("Yawn Detected!", 0, 45, WHITE_DATA, RED_DATA, 5);
     if(blink_detected)
         img.write_string("Blink Detected!", 0, 60, WHITE_DATA, RED_DATA, 5);
-    for (const auto& detection: last_face)
-    {
-        /* Draw the bounding box on the image */
-        img.draw_rect((int32_t)(detection.bbox.x + last_det.at(0).bbox.x), (int32_t)(detection.bbox.y + last_det.at(0).bbox.y),
-                      (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, "");
-    }
+    if(!last_det.empty())
+        for (const auto& detection: last_face)
+        {
+            /* Draw the bounding box on the image */
+            img.draw_rect((int32_t)(detection.bbox.x + last_det.at(0).bbox.x), (int32_t)(detection.bbox.y + last_det.at(0).bbox.y),
+                          (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, "");
+        }
 
     return 0;
 }
@@ -599,10 +600,12 @@ void DRPAI::thread_function_single() {
             blink_detected = ret & (1 << 3);
             last_head_pose = (Pose)(ret % (1 << 3));
 
-            if(yawn_detected)
-                std::cout << "Yawn Detected!" << std::endl;
-            if(blink_detected)
-                std::cout << "Blink Detected!" << std::endl;
+            if(log_detects) {
+                if (yawn_detected)
+                    std::cout << "Yawn Detected!" << std::endl;
+                if (blink_detected)
+                    std::cout << "Blink Detected!" << std::endl;
+            }
         }
     }
 }

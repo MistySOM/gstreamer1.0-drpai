@@ -7,7 +7,7 @@
 #include "deeppose.h"
 #include "../postprocess.h"
 /*opencv for machine learning*/
-#include <opencv2/opencv.hpp>
+#include <opencv2/ml.hpp>
 
 /*ML model inferencing*/
 static cv::Ptr<cv::ml::RTrees> tree = nullptr;
