@@ -516,6 +516,7 @@ void DRPAI::thread_function_single() {
         /* Get the output data from memory */
         get_result(drpai_address.data_out_addr, drpai_address.data_out_size);
         extract_detections();
+    }
 }
 
 void DRPAI::drpai_start() const {
