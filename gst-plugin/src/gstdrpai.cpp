@@ -295,7 +295,7 @@ gst_drpai_set_property(GObject *object, guint prop_id,
             obj->drpai->multithread = g_value_get_boolean(value);
             break;
         case PROP_MODEL:
-            obj->drpai->model_prefix = g_value_get_string(value);
+            obj->drpai->model_prefix_yolo = g_value_get_string(value);
             break;
         case PROP_TRACKING:
             obj->drpai->det_tracker.active = g_value_get_boolean(value);
@@ -369,7 +369,7 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             g_value_set_boolean(value, obj->drpai->multithread);
             break;
         case PROP_MODEL:
-            g_value_set_string(value, obj->drpai->model_prefix.c_str());
+            g_value_set_string(value, obj->drpai->model_prefix_yolo.c_str());
             break;
         case PROP_TRACKING:
             g_value_set_boolean(value, obj->drpai->det_tracker.active);

@@ -33,7 +33,7 @@ public:
         det_tracker(true, 2, 2.25, 1),
         image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {}
 
-    std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
+    std::string model_prefix_yolo; // Directory name of DRP-AI Object files (DRP-AI Translator output)
     std::vector<std::string> filter_classes {};
     bool multithread = true;
     bool log_detects = false;
