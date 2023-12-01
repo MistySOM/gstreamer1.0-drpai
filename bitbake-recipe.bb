@@ -40,7 +40,7 @@ do_install_append() {
     cp -r ${WORKDIR}/models ${D}${ROOT_HOME}
 }
 PACKAGES += "${PN}-models ${PN}-models-yolov3 ${PN}-models-tinyyolov3 ${PN}-models-yolov2 ${PN}-models-tinyyolov2"
-PACKAGES += "${PN-models-deeppose"
+PACKAGES += "${PN}-models-deeppose"
 FILES_${PN}-models-yolov3 = "${ROOT_HOME}/models/yolov3"
 FILES_${PN}-models-tinyyolov3 = "${ROOT_HOME}/models/tinyyolov3"
 FILES_${PN}-models-yolov2 = "${ROOT_HOME}/models/yolov2"
