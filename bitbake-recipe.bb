@@ -27,6 +27,10 @@ PACKAGES += "${PN}-postprocess-yolo"
 FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-yolo.so"
 RDEPENDS_${PN} += "${PN}-postprocess-yolo"
 
+PACKAGES += "${PN}-postprocess-deeppose"
+FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-deeppose.so"
+RDEPENDS_${PN} += "${PN}-postprocess-deeppose"
+
 
 
 SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"
