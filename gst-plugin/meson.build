@@ -28,3 +28,4 @@ gstplugindrpai = library('gstdrpai',
 )
 
 subdir('src/dynamic-post-process/yolo')
+subdir('src/dynamic-post-process/deeppose')

@@ -22,6 +22,9 @@
 #include "fps.h"
 #include "dynamic-post-process/postprocess.h"
 #include "tracker.h"
+#include "src/dynamic-post-process/deeppose/deeppose.h"
+
+#define clip(n,lower,upper) std::max(lower, std::min(n, upper))
 
 class DRPAI {
 
@@ -64,6 +67,11 @@ private:
     void get_result(uint32_t output_addr, uint32_t output_size);
     void extract_detections();
     void print_box(detection d, int32_t i);
+
+    PostProcess post_process_deeppose;
+    std::array<detection,NUM_OUTPUT_KEYPOINT> last_face {};
+    bool yawn_detected, blink_detected;
+    Pose last_head_pose;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
