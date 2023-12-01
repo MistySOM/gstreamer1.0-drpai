@@ -262,7 +262,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
                 break;
         }
     }
-    catch (std::runtime_error& e) {
+    catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         if (obj->stop_error)
             return GST_STATE_CHANGE_FAILURE;
@@ -282,7 +282,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
         delete obj->drpai;
         return state_change_ret;
     }
-    catch (std::runtime_error& e) {
+    catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         delete obj->drpai;
         return GST_STATE_CHANGE_FAILURE;
