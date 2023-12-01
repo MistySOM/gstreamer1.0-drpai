@@ -9,7 +9,7 @@
 #define IMREAD_IMAGE_HEIGHT       (480)
 #define IMREAD_IMAGE_CHANNEL      (2)
 
-#define ML_DESC_NAME                "rf_gaze_dir.xml"
+#define ML_DESC_NAME                "deeppose/rf_gaze_dir.xml"
 /*DeepPose Related*/
 #define INF_OUT_SIZE                (196)
 #define NUM_OUTPUT_KEYPOINT         (98)

@@ -16,8 +16,14 @@ static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
 int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
     post_process_release();
 
-    tree = cv::ml::RTrees::create();
-    dtree = tree->load(ML_DESC_NAME);
+    try {
+        tree = cv::ml::RTrees::create();
+        dtree = tree->load(ML_DESC_NAME);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
 
     return 0;
 }
