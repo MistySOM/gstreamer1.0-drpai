@@ -26,13 +26,35 @@
 #define BOX_H
 
 #include <cinttypes>
+#include <string>
 
 /*****************************************
 * Box : Bounding box coordinates and its size
 ******************************************/
-typedef struct
+typedef struct Box
 {
     float x, y, w, h;
+
+    [[nodiscard]] std::string to_string_json() const {
+        return "{ \"x\"=" + std::to_string(x) +
+               ", \"y\"=" + std::to_string(y) +
+               ", \"width\"=" + std::to_string(w) +
+               ", \"height\"=" + std::to_string(h) + " }";
+    }
+
+    [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
+    [[nodiscard]] float intersection_with(const Box& b) const;
+    [[nodiscard]] float iou_with(const Box& b) const;
+    [[nodiscard]] float union_with(const Box& b) const;
+    [[nodiscard]] float doa_with(const Box& b) const;
+    [[nodiscard]] float area() const { return w*h; };
+
+    [[nodiscard]] Box operator*(float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] Box operator/(float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
+    [[nodiscard]] Box average_with(float my_weight, float other_weight, const Box& other) const {
+        return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
+    }
 } Box;
 
 /*****************************************
@@ -40,19 +62,27 @@ typedef struct
 ******************************************/
 typedef struct detection
 {
-    Box bbox;
-    uint32_t c;
-    float prob;
-    const char* name;
+    Box bbox {};
+    uint32_t c = 0;
+    float prob = 0;
+    const char* name = nullptr;
+
+    [[nodiscard]] std::string to_string_hr() const {
+        return std::string(name) + " (" + std::to_string(int(prob*100)) + "%)";
+    }
+    [[nodiscard]] std::string to_string_json() const {
+        return "{ " + to_string_json_inline() + " }";
+    }
+    [[nodiscard]] std::string to_string_json_inline() const {
+        return "\"class\"=" + std::string(name) +
+               ", \"probability\"=" + std::to_string(prob) +
+               ", \"box\"=" + bbox.to_string_json();
+    }
 } detection;
 
 /*****************************************
 * Functions
 ******************************************/
-float box_iou(Box a, Box b);
-float overlap(float x1, float w1, float x2, float w2);
-float box_intersection(Box a, Box b);
-float box_union(Box a, Box b);
 void filter_boxes_nms(detection det[], uint8_t size, float th_nms);
 
 #endif

@@ -21,19 +21,25 @@
 #include "image.h"
 #include "fps.h"
 #include "dynamic-post-process/postprocess.h"
+#include "tracker.h"
 
 class DRPAI {
 
 public:
     explicit DRPAI():
-        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {};
+        det_tracker(true, 2, 2.25, 1),
+        image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR) {}
 
     std::string model_prefix; // Directory name of DRP-AI Object files (DRP-AI Translator output)
+    std::vector<std::string> filter_classes {};
     bool multithread = true;
     bool log_detects = false;
     bool show_fps = false;
     fps video_rate{};
     fps drpai_rate{};
+    Box filter_region { 0, 0, DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT};
+    tracker det_tracker;
+
     int open_resources();
     int process_image(uint8_t* img_data);
     int release_resources();
@@ -44,17 +50,18 @@ private:
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     Image image_mapped_udma;
     [[nodiscard]] int8_t read_addrmap_txt(const std::string& addr_file);
-    [[nodiscard]] int8_t load_drpai_data();
+    [[nodiscard]] int8_t load_drpai_data() const;
     [[nodiscard]] int8_t load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 
     /* Output Section */
     uint32_t detection_buffer_size = 10;
     std::vector<float> drpai_output_buf {};
-    std::vector<detection> last_det{};
+    std::vector<detection> last_det {};
+    std::vector<tracked_detection> last_tracked_detection {};
+    PostProcess post_process;
     [[nodiscard]] int8_t get_result(uint32_t output_addr, uint32_t output_size);
     [[nodiscard]] int8_t extract_detections();
     void print_box(detection d, int32_t i);
-    PostProcess post_process;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };

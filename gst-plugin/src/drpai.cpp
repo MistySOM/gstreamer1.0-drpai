@@ -172,7 +172,7 @@ int8_t DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t 
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-int8_t DRPAI::load_drpai_data()
+int8_t DRPAI::load_drpai_data() const
 {
     const static std::string drpai_file_path[5] =
     {
@@ -271,6 +271,14 @@ int8_t DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
     return 0;
 }
 
+bool in(const std::string& search, const std::vector<std::string>& array) {
+    for (auto& item: array) {
+        if (item == search)
+            return true;
+    }
+    return false;
+}
+
 /*****************************************
 * Function Name : extract_detections
 * Description   : Process CPU post-processing for YOLO (drawing bounding boxes) and print the result on console.
@@ -296,19 +304,38 @@ int8_t DRPAI::extract_detections()
     filter_boxes_nms(det, det_size, TH_NMS);
 
     last_det.clear();
+    last_tracked_detection.clear();
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
-        last_det.push_back(det[i]);
+
+        /* Skip the bounding boxes outside of region of interest */
+        if (!filter_classes.empty() && !in(det[i].name, filter_classes)) continue;
+        if (filter_region.intersection_with(det[i].bbox) == 0) continue;
+
+        if (det_tracker.active)
+            last_tracked_detection.push_back(det_tracker.track(det[i]));
+        else
+            last_det.push_back(det[i]);
     }
 
-    /* Render boxes on image and print their details */
+    /* Print details */
     if(log_detects) {
-        std::cout << "DRP-AI detected items:  ";
-        for (const auto &detection: last_det) {
-            /* Print the box details on console */
-            //print_box(detection, n++);
-            std::cout << detection.name << " (" << detection.prob * 100 << "%)\t";
+        if (det_tracker.active) {
+            std::cout << "DRP-AI tracked items:  ";
+            for (const auto &detection: last_tracked_detection) {
+                /* Print the box details on console */
+                //print_box(detection, n++);
+                std::cout << detection.to_string_hr() + "\t";
+            }
+        }
+        else {
+            std::cout << "DRP-AI detected items:  ";
+            for (const auto &detection: last_det) {
+                /* Print the box details on console */
+                //print_box(detection, n++);
+                std::cout << detection.to_string_hr() + "\t";
+            }
         }
         std::cout << std::endl;
     }
@@ -427,6 +454,8 @@ int DRPAI::open_resources() {
     }
 
     std::cout <<"DRP-AI Ready!" << std::endl;
+    if (det_tracker.active)
+        std::cout << "Detection Tracking is Active!" << std::endl;
     return 0;
 }
 
@@ -463,20 +492,27 @@ int DRPAI::process_image(uint8_t* img_data) {
         img.write_string(rate_str, 0, 0, WHITE_DATA, BLACK_DATA, 5);
         rate_str = "DRPAI Rate: " + (drpai_fd ? std::to_string(int(drpai_rate.get_smooth_rate())) + " fps" : "N/A");
         img.write_string(rate_str, 0, 15, WHITE_DATA, BLACK_DATA, 5);
+        if (det_tracker.active) {
+            rate_str = "Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f));
+            img.write_string(rate_str, 0, 30, WHITE_DATA, BLACK_DATA, 5);
+        }
     }
 
     /* Compute the result, draw the result on img and display it on console */
-    for (const auto& detection: last_det)
-    {
-        /* Skip the overlapped bounding boxes */
-        if (detection.prob == 0) continue;
-
-        /* Draw the bounding box on the image */
-        std::stringstream stream;
-        stream << detection.name << " " << int(detection.prob * 100) << "%";
-        img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
-                      (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, stream.str());
-    }
+    if (det_tracker.active)
+        for (const auto& tracked: last_tracked_detection)
+        {
+            /* Draw the bounding box on the image */
+            img.draw_rect((int32_t)tracked.last_detection.bbox.x, (int32_t)tracked.last_detection.bbox.y,
+                          (int32_t)tracked.last_detection.bbox.w, (int32_t)tracked.last_detection.bbox.h, tracked.to_string_hr());
+        }
+    else
+        for (const auto& detection: last_det)
+        {
+            /* Draw the bounding box on the image */
+            img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
+                          (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, detection.to_string_hr());
+        }
 
     return 0;
 }

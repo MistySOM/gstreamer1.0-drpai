@@ -77,6 +77,7 @@ enum {
     PROP_0,
     PROP_MULTITHREAD,
     PROP_MODEL,
+    PROP_TRACKING,
     PROP_SHOW_FPS,
     PROP_LOG_DETECTS,
     PROP_STOP_ERROR,
@@ -85,6 +86,16 @@ enum {
     PROP_MAX_DRPAI_RATE,
     PROP_SMOOTH_VIDEO_RATE,
     PROP_SMOOTH_DRPAI_RATE,
+    PROP_SMOOTH_BBOX_RATE,
+
+    PROP_TRACK_SECONDS,
+    PROP_TRACK_DOA_THRESHOLD,
+
+    PROP_FILTER_CLASS,
+    PROP_FILTER_LEFT,
+    PROP_FILTER_TOP,
+    PROP_FILTER_WIDTH,
+    PROP_FILTER_HEIGHT,
 };
 
 /* the capabilities of the inputs and outputs.
@@ -135,6 +146,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_string("model", "Model",
                              "The name of the pretrained model and the directory prefix.",
                              nullptr, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_TRACKING,
+        g_param_spec_boolean("tracking", "Tracking",
+                            "Track detected objects based on their previous locations. Each detected object gets an ID that persists across multiple detections based on other tracking properties.",
+                            TRUE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_LOG_DETECTS,
         g_param_spec_boolean("log_detects", "Log Detects",
                              "Print detected objects in standard output.",
@@ -154,15 +169,47 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
     g_object_class_install_property(gobject_class, PROP_MAX_DRPAI_RATE,
         g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
                            "Force maximum DRPAI frame rate using thread sleeps.",
-                            0.0f, 120.f, 120.f, G_PARAM_READWRITE));
+                           0.0f, 120.f, 120.f, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SMOOTH_VIDEO_RATE,
         g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
-                             "Number of last video frame rates to average for a more smooth value.",
-                             1, 1000, 1, G_PARAM_READWRITE));
+                          "Number of last video frame rates to average for a more smooth value.",
+                          1, 1000, 1, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_SMOOTH_DRPAI_RATE,
         g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
-                             "Number of last DRPAI frame rates to average for a more smooth value.",
-                             1, 1000, 1, G_PARAM_READWRITE));
+                          "Number of last DRPAI frame rates to average for a more smooth value.",
+                          1, 1000, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_SMOOTH_BBOX_RATE,
+        g_param_spec_uint("smooth_bbox_rate", "Smooth Bounding Box Framerate",
+                          "Number of last bounding-box updates to average. (requires tracking)",
+                          1, 1000, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_TRACK_SECONDS,
+        g_param_spec_float("track_seconds", "Track Seconds",
+                           "Number of seconds to wait for a tracked undetected object to forget it.",
+                           0.001, 100, 2, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_TRACK_DOA_THRESHOLD,
+        g_param_spec_float("track_doa_thresh", "Track DOA Threshold",
+                           "The threshold of Distance Over Areas (DOA) for tracking bounding-boxes.",
+                           0.001, 1000, 2.25, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_CLASS,
+        g_param_spec_string("filter_class", "Filter Class",
+                            "A comma-separated list of classes to filter the detection.",
+                            nullptr, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_LEFT,
+        g_param_spec_uint("filter_left", "Filter Left",
+                          "The left edge of the region of interest to filter the detection.",
+                          0, DRPAI_IN_WIDTH-1, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_TOP,
+        g_param_spec_uint("filter_top", "Filter Top",
+                          "The top edge of the region of interest to filter the detection.",
+                          0, DRPAI_IN_HEIGHT-1, 0, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_WIDTH,
+        g_param_spec_uint("filter_width", "Filter Width",
+                          "The width of the region of interest to filter the detection.",
+                          1, DRPAI_IN_WIDTH, DRPAI_IN_WIDTH, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_HEIGHT,
+        g_param_spec_uint("filter_height", "Filter Height",
+                          "The height of the region of interest to filter the detection.",
+                          1, DRPAI_IN_HEIGHT, DRPAI_IN_HEIGHT, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -244,6 +291,9 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_MODEL:
             obj->drpai->model_prefix = g_value_get_string(value);
             break;
+        case PROP_TRACKING:
+            obj->drpai->det_tracker.active = g_value_get_boolean(value);
+            break;
         case PROP_LOG_DETECTS:
             obj->drpai->log_detects = g_value_get_boolean(value);
             break;
@@ -265,6 +315,38 @@ gst_drpai_set_property(GObject *object, guint prop_id,
         case PROP_SMOOTH_DRPAI_RATE:
             obj->drpai->drpai_rate.smooth_rate = g_value_get_uint(value);
             break;
+        case PROP_SMOOTH_BBOX_RATE:
+            obj->drpai->det_tracker.bbox_smooth_rate = g_value_get_uint(value);
+            break;
+        case PROP_TRACK_SECONDS:
+            obj->drpai->det_tracker.time_threshold = g_value_get_float(value);
+            break;
+        case PROP_TRACK_DOA_THRESHOLD:
+            obj->drpai->det_tracker.doa_threshold = g_value_get_float(value);
+            break;
+        case PROP_FILTER_CLASS: {
+            std::string csv_classes = g_value_get_string(value);
+            obj->drpai->filter_classes.clear();
+            if (!csv_classes.empty()) {
+                std::stringstream ss(csv_classes);
+                std::string item;
+                while (std::getline(ss, item, ','))
+                    obj->drpai->filter_classes.push_back(std::move(item));
+            }
+            break;
+        }
+        case PROP_FILTER_LEFT:
+            obj->drpai->filter_region.x = (float)g_value_get_uint(value);
+            break;
+        case PROP_FILTER_TOP:
+            obj->drpai->filter_region.y = (float)g_value_get_uint(value);
+            break;
+        case PROP_FILTER_WIDTH:
+            obj->drpai->filter_region.w = (float)g_value_get_uint(value);
+            break;
+        case PROP_FILTER_HEIGHT:
+            obj->drpai->filter_region.h = (float)g_value_get_uint(value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
             break;
@@ -282,6 +364,9 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             break;
         case PROP_MODEL:
             g_value_set_string(value, obj->drpai->model_prefix.c_str());
+            break;
+        case PROP_TRACKING:
+            g_value_set_boolean(value, obj->drpai->det_tracker.active);
             break;
         case PROP_LOG_DETECTS:
             g_value_set_boolean(value, obj->drpai->log_detects);
@@ -303,6 +388,37 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             break;
         case PROP_SMOOTH_DRPAI_RATE:
             g_value_set_uint(value, obj->drpai->drpai_rate.smooth_rate);
+            break;
+        case PROP_SMOOTH_BBOX_RATE:
+            g_value_set_uint(value, obj->drpai->det_tracker.bbox_smooth_rate);
+            break;
+        case PROP_TRACK_SECONDS:
+            g_value_set_float(value, obj->drpai->det_tracker.time_threshold);
+            break;
+        case PROP_TRACK_DOA_THRESHOLD:
+            g_value_set_float(value, obj->drpai->det_tracker.doa_threshold);
+            break;
+        case PROP_FILTER_CLASS: {
+            std::string ss;
+            for (const auto& s: obj->drpai->filter_classes) {
+                if (!ss.empty())
+                    ss += ",";
+                ss += s;
+            }
+            g_value_set_string(value, ss.c_str());
+            break;
+        }
+        case PROP_FILTER_LEFT:
+            g_value_set_uint(value, (uint)obj->drpai->filter_region.x);
+            break;
+        case PROP_FILTER_TOP:
+            g_value_set_uint(value, (uint)obj->drpai->filter_region.y);
+            break;
+        case PROP_FILTER_WIDTH:
+            g_value_set_uint(value, (uint)obj->drpai->filter_region.w);
+            break;
+        case PROP_FILTER_HEIGHT:
+            g_value_set_uint(value, (uint)obj->drpai->filter_region.h);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
