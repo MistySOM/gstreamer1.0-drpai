@@ -48,23 +48,28 @@ public:
     int process_image(uint8_t* img_data);
 
 private:
-    int32_t drpai_fd = 0;
-    st_addr_t drpai_address{};
-    std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
+    int32_t drpai_fd_yolo = 0;
+    st_addr_t drpai_address_yolo {};
+    std::array<drpai_data_t, DRPAI_INDEX_NUM> proc_yolo {};
+    int32_t drpai_fd_deeppose = 0;
+    st_addr_t drpai_address_deeppose {};
+    std::array<drpai_data_t, DRPAI_INDEX_NUM> proc_deeppose {};
+
     Image image_mapped_udma;
-    void read_addrmap_txt(const std::string& addr_file);
-    void load_drpai_data() const;
-    void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
-    void drpai_start() const;
-    void drpai_wait() const;
+    static void read_addrmap_txt(const std::string& addr_file, st_addr_t& drpai_address);
+    static void load_drpai_data(int32_t drpai_fd, const std::string& model_prefix, st_addr_t& drpai_address);
+    static void load_data_to_mem(const std::string& data, int32_t drpai_fd, uint32_t from, uint32_t size);
+    static void drpai_start(int32_t drpai_fd, std::array<drpai_data_t, DRPAI_INDEX_NUM>& proc);
+    static void drpai_wait(int32_t drpai_fd);
 
     /* Output Section */
     uint32_t detection_buffer_size = 10;
-    std::vector<float> drpai_output_buf {};
+    std::vector<float> drpai_yolo_output_buf {};
+    std::vector<float> drpai_deeppose_output_buf {};
     std::vector<detection> last_det {};
     std::vector<tracked_detection> last_tracked_detection {};
     PostProcess post_process;
-    void get_result(uint32_t output_addr, uint32_t output_size);
+    static void get_result(int32_t drpai_fd, uint32_t output_addr, uint32_t output_size, std::vector<float>& buffer);
     void extract_detections();
     void print_box(detection d, int32_t i);
 

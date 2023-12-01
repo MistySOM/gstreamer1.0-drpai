@@ -14,7 +14,7 @@
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI::read_addrmap_txt(const std::string& addr_file)
+void DRPAI::read_addrmap_txt(const std::string& addr_file, st_addr_t& drpai_address)
 {
     std::ifstream ifs(addr_file);
     if (ifs.fail())
@@ -91,7 +91,7 @@ void DRPAI::read_addrmap_txt(const std::string& addr_file)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const
+void DRPAI::load_data_to_mem(const std::string& data, int32_t drpai_fd, uint32_t from, uint32_t size)
 {
     int32_t obj_fd;
     uint8_t drpai_buf[BUF_SIZE];
@@ -142,7 +142,7 @@ void DRPAI::load_data_to_mem(const std::string& data, uint32_t from, uint32_t si
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-void DRPAI::load_drpai_data() const
+void DRPAI::load_drpai_data(int32_t drpai_fd, const std::string& model_prefix, st_addr_t& drpai_address)
 {
     const static std::string drpai_file_path[5] =
     {
@@ -183,7 +183,7 @@ void DRPAI::load_drpai_data() const
                 break;
         }
 
-        load_data_to_mem(drpai_file_path[i], addr, size);
+        load_data_to_mem(drpai_file_path[i], drpai_fd, addr, size);
     }
 }
 
@@ -196,7 +196,7 @@ void DRPAI::load_drpai_data() const
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
+void DRPAI::get_result(int32_t drpai_fd, uint32_t output_addr, uint32_t output_size, std::vector<float>& buffer)
 {
     drpai_data_t drpai_data;
     float drpai_buf[BUF_SIZE];
@@ -214,7 +214,7 @@ void DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
         errno = 0;
         if ( read(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
             throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver: errno=" + std::to_string(errno));
-        std::memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
+        std::memcpy(&buffer[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
     }
 
     if ( 0 != (drpai_data.size % BUF_SIZE))
@@ -222,7 +222,7 @@ void DRPAI::get_result(uint32_t output_addr, uint32_t output_size)
         errno = 0;
         if ( read(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) == -1 )
             throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver: errno=" + std::to_string(errno));
-        std::memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
+        std::memcpy(&buffer[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
     }
 }
 
@@ -246,7 +246,7 @@ void DRPAI::extract_detections()
 {
     uint8_t det_size = detection_buffer_size;
     detection det[det_size];
-    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
+    auto ret = post_process.post_process_output(drpai_yolo_output_buf.data(), det, &det_size);
     if (ret == 1) {
         // if detected items are more than the array size
         uint8_t tmp = detection_buffer_size;
@@ -332,14 +332,19 @@ void DRPAI::open_resources() {
     /* Read DRP-AI Object files address and size */
     std::string drpai_address_file = model_prefix + "/" + model_prefix + "_addrmap_intm.txt";
     std::cout << "Loading : " << drpai_address_file << std::endl;
-    read_addrmap_txt(drpai_address_file);
-    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+    read_addrmap_txt(drpai_address_file, drpai_address_yolo);
+    drpai_yolo_output_buf.resize(drpai_address_yolo.data_out_size/sizeof(float));
+
+    drpai_address_file = std::string("deeppose") + "/" + "deeppose" + "_addrmap_intm.txt";
+    std::cout << "Loading : " << drpai_address_file << std::endl;
+    read_addrmap_txt(drpai_address_file, drpai_address_deeppose);
+    drpai_deeppose_output_buf.resize(drpai_address_deeppose.data_out_size/sizeof(float));
 
     post_process.dynamic_library_open(model_prefix);
-    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_output_buf.size()) != 0)
+    if (post_process.post_process_initialize(model_prefix.c_str(), drpai_yolo_output_buf.size()) != 0)
         throw std::runtime_error("[ERROR] Failed to run post_process_initialize.");
     post_process_deeppose.dynamic_library_open("deeppose");
-    if (post_process_deeppose.post_process_initialize("deeppose", 98) != 0)
+    if (post_process_deeppose.post_process_initialize("deeppose", drpai_deeppose_output_buf.size()) != 0)
         throw std::runtime_error("[ERROR] Failed to run post_process_initialize.");
 
     /* Obtain udmabuf memory area starting address */
@@ -364,28 +369,48 @@ void DRPAI::open_resources() {
 
     /* Open DRP-AI Driver */
     errno = 0;
-    drpai_fd = open("/dev/drpai0", O_RDWR);
-    if (0 > drpai_fd)
+    drpai_fd_yolo = open("/dev/drpai0", O_RDWR);
+    if (0 > drpai_fd_yolo)
+        throw std::runtime_error("[ERROR] Failed to open DRP-AI Driver: errno=" + std::to_string(errno));
+    errno = 0;
+    drpai_fd_deeppose = open("/dev/drpai0", O_RDWR);
+    if (0 > drpai_fd_deeppose)
         throw std::runtime_error("[ERROR] Failed to open DRP-AI Driver: errno=" + std::to_string(errno));
 
     /* Load DRP-AI Data from Filesystem to Memory via DRP-AI Driver */
-    load_drpai_data();
+    load_drpai_data(drpai_fd_yolo, model_prefix, drpai_address_yolo);
+    load_drpai_data(drpai_fd_deeppose, "deeppose", drpai_address_deeppose);
 
     /* Set DRP-AI Driver Input (DRP-AI Object files address and size)*/
-    proc[DRPAI_INDEX_INPUT].address       = udmabuf_address;
-    proc[DRPAI_INDEX_INPUT].size          = drpai_address.data_in_size;
-    proc[DRPAI_INDEX_DRP_CFG].address     = drpai_address.drp_config_addr;
-    proc[DRPAI_INDEX_DRP_CFG].size        = drpai_address.drp_config_size;
-    proc[DRPAI_INDEX_DRP_PARAM].address   = drpai_address.drp_param_addr;
-    proc[DRPAI_INDEX_DRP_PARAM].size      = drpai_address.drp_param_size;
-    proc[DRPAI_INDEX_AIMAC_DESC].address  = drpai_address.desc_aimac_addr;
-    proc[DRPAI_INDEX_AIMAC_DESC].size     = drpai_address.desc_aimac_size;
-    proc[DRPAI_INDEX_DRP_DESC].address    = drpai_address.desc_drp_addr;
-    proc[DRPAI_INDEX_DRP_DESC].size       = drpai_address.desc_drp_size;
-    proc[DRPAI_INDEX_WEIGHT].address      = drpai_address.weight_addr;
-    proc[DRPAI_INDEX_WEIGHT].size         = drpai_address.weight_size;
-    proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
-    proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
+    proc_yolo[DRPAI_INDEX_INPUT].address       = udmabuf_address;
+    proc_yolo[DRPAI_INDEX_INPUT].size          = drpai_address_yolo.data_in_size;
+    proc_yolo[DRPAI_INDEX_DRP_CFG].address     = drpai_address_yolo.drp_config_addr;
+    proc_yolo[DRPAI_INDEX_DRP_CFG].size        = drpai_address_yolo.drp_config_size;
+    proc_yolo[DRPAI_INDEX_DRP_PARAM].address   = drpai_address_yolo.drp_param_addr;
+    proc_yolo[DRPAI_INDEX_DRP_PARAM].size      = drpai_address_yolo.drp_param_size;
+    proc_yolo[DRPAI_INDEX_AIMAC_DESC].address  = drpai_address_yolo.desc_aimac_addr;
+    proc_yolo[DRPAI_INDEX_AIMAC_DESC].size     = drpai_address_yolo.desc_aimac_size;
+    proc_yolo[DRPAI_INDEX_DRP_DESC].address    = drpai_address_yolo.desc_drp_addr;
+    proc_yolo[DRPAI_INDEX_DRP_DESC].size       = drpai_address_yolo.desc_drp_size;
+    proc_yolo[DRPAI_INDEX_WEIGHT].address      = drpai_address_yolo.weight_addr;
+    proc_yolo[DRPAI_INDEX_WEIGHT].size         = drpai_address_yolo.weight_size;
+    proc_yolo[DRPAI_INDEX_OUTPUT].address      = drpai_address_yolo.data_out_addr;
+    proc_yolo[DRPAI_INDEX_OUTPUT].size         = drpai_address_yolo.data_out_size;
+
+    proc_deeppose[DRPAI_INDEX_INPUT].address       = drpai_address_deeppose.data_in_addr;
+    proc_deeppose[DRPAI_INDEX_INPUT].size          = drpai_address_deeppose.data_in_size;
+    proc_deeppose[DRPAI_INDEX_DRP_CFG].address     = drpai_address_deeppose.drp_config_addr;
+    proc_deeppose[DRPAI_INDEX_DRP_CFG].size        = drpai_address_deeppose.drp_config_size;
+    proc_deeppose[DRPAI_INDEX_DRP_PARAM].address   = drpai_address_deeppose.drp_param_addr;
+    proc_deeppose[DRPAI_INDEX_DRP_PARAM].size      = drpai_address_deeppose.drp_param_size;
+    proc_deeppose[DRPAI_INDEX_AIMAC_DESC].address  = drpai_address_deeppose.desc_aimac_addr;
+    proc_deeppose[DRPAI_INDEX_AIMAC_DESC].size     = drpai_address_deeppose.desc_aimac_size;
+    proc_deeppose[DRPAI_INDEX_DRP_DESC].address    = drpai_address_deeppose.desc_drp_addr;
+    proc_deeppose[DRPAI_INDEX_DRP_DESC].size       = drpai_address_deeppose.desc_drp_size;
+    proc_deeppose[DRPAI_INDEX_WEIGHT].address      = drpai_address_deeppose.weight_addr;
+    proc_deeppose[DRPAI_INDEX_WEIGHT].size         = drpai_address_deeppose.weight_size;
+    proc_deeppose[DRPAI_INDEX_OUTPUT].address      = drpai_address_deeppose.data_out_addr;
+    proc_deeppose[DRPAI_INDEX_OUTPUT].size         = drpai_address_deeppose.data_out_size;
 
     if (image_mapped_udma.map_udmabuf() < 0)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
@@ -433,7 +458,7 @@ int DRPAI::process_image(uint8_t* img_data) {
     if(show_fps) {
         auto rate_str = "Video Rate: " + std::to_string(int(video_rate.get_smooth_rate())) + " fps";
         img.write_string(rate_str, 0, 0, WHITE_DATA, BLACK_DATA, 5);
-        rate_str = "DRPAI Rate: " + (drpai_fd ? std::to_string(int(drpai_rate.get_smooth_rate())) + " fps" : "N/A");
+        rate_str = "DRPAI Rate: " + (drpai_fd_yolo ? std::to_string(int(drpai_rate.get_smooth_rate())) + " fps" : "N/A");
         img.write_string(rate_str, 0, 15, WHITE_DATA, BLACK_DATA, 5);
         if (det_tracker.active) {
             rate_str = "Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f));
@@ -489,7 +514,10 @@ void DRPAI::release_resources() {
     post_process_deeppose.dynamic_library_close();
 
     errno = 0;
-    if (close(drpai_fd) != 0)
+    if (close(drpai_fd_yolo) != 0)
+        throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver: errno=" + std::to_string(errno));
+    errno = 0;
+    if (close(drpai_fd_deeppose) != 0)
         throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver: errno=" + std::to_string(errno));
 }
 
@@ -523,23 +551,23 @@ void DRPAI::thread_function_single() {
 
     drpai_rate.inform_frame();
 
-    if (drpai_fd) {
+    if (drpai_fd_yolo) {
         /**********************************************************************
         * START Inference
         **********************************************************************/
-        drpai_start();
+        drpai_start(drpai_fd_yolo, proc_yolo);
 
         /**********************************************************************
         * Wait until the DRP-AI finish (Thread will sleep)
         **********************************************************************/
-        drpai_wait();
+        drpai_wait(drpai_fd_yolo);
 
         /**********************************************************************
         * CPU Post-processing
         **********************************************************************/
 
         /* Get the output data from memory */
-        get_result(drpai_address.data_out_addr, drpai_address.data_out_size);
+        get_result(drpai_fd_yolo, drpai_address_yolo.data_out_addr, drpai_address_yolo.data_out_size, drpai_yolo_output_buf);
         extract_detections();
 
         /*If Person is detected run DeepPose for Pose Estimation three times*/
@@ -584,18 +612,18 @@ void DRPAI::thread_function_single() {
             crop_param.img_oheight = (uint16_t) crop_region.h;
             crop_param.pos_x = (uint16_t) crop_region.x;
             crop_param.pos_y = (uint16_t) crop_region.y;
-            crop_param.obj.address = proc[DRPAI_INDEX_DRP_PARAM].address;
-            crop_param.obj.size = proc[DRPAI_INDEX_DRP_PARAM].size;
-            if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
-                throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop: errno=" + std::to_string(errno));
+            crop_param.obj.address = proc_deeppose[DRPAI_INDEX_DRP_PARAM].address;
+            crop_param.obj.size = proc_deeppose[DRPAI_INDEX_DRP_PARAM].size;
+            if (0 != ioctl(drpai_fd_deeppose, DRPAI_PREPOST_CROP, &crop_param))
+                throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop: errno=" + std::string(std::strerror(errno)));
 
             /*Start DRP-AI Driver*/
-            drpai_start();
-            drpai_wait();
-            get_result(drpai_address.data_out_addr, drpai_address.data_out_size);
+            drpai_start(drpai_fd_deeppose, proc_deeppose);
+            drpai_wait(drpai_fd_deeppose);
+            get_result(drpai_fd_deeppose, drpai_address_deeppose.data_out_addr, drpai_address_deeppose.data_out_size, drpai_deeppose_output_buf);
 
             uint8_t det_size = NUM_OUTPUT_KEYPOINT;
-            auto ret = post_process_deeppose.post_process_output(drpai_output_buf.data(), last_face.data(), &det_size);
+            auto ret = post_process_deeppose.post_process_output(drpai_deeppose_output_buf.data(), last_face.data(), &det_size);
             yawn_detected = ret & (1 << 4);
             blink_detected = ret & (1 << 3);
             last_head_pose = (Pose)(ret % (1 << 3));
@@ -610,14 +638,14 @@ void DRPAI::thread_function_single() {
     }
 }
 
-void DRPAI::drpai_start() const {
+void DRPAI::drpai_start(int32_t drpai_fd, std::array<drpai_data_t, DRPAI_INDEX_NUM>& proc) {
     errno = 0;
     int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]);
     if (0 != ret)
         throw std::runtime_error("[ERROR] Failed to run DRPAI_START: errno=" + std::to_string(errno));
 }
 
-void DRPAI::drpai_wait() const {
+void DRPAI::drpai_wait(int32_t drpai_fd) {
     fd_set rfds;
     drpai_status_t drpai_status;
 
