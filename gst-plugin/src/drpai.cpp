@@ -478,16 +478,6 @@ void DRPAI::release_resources() {
 void DRPAI::thread_function_loop() {
     try {
         while (true) {
-            {
-                std::unique_lock<std::mutex> lock(state_mutex);
-                if (thread_state == Closing)
-                    return;
-
-                thread_state = Ready;
-                if (multithread) {
-                    v.wait(lock, [&] { return thread_state != Ready; });
-                }
-            }
             thread_function_single();
         }
     }
@@ -495,9 +485,24 @@ void DRPAI::thread_function_loop() {
         std::cerr << e.what() << std::endl;
         thread_state = Failed;
     }
+    catch (const std::exception& e) {
+        if (thread_state != Closing)
+            throw e;
+    }
 }
 
 void DRPAI::thread_function_single() {
+    {
+        std::unique_lock<std::mutex> lock(state_mutex);
+        if (thread_state == Closing)
+            throw std::exception();
+
+        thread_state = Ready;
+        if (multithread) {
+            v.wait(lock, [&] { return thread_state != Ready; });
+        }
+    }
+
     drpai_rate.inform_frame();
 
     if (drpai_fd) {
