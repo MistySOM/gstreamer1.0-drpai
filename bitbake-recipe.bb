@@ -28,7 +28,7 @@ FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-yolo.so"
 RDEPENDS_${PN} += "${PN}-postprocess-yolo"
 
 PACKAGES += "${PN}-postprocess-deeppose"
-FILES_${PN}-postprocess-yolo = "${libdir}/libpostprocess-deeppose.so"
+FILES_${PN}-postprocess-deeppose = "${libdir}/libpostprocess-deeppose.so"
 RDEPENDS_${PN} += "${PN}-postprocess-deeppose"
 
 
