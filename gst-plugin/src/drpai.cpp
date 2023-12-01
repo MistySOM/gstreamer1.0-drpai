@@ -414,6 +414,7 @@ int DRPAI::process_image(uint8_t* img_data) {
 
     if(drpai_rate.max_rate != 0 && !multithread)
         try {
+            thread_state = Ready;
             thread_function_single();
         }
         catch (const std::runtime_error& e) {
@@ -477,15 +478,16 @@ void DRPAI::release_resources() {
 void DRPAI::thread_function_loop() {
     try {
         while (true) {
-            std::unique_lock<std::mutex> lock(state_mutex);
-            if (thread_state == Closing)
-                return;
+            {
+                std::unique_lock<std::mutex> lock(state_mutex);
+                if (thread_state == Closing)
+                    return;
 
-            thread_state = Ready;
-            if(multithread) {
-                v.wait(lock, [&] { return thread_state != Ready; });
+                thread_state = Ready;
+                if (multithread) {
+                    v.wait(lock, [&] { return thread_state != Ready; });
+                }
             }
-
             thread_function_single();
         }
     }
