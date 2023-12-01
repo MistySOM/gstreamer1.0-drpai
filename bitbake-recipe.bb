@@ -8,7 +8,7 @@ MESON_BUILDTYPE = "release"
 
 inherit meson
 
-DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai"
+DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai opencv"
 
 S = "${WORKDIR}/git"
 PV = "1.0"
