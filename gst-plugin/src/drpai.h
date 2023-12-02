@@ -51,6 +51,7 @@ private:
     int32_t drpai_fd_yolo = 0;
     st_addr_t drpai_address_yolo {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc_yolo {};
+
     int32_t drpai_fd_deeppose = 0;
     st_addr_t drpai_address_deeppose {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc_deeppose {};
