@@ -14,10 +14,23 @@ void DRPAI_DeepPose::add_corner_text() {
 
 void DRPAI_DeepPose::extract_detections() {
     uint8_t det_size = NUM_OUTPUT_KEYPOINT;
-    auto ret = post_process.post_process_output(drpai_output_buf.data(), last_det.data(), &det_size);
+    detection det[det_size];
+    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
+
     yawn_detected = ret & (1 << 4);
     blink_detected = ret & (1 << 3);
     last_head_pose = (HeadPose)(ret % (1 << 3));
+
+    /* Non-Maximum Suppression filter */
+    filter_boxes_nms(det, det_size, TH_NMS);
+
+    last_det.clear();
+    for (uint8_t i = 0; i<det_size; i++) {
+        /* Skip the overlapped bounding boxes */
+        if (det[i].prob == 0) continue;
+
+        last_det.push_back(det[i]);
+    }
 
     if(log_detects) {
         if (yawn_detected)
