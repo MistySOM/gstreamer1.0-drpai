@@ -63,7 +63,7 @@
 #include <gst/gst.h>
 #include <iostream>
 #include "gstdrpai.h"
-#include "drpai.h"
+#include "drpai_controller.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
 #define GST_CAT_DEFAULT gst_drpai_debug
@@ -242,7 +242,7 @@ gst_drpai_init(GstDRPAI *obj) {
     GST_PAD_SET_PROXY_CAPS (obj->srcpad);
     gst_element_add_pad(GST_ELEMENT (obj), obj->srcpad);
 
-    obj->drpai = new DRPAI();
+    obj->drpai_controller = new DRPAI_Controller();
     obj->stop_error = TRUE;
 }
 
@@ -254,7 +254,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             try {
                 /* open the device */
-                obj->drpai->open_resources();
+                obj->drpai_controller->open_resources();
             }
             catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
@@ -272,13 +272,13 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
         case GST_STATE_CHANGE_READY_TO_NULL:
             try {
                 /* close the device */
-                obj->drpai->release_resources();
+                obj->drpai_controller->release_resources();
             }
             catch (std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
                 state_change_ret = GST_STATE_CHANGE_FAILURE;
             }
-            delete obj->drpai;
+            delete obj->drpai_controller;
             break;
         default:
             break;
@@ -292,66 +292,66 @@ gst_drpai_set_property(GObject *object, guint prop_id,
 
     switch (prop_id) {
         case PROP_MULTITHREAD:
-            obj->drpai->multithread = g_value_get_boolean(value);
+            obj->drpai_controller->multithread = g_value_get_boolean(value);
             break;
         case PROP_MODEL:
-            obj->drpai->model_prefix = g_value_get_string(value);
+            obj->drpai_controller->drpai.prefix = g_value_get_string(value);
             break;
         case PROP_TRACKING:
-            obj->drpai->det_tracker.active = g_value_get_boolean(value);
+            obj->drpai_controller->drpai.det_tracker.active = g_value_get_boolean(value);
             break;
         case PROP_LOG_DETECTS:
-            obj->drpai->log_detects = g_value_get_boolean(value);
+            obj->drpai_controller->drpai.log_detects = g_value_get_boolean(value);
             break;
         case PROP_SHOW_FPS:
-            obj->drpai->show_fps = g_value_get_boolean(value);
+            obj->drpai_controller->show_fps = g_value_get_boolean(value);
             break;
         case PROP_STOP_ERROR:
             obj->stop_error = g_value_get_boolean(value);
             break;
         case PROP_MAX_VIDEO_RATE:
-            obj->drpai->video_rate.max_rate = g_value_get_float(value);
+            obj->drpai_controller->video_rate.max_rate = g_value_get_float(value);
             break;
         case PROP_MAX_DRPAI_RATE:
-            obj->drpai->drpai_rate.max_rate = g_value_get_float(value);
+            obj->drpai_controller->drpai.rate.max_rate = g_value_get_float(value);
             break;
         case PROP_SMOOTH_VIDEO_RATE:
-            obj->drpai->video_rate.smooth_rate = g_value_get_uint(value);
+            obj->drpai_controller->video_rate.smooth_rate = g_value_get_uint(value);
             break;
         case PROP_SMOOTH_DRPAI_RATE:
-            obj->drpai->drpai_rate.smooth_rate = g_value_get_uint(value);
+            obj->drpai_controller->drpai.rate.smooth_rate = g_value_get_uint(value);
             break;
         case PROP_SMOOTH_BBOX_RATE:
-            obj->drpai->det_tracker.bbox_smooth_rate = g_value_get_uint(value);
+            obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate = g_value_get_uint(value);
             break;
         case PROP_TRACK_SECONDS:
-            obj->drpai->det_tracker.time_threshold = g_value_get_float(value);
+            obj->drpai_controller->drpai.det_tracker.time_threshold = g_value_get_float(value);
             break;
         case PROP_TRACK_DOA_THRESHOLD:
-            obj->drpai->det_tracker.doa_threshold = g_value_get_float(value);
+            obj->drpai_controller->drpai.det_tracker.doa_threshold = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
             std::string csv_classes = g_value_get_string(value);
-            obj->drpai->filter_classes.clear();
+            obj->drpai_controller->drpai.filter_classes.clear();
             if (!csv_classes.empty()) {
                 std::stringstream ss(csv_classes);
                 std::string item;
                 while (std::getline(ss, item, ','))
-                    obj->drpai->filter_classes.push_back(std::move(item));
+                    obj->drpai_controller->drpai.filter_classes.push_back(std::move(item));
             }
             break;
         }
         case PROP_FILTER_LEFT:
-            obj->drpai->filter_region.x = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.x = (float)g_value_get_uint(value);
             break;
         case PROP_FILTER_TOP:
-            obj->drpai->filter_region.y = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.y = (float)g_value_get_uint(value);
             break;
         case PROP_FILTER_WIDTH:
-            obj->drpai->filter_region.w = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.w = (float)g_value_get_uint(value);
             break;
         case PROP_FILTER_HEIGHT:
-            obj->drpai->filter_region.h = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.h = (float)g_value_get_uint(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -366,47 +366,47 @@ gst_drpai_get_property(GObject *object, guint prop_id,
 
     switch (prop_id) {
         case PROP_MULTITHREAD:
-            g_value_set_boolean(value, obj->drpai->multithread);
+            g_value_set_boolean(value, obj->drpai_controller->multithread);
             break;
         case PROP_MODEL:
-            g_value_set_string(value, obj->drpai->model_prefix.c_str());
+            g_value_set_string(value, obj->drpai_controller->drpai.prefix.c_str());
             break;
         case PROP_TRACKING:
-            g_value_set_boolean(value, obj->drpai->det_tracker.active);
+            g_value_set_boolean(value, obj->drpai_controller->drpai.det_tracker.active);
             break;
         case PROP_LOG_DETECTS:
-            g_value_set_boolean(value, obj->drpai->log_detects);
+            g_value_set_boolean(value, obj->drpai_controller->drpai.log_detects);
             break;
         case PROP_SHOW_FPS:
-            g_value_set_boolean(value, obj->drpai->show_fps);
+            g_value_set_boolean(value, obj->drpai_controller->show_fps);
             break;
         case PROP_STOP_ERROR:
             g_value_set_boolean(value, obj->stop_error);
             break;
         case PROP_MAX_VIDEO_RATE:
-            g_value_set_float(value, obj->drpai->video_rate.max_rate);
+            g_value_set_float(value, obj->drpai_controller->video_rate.max_rate);
             break;
         case PROP_MAX_DRPAI_RATE:
-            g_value_set_float(value, obj->drpai->drpai_rate.max_rate);
+            g_value_set_float(value, obj->drpai_controller->drpai.rate.max_rate);
             break;
         case PROP_SMOOTH_VIDEO_RATE:
-            g_value_set_uint(value, obj->drpai->video_rate.smooth_rate);
+            g_value_set_uint(value, obj->drpai_controller->video_rate.smooth_rate);
             break;
         case PROP_SMOOTH_DRPAI_RATE:
-            g_value_set_uint(value, obj->drpai->drpai_rate.smooth_rate);
+            g_value_set_uint(value, obj->drpai_controller->drpai.rate.smooth_rate);
             break;
         case PROP_SMOOTH_BBOX_RATE:
-            g_value_set_uint(value, obj->drpai->det_tracker.bbox_smooth_rate);
+            g_value_set_uint(value, obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate);
             break;
         case PROP_TRACK_SECONDS:
-            g_value_set_float(value, obj->drpai->det_tracker.time_threshold);
+            g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.time_threshold);
             break;
         case PROP_TRACK_DOA_THRESHOLD:
-            g_value_set_float(value, obj->drpai->det_tracker.doa_threshold);
+            g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.doa_threshold);
             break;
         case PROP_FILTER_CLASS: {
             std::string ss;
-            for (const auto& s: obj->drpai->filter_classes) {
+            for (const auto& s: obj->drpai_controller->drpai.filter_classes) {
                 if (!ss.empty())
                     ss += ",";
                 ss += s;
@@ -415,16 +415,16 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             break;
         }
         case PROP_FILTER_LEFT:
-            g_value_set_uint(value, (uint)obj->drpai->filter_region.x);
+            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.x);
             break;
         case PROP_FILTER_TOP:
-            g_value_set_uint(value, (uint)obj->drpai->filter_region.y);
+            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.y);
             break;
         case PROP_FILTER_WIDTH:
-            g_value_set_uint(value, (uint)obj->drpai->filter_region.w);
+            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.w);
             break;
         case PROP_FILTER_HEIGHT:
-            g_value_set_uint(value, (uint)obj->drpai->filter_region.h);
+            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.h);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -476,7 +476,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
-    if (obj->drpai->process_image(info.data) == -1) {
+    if (obj->drpai_controller->process_image(info.data) == -1) {
         if(obj->stop_error) {
             gst_buffer_unref (buf);
             return GST_FLOW_ERROR;

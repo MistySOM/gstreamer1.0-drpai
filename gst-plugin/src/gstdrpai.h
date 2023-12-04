@@ -54,7 +54,7 @@ G_BEGIN_DECLS
 #define GST_TYPE_PLUGIN_DRPAI (gst_drpai_get_type())
 G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
-class DRPAI;
+class DRPAI_Controller;
 
 struct _GstDRPAI
 {
@@ -64,7 +64,7 @@ struct _GstDRPAI
 
   gboolean stop_error;
 
-  DRPAI *drpai;
+  DRPAI_Controller *drpai_controller;
 };
 
 G_END_DECLS
