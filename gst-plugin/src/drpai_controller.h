@@ -22,7 +22,7 @@
 #include "fps.h"
 #include "dynamic-post-process/postprocess.h"
 #include "tracker.h"
-#include "src/drpai-models/drpai_yolo.h"
+#include "src/drpai-models/drpai_deeppose.h"
 
 class DRPAI_Controller {
 
@@ -35,7 +35,7 @@ public:
     bool multithread = true;
     bool show_fps = false;
     fps video_rate{};
-    DRPAI_Yolo drpai;
+    DRPAI_DeepPose drpai;
 
     void open_resources();
     void release_resources();

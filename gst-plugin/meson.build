@@ -14,6 +14,7 @@ plugin_sources = [
   'src/drpai_controller.cpp',
   'src/drpai-models/drpai_connection.cpp',
   'src/drpai-models/drpai_yolo.cpp',
+  'src/drpai-models/drpai_deeppose.cpp',
   'src/image.cpp',
   'src/box.cpp',
   'src/tracker.cpp',

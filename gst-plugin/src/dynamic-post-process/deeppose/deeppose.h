@@ -29,6 +29,6 @@
 #define KEYPOINT_LIP_RIGHT 82
 #define KEYPOINT_LIP_BOTTOM 85
 
-enum Pose: int8_t { Center=0, Down, Right, Left, Up  };
+enum HeadPose: int8_t { Center=0, Down, Right, Left, Up  };
 
 #endif //GSTREAMER1_0_DRPAI_DEEPPOSE_H
