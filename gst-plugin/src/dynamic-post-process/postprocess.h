@@ -22,8 +22,8 @@ class PostProcess {
     void* dynamic_library_handle;
 public:
     PostProcess();
-    [[nodiscard]] int8_t dynamic_library_open(const std::string& prefix);
-    int8_t dynamic_library_close();
+    void dynamic_library_open(const std::string& prefix);
+    void dynamic_library_close();
 
 #endif
 

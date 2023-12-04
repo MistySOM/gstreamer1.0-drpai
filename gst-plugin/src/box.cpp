@@ -55,7 +55,7 @@ float Box::overlap(float x1, float w1, float x2, float w2)
 *                 b = Box 2
 * Return value  : area of intersection
 ******************************************/
-float Box::intersection_with(const Box& b) const
+float Box::operator&(const Box& b) const
 {
     float _w = overlap(x, w, b.x, b.w);
     float _h = overlap(y, h, b.y, b.h);
@@ -74,9 +74,9 @@ float Box::intersection_with(const Box& b) const
 *                 b = Box 2
 * Return value  : area of union
 ******************************************/
-float Box::union_with(const Box& b) const
+float Box::operator|(const Box& b) const
 {
-    float i = intersection_with(b);
+    float i = operator&(b);
     float u = area() + b.area() - i;
     return u;
 }
@@ -90,7 +90,7 @@ float Box::union_with(const Box& b) const
 ******************************************/
 float Box::iou_with(const Box& b) const
 {
-    return intersection_with(b)/union_with(b);
+    return operator&(b)/operator|(b);
 }
 
 float Box::doa_with(const Box& b) const
@@ -128,7 +128,7 @@ void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
                 continue;
             }
             Box b = det[j].bbox;
-            float b_intersection = a.intersection_with(b);
+            float b_intersection = a & b;
             if ((a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
                 if (det[i].prob > det[j].prob)
