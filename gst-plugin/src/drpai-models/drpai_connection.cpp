@@ -322,6 +322,8 @@ void DRPAI_Connection::add_corner_text() {
 
 void DRPAI_Connection::run_inference() {
     if(drpai_fd) {
+        rate.inform_frame();
+
         /**********************************************************************
         * START Inference
         **********************************************************************/

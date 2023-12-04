@@ -121,12 +121,14 @@ void DRPAI_Controller::thread_function_loop() {
         }
     }
     catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "[Loop ERROR] " << e.what() << std::endl;
         thread_state = Failed;
     }
     catch (const std::exception& e) {
-        if (thread_state != Closing)
-            throw e;
+        if (thread_state != Closing) {
+            std::cerr << "[Loop ERROR] " << e.what() << std::endl;
+            thread_state = Failed;
+        }
     }
 }
 
@@ -142,6 +144,5 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
-    drpai.rate.inform_frame();
     drpai.run_inference();
 }
