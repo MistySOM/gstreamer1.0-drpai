@@ -74,15 +74,21 @@ typedef struct detection
     const char* name = nullptr;
 
     [[nodiscard]] std::string to_string_hr() const {
-        return std::string(name) + " (" + std::to_string(int(prob*100)) + "%)";
+        if (name)
+            return std::string(name) + " (" + std::to_string(int(prob*100)) + "%)";
+        else
+            return "";
     }
     [[nodiscard]] std::string to_string_json() const {
         return "{ " + to_string_json_inline() + " }";
     }
     [[nodiscard]] std::string to_string_json_inline() const {
-        return "\"class\"=" + std::string(name) +
-               ", \"probability\"=" + std::to_string(prob) +
-               ", \"box\"=" + bbox.to_string_json();
+        if (name)
+            return "\"class\"=" + std::string(name) +
+                   ", \"probability\"=" + std::to_string(prob) +
+                   ", \"box\"=" + bbox.to_string_json();
+        else
+            return "\"box\"=" + bbox.to_string_json();
     }
 } detection;
 
