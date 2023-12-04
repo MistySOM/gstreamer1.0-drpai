@@ -18,7 +18,7 @@ public:
 
     bool log_detects = false;
     bool yawn_detected = false, blink_detected = false;
-    HeadPose last_head_pose;
+    HeadPose last_head_pose = Center;
 
     void open_resource(uint32_t data_in_address) override;
     void add_corner_text() override;
