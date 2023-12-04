@@ -30,7 +30,7 @@ RDEPENDS_${PN} += "${PN}-postprocess-yolo"
 
 
 SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"
-SRC_URI[sha256sum] = "9499f0d4a494cbf116c7e12d06a00adc2d0a2c6eed7309bdacac1961841daebb"
+SRC_URI[sha256sum] = "80215345f43e0e565d3a95f86933e96773ad9bf3cc03a2d8c2ecfe0803995a93"
 do_install_append() {
     install -d ${D}${ROOT_HOME}
     cp -r ${WORKDIR}/models ${D}${ROOT_HOME}
