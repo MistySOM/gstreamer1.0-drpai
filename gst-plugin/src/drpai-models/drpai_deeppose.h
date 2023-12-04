@@ -20,6 +20,7 @@ public:
     bool yawn_detected = false, blink_detected = false;
     HeadPose last_head_pose;
 
+    void open_resource(uint32_t data_in_address) override;
     void add_corner_text() override;
     void extract_detections() override;
 };
