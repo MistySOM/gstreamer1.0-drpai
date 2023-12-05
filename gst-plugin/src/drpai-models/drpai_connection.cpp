@@ -347,35 +347,12 @@ void DRPAI_Connection::run_inference() {
 }
 
 void DRPAI_Connection::crop(Box& crop_region) {
-    /*Checks that cropping height and width does not exceeds image dimension*/
+    /*Checks that cropping height and width does not exceed image dimension*/
     clip(crop_region.h, 1.0f, (float) DRPAI_IN_HEIGHT);
     clip(crop_region.w, 1.0f, (float) DRPAI_IN_WIDTH);
+    clip(crop_region.x, 0.0f, DRPAI_IN_WIDTH - crop_region.w);
+    clip(crop_region.y, 0.0f, DRPAI_IN_HEIGHT - crop_region.h);
 
-    /*Compute Cropping Y Position based on Detection Result*/
-    /*If Negative Cropping Position*/
-    if (this->last_det.at(0).bbox.y < (crop_region.h / 2)) {
-        crop_region.y = 0;
-    } else if (this->last_det.at(0).bbox.y > (DRPAI_IN_HEIGHT - crop_region.h / 2)) { /*If Exceeds Image Area*/
-        crop_region.y = DRPAI_IN_HEIGHT - crop_region.h;
-    } else {
-        crop_region.y = this->last_det.at(0).bbox.y - crop_region.h / 2;
-    }
-    /*Compute Cropping X Position based on Detection Result*/
-    /*If Negative Cropping Position*/
-    if (this->last_det.at(0).bbox.x < (crop_region.w / 2)) {
-        crop_region.x = 0;
-    } else if (this->last_det.at(0).bbox.x > (DRPAI_IN_WIDTH - crop_region.w / 2)) { /*If Exceeds Image Area*/
-        crop_region.x = DRPAI_IN_WIDTH - crop_region.w;
-    } else {
-        crop_region.x = this->last_det.at(0).bbox.x - crop_region.w / 2;
-    }
-    /*Checks that combined cropping position with width and height does not exceed the image dimension*/
-    if (crop_region.w > DRPAI_IN_WIDTH - crop_region.x) {
-        crop_region.w = DRPAI_IN_WIDTH - crop_region.x;
-    }
-    if (crop_region.h > DRPAI_IN_HEIGHT - crop_region.y) {
-        crop_region.h = DRPAI_IN_HEIGHT - crop_region.y;
-    }
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
     crop_param.img_owidth = (uint16_t) crop_region.w;

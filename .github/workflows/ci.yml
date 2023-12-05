@@ -67,6 +67,9 @@ jobs:
 
     - name: List files that are generated
       run: ls -lah rzv2l/Build/output/
+
+    - name: Remove model packages
+      run: rm rzv2l/Build/output/gstreamer1.0-drpai-models-*.rpm
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
