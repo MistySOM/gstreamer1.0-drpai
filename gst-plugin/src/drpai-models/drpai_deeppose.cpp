@@ -68,6 +68,13 @@ void DRPAI_DeepPose::open_resource(uint32_t data_in_address) {
     prefix = "deeppose";
     std::cout << "Model : Deep Pose      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
+
+    /*DRP Param Info Preparation*/
+    auto drpai_param_file = prefix + "/drp_param_info.txt";
+    std::ifstream param_file(drpai_param_file, std::ifstream::ate);
+    auto drp_param_info_size = static_cast<uint32_t>(param_file.tellg());
+    /*Load DRPAI Parameter for Cropping later*/
+    load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file, drp_param_info_size);
 }
 
 void DRPAI_DeepPose::release_resource() {
