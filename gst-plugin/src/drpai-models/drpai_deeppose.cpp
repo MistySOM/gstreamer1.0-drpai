@@ -60,9 +60,12 @@ void DRPAI_DeepPose::extract_detections() {
 }
 
 void DRPAI_DeepPose::open_resource(uint32_t data_in_address) {
+    yolo.prefix = prefix;
+    yolo.open_resource(data_in_address);
+
+    prefix = "deeppose";
     std::cout << "Model : Deep Pose      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
-    yolo.open_resource(data_in_address);
 }
 
 void DRPAI_DeepPose::release_resource() {
