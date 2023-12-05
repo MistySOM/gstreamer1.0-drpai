@@ -67,12 +67,12 @@ void DRPAI_DeepPose::open_resource(uint32_t data_in_address) {
 
     prefix = "deeppose";
     std::cout << "Model : Deep Pose      | " << prefix << std::endl;
-//    DRPAI_Connection::open_resource(data_in_address);
+    DRPAI_Connection::open_resource(data_in_address);
 }
 
 void DRPAI_DeepPose::release_resource() {
     yolo.release_resource();
-//    DRPAI_Connection::release_resource();
+    DRPAI_Connection::release_resource();
 }
 
 void DRPAI_DeepPose::run_inference() {
@@ -87,6 +87,6 @@ void DRPAI_DeepPose::run_inference() {
 
 void DRPAI_DeepPose::render_detections_on_image(Image &img) {
     yolo.render_detections_on_image(img);
-//    if (!yolo.last_det.empty())
-//        DRPAI_Connection::render_detections_on_image(img);
+    if (!yolo.last_det.empty())
+        DRPAI_Connection::render_detections_on_image(img);
 }
