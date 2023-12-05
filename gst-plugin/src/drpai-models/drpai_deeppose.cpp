@@ -6,9 +6,8 @@
 #include "drpai_deeppose.h"
 
 void DRPAI_DeepPose::add_corner_text() {
+    yolo.corner_text.clear();
     yolo.add_corner_text();
-
-    corner_text.clear();
     for (auto& s: yolo.corner_text)
         corner_text.push_back(s);
 
@@ -28,6 +27,8 @@ void DRPAI_DeepPose::add_corner_text() {
         if(blink_detected)
             corner_text.emplace_back("Blink Detected!");
     }
+    else
+        corner_text.emplace_back("Head Pose: N/A");
 }
 
 void DRPAI_DeepPose::extract_detections() {
