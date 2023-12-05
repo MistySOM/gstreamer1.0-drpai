@@ -45,6 +45,7 @@ protected:
     void read_addrmap_txt(const std::string& addr_file);
     void load_drpai_data();
     void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+    void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size);
     void get_result();
     void start();
     void wait() const;

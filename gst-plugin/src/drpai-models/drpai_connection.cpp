@@ -346,6 +346,51 @@ void DRPAI_Connection::run_inference() {
     }
 }
 
+/*****************************************
+* Function Name :  load_drpai_param_file
+* Description   : Loads DRP-AI Parameter File to memory via DRP-AI Driver.
+* Arguments     : drpai_fd = file descriptor of DRP-AI Driver
+*                 proc = drpai data
+*                 param_file = drpai parameter file to load
+*                 file_size = drpai parameter file size
+* Return value  : 0 if succeeded
+*                 not 0 otherwise
+******************************************/
+void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size)
+{
+    uint8_t drpai_buf[BUF_SIZE];
+
+    drpai_assign_param_t crop_assign;
+    crop_assign.info_size = file_size;
+    crop_assign.obj.address = proc.address;
+    crop_assign.obj.size = proc.size;
+    if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &crop_assign))
+        throw std::runtime_error("[ERROR] DRPAI Assign Parameter Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+
+    auto obj_fd = open(param_file.c_str(), O_RDONLY);
+    if (obj_fd < 0)
+        throw std::runtime_error("[ERROR] Failed to open parameter file " + param_file);
+    try {
+        for (uint32_t i = 0; i < (file_size / BUF_SIZE); i++) {
+            if (0 > read(obj_fd, drpai_buf, BUF_SIZE))
+                throw std::runtime_error("[ERROR] Failed to read parameter file " + param_file);
+            if (0 > write(drpai_fd, drpai_buf, BUF_SIZE))
+                throw std::runtime_error("[ERROR] DRPAI Write Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+        }
+        if (0 != (file_size % BUF_SIZE)) {
+            if (0 > read(obj_fd, drpai_buf, (file_size % BUF_SIZE)))
+                throw std::runtime_error("[ERROR] Failed to read parameter file " + param_file);
+            if (0 > write(drpai_fd, drpai_buf, (file_size % BUF_SIZE)))
+                throw std::runtime_error("[ERROR] DRPAI Write Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+        }
+    }
+    catch (std::runtime_error& e) {
+        close(obj_fd);
+        throw e;
+    }
+    close(obj_fd);
+}
+
 void DRPAI_Connection::crop(Box& crop_region) {
     /*Checks that cropping height and width does not exceed image dimension*/
     for (auto i=0; i<2; i++) {
