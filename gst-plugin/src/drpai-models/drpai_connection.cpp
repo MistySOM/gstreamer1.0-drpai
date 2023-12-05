@@ -348,10 +348,12 @@ void DRPAI_Connection::run_inference() {
 
 void DRPAI_Connection::crop(Box& crop_region) {
     /*Checks that cropping height and width does not exceed image dimension*/
-    clip(crop_region.h, 1.0f, (float) DRPAI_IN_HEIGHT);
-    clip(crop_region.w, 1.0f, (float) DRPAI_IN_WIDTH);
-    clip(crop_region.x, 0.0f, DRPAI_IN_WIDTH - crop_region.w);
-    clip(crop_region.y, 0.0f, DRPAI_IN_HEIGHT - crop_region.h);
+    for (auto i=0; i<2; i++) {
+        clip(crop_region.w, 1.0f, DRPAI_IN_WIDTH - crop_region.x);
+        clip(crop_region.h, 1.0f, DRPAI_IN_HEIGHT - crop_region.y);
+        clip(crop_region.x, 0.0f, DRPAI_IN_WIDTH - crop_region.w);
+        clip(crop_region.y, 0.0f, DRPAI_IN_HEIGHT - crop_region.h);
+    }
 
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
