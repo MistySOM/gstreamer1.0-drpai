@@ -60,10 +60,8 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
         auto posx = output_buf[2*i]   * crop_box.w + crop_box.x + OUTPUT_ADJ_X;
         auto posy = output_buf[2*i+1] * crop_box.h + crop_box.y + OUTPUT_ADJ_Y;
         /* Make sure the coordinates are not off the screen. */
-        posx = std::max(posx, 0.0f);
-        posx = std::min(posx, IMREAD_IMAGE_WIDTH -KEY_POINT_SIZE -1.0f);
-        posy = std::max(posy, 0.0f);
-        posy = std::min(posy, IMREAD_IMAGE_HEIGHT -KEY_POINT_SIZE -1.0f);
+        CLIP(posx, 0.0f, IMREAD_IMAGE_WIDTH - KEY_POINT_SIZE - 1.0f);
+        CLIP(posy, 0.0f, IMREAD_IMAGE_HEIGHT - KEY_POINT_SIZE - 1.0f);
         det[i].bbox.x = posx;
         det[i].bbox.y = posy;
         det[i].bbox.w = det[i].bbox.h = KEY_POINT_SIZE;

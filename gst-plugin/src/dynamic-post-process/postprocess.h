@@ -8,6 +8,7 @@
 #include "../box.h"
 #include <cstdint>
 #include <algorithm>
+#define CLIP(n,lower,upper) std::max(lower, std::min(n, upper))
 
 #ifdef POST_PROCESS_LIBRARY
 

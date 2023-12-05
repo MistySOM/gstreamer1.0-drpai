@@ -13,8 +13,6 @@
 #include "src/dynamic-post-process/postprocess.h"
 #include "src/image.h"
 
-#define clip(n,lower,upper) std::max(lower, std::min(n, upper))
-
 class DRPAI_Connection {
 
 public:
