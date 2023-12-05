@@ -62,6 +62,7 @@ void DRPAI_DeepPose::extract_detections() {
 
 void DRPAI_DeepPose::open_resource(uint32_t data_in_address) {
     yolo.prefix = prefix;
+    yolo.det_tracker.active = false;
     yolo.open_resource(data_in_address);
 
     prefix = "deeppose";

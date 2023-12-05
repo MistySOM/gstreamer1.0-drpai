@@ -15,7 +15,7 @@ class DRPAI_DeepPose: public DRPAI_Connection {
 public:
     explicit DRPAI_DeepPose(bool log_detects):
             log_detects(log_detects),
-            yolo(false)
+            yolo(true)
     {}
 
     bool log_detects = false;
