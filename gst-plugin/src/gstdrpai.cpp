@@ -103,7 +103,7 @@ enum {
  *
  * describe the real formats here.
  */
-auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
+auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) YUV2";
 static GstStaticPadTemplate sink_factory =
         GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 static GstStaticPadTemplate src_factory =

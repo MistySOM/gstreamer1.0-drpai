@@ -58,6 +58,7 @@
 #define DRPAI_IN_WIDTH          (640)
 #define DRPAI_IN_HEIGHT         (480)
 #define DRPAI_IN_CHANNEL_BGR    (3)
+#define DRPAI_IN_CHANNEL_YUV2   (2)
 
 /*BMP Header size for Windows Bitmap v3*/
 #define FILEHEADERSIZE          (14)

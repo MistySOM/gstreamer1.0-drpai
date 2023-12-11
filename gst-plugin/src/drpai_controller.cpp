@@ -83,8 +83,9 @@ int DRPAI_Controller::process_image(uint8_t* img_data) {
             return -1;
         }
 
-    Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR);
+    Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_YUV2);
     img.img_buffer = img_data;
+    img.convert_yuyv_to_bgra();
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
