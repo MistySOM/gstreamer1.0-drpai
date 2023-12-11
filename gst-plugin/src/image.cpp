@@ -27,11 +27,12 @@
 ******************************************/
 #include "image.h"
 #include "ascii.h"
+#include "opencv2/opencv.hpp"
 
 Image::~Image()
 {
     if(udmabuf_fd != 0) {
-        munmap(img_buffer, size);
+        munmap(img_buffer, get_size());
         close(udmabuf_fd);
     }
 }
@@ -53,7 +54,7 @@ void Image::map_udmabuf()
     if (udmabuf_fd < 0)
         throw std::runtime_error("[ERROR] Failed to open image buffer to UDMA.");
 
-    img_buffer = (uint8_t *) mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, udmabuf_fd, 0);
+    img_buffer = (uint8_t *) mmap(nullptr, get_size(), PROT_READ | PROT_WRITE, MAP_SHARED, udmabuf_fd, 0);
 
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
@@ -61,7 +62,7 @@ void Image::map_udmabuf()
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (int32_t i = 0; i < size; i++) {
+        for (std::size_t i = 0; i < get_size(); i++) {
             img_buffer[i] = 0;
         }
     }
@@ -392,4 +393,34 @@ uint8_t Image::at(int32_t a) const
 void Image::set(int32_t a, uint8_t val)
 {
     img_buffer[a] = val;
+}
+
+/*****************************************
+* Function Name : convert_bgra_to_yuyv
+* Description   : Convert YUYV image to BGRA format
+* Arguments     : -
+* Return value  : -
+******************************************/
+void Image::convert_bgra_to_yuyv() {
+    cv::Mat yuyv_image(img_h, img_w, CV_8UC4, img_buffer);
+    cv::Mat bgra_image;
+    cv::Mat out_image(img_h, img_w, CV_8UC2, img_buffer);
+    cv::cvtColor(yuyv_image, bgra_image, cv::COLOR_BGRA2YUV_YV12);
+    img_c = 2;
+    memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
+}
+
+/*****************************************
+* Function Name : convert_format
+* Description   : Convert YUYV image to BGRA format
+* Arguments     : -
+* Return value  : -
+******************************************/
+void Image::convert_yuyv_to_bgra() {
+    cv::Mat yuyv_image(img_h, img_w, CV_8UC2, img_buffer);
+    cv::Mat bgra_image;
+    cv::Mat out_image(img_h, img_w, CV_8UC4, img_buffer);
+    cv::cvtColor(yuyv_image, bgra_image, cv::COLOR_YUV2BGRA_YUYV);
+    img_c = 4;
+    memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
 }

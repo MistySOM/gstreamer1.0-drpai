@@ -3,6 +3,7 @@
 //
 
 #include "drpai_connection.h"
+#include "src/dynamic-post-process/deeppose/deeppose.h"
 #include <iostream>
 
 /*****************************************
@@ -93,7 +94,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
 {
     int32_t obj_fd;
     uint8_t drpai_buf[BUF_SIZE];
-    drpai_data_t drpai_data;
+    drpai_data_t drpai_data {from, size};
 
     std::cout << "Loading : " << data << std::endl;
     errno = 0;
@@ -102,9 +103,6 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
         throw std::runtime_error("[ERROR] Failed to open: " + data + "  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
     try {
-        drpai_data.address = from;
-        drpai_data.size = size;
-
         errno = 0;
         if ( ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data) == -1 )
             throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
@@ -324,6 +322,8 @@ void DRPAI_Connection::run_inference() {
     if(drpai_fd) {
         rate.inform_frame();
 
+
+
         /**********************************************************************
         * START Inference
         **********************************************************************/
@@ -392,22 +392,82 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std
 }
 
 void DRPAI_Connection::crop(Box& crop_region) {
+    float cropx = 0, cropy = 0;
+    float croph = crop_region.h + CROP_ADJ_X;
+    float cropw = crop_region.w + CROP_ADJ_Y;
     /*Checks that cropping height and width does not exceed image dimension*/
-    for (auto i=0; i<2; i++) {
-        CLIP(crop_region.w, 1.0f, DRPAI_IN_WIDTH - crop_region.x);
-        CLIP(crop_region.h, 1.0f, DRPAI_IN_HEIGHT - crop_region.y);
-        CLIP(crop_region.x, 0.0f, DRPAI_IN_WIDTH - crop_region.w);
-        CLIP(crop_region.y, 0.0f, DRPAI_IN_HEIGHT - crop_region.h);
+    if(croph < 1)
+    {
+        croph = 1;
+    }
+    else if(croph > IMREAD_IMAGE_HEIGHT)
+    {
+        croph = IMREAD_IMAGE_HEIGHT;
+    }
+    else
+    {
+        /*Do Nothing*/
+    }
+    if(cropw < 1)
+    {
+        cropw = 1;
+    }
+    else if(cropw > IMREAD_IMAGE_WIDTH)
+    {
+        cropw = IMREAD_IMAGE_WIDTH;
+    }
+    else
+    {
+        /*Do Nothing*/
+    }
+    /*Compute Cropping Y Position based on Detection Result*/
+    /*If Negative Cropping Position*/
+    if(crop_region.y < (croph/2))
+    {
+        cropy = 0;
+    }
+    else if(crop_region.y > (IMREAD_IMAGE_HEIGHT-croph/2)) /*If Exceeds Image Area*/
+    {
+        cropy = IMREAD_IMAGE_HEIGHT-croph;
+    }
+    else
+    {
+        cropy = (int16_t)crop_region.y - croph/2;
+    }
+    /*Compute Cropping X Position based on Detection Result*/
+    /*If Negative Cropping Position*/
+    if(crop_region.x < (cropw/2))
+    {
+        cropx = 0;
+    }
+    else if(crop_region.x > (IMREAD_IMAGE_WIDTH-cropw/2)) /*If Exceeds Image Area*/
+    {
+        cropx = IMREAD_IMAGE_WIDTH-cropw;
+    }
+    else
+    {
+        cropx = (int16_t)crop_region.x - cropw/2;
+    }
+    /*Checks that combined cropping position with width and height does not exceed the image dimension*/
+    if(cropx + cropw > IMREAD_IMAGE_WIDTH)
+    {
+        cropw = IMREAD_IMAGE_WIDTH - cropx;
+    }
+    if(cropy + croph > IMREAD_IMAGE_HEIGHT)
+    {
+        croph = IMREAD_IMAGE_HEIGHT - cropy;
     }
 
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
-    crop_param.img_owidth = (uint16_t) crop_region.w;
-    crop_param.img_oheight = (uint16_t) crop_region.h;
-    crop_param.pos_x = (uint16_t) crop_region.x;
-    crop_param.pos_y = (uint16_t) crop_region.y;
+    crop_param.img_owidth = (uint16_t) cropw;
+    crop_param.img_oheight = (uint16_t) croph;
+    crop_param.pos_x = (uint16_t) cropx;
+    crop_param.pos_y = (uint16_t) cropy;
     crop_param.obj.address = proc[DRPAI_INDEX_DRP_PARAM].address;
     crop_param.obj.size = proc[DRPAI_INDEX_DRP_PARAM].size;
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+
+    crop_region = Box{cropx, cropy, cropw, croph};
 }

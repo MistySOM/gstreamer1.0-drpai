@@ -49,6 +49,8 @@ void DRPAI_DeepPose::extract_detections() {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
 
+        det[i].bbox.x += OUTPUT_ADJ_X;
+        det[i].bbox.y += OUTPUT_ADJ_Y;
         last_det.push_back(det[i]);
     }
 
@@ -85,11 +87,11 @@ void DRPAI_DeepPose::release_resource() {
 void DRPAI_DeepPose::run_inference() {
     yolo.run_inference();
 
-//    if (!yolo.last_det.empty()) {
-//        crop_region = yolo.last_det.at(0).bbox;
-//        crop(crop_region);
-//        DRPAI_Connection::run_inference();
-//    }
+    if (!yolo.last_det.empty()) {
+        crop_region = yolo.last_det.at(0).bbox;
+        crop(crop_region);
+        DRPAI_Connection::run_inference();
+    }
 }
 
 void DRPAI_DeepPose::render_detections_on_image(Image &img) {

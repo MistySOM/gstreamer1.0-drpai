@@ -19,6 +19,8 @@
 /*DeepPose Post Processing & Drawing Related*/
 #define OUTPUT_ADJ_X              (2)
 #define OUTPUT_ADJ_Y              (0)
+#define CROP_ADJ_X                (20)
+#define CROP_ADJ_Y                (20)
 
 #define KEYPOINT_LEFT_EYE_TOP 62
 #define KEYPOINT_LEFT_EYE_BOTTOM 66

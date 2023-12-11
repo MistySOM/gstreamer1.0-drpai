@@ -1,5 +1,7 @@
 plugin_c_args = ['-DHAVE_CONFIG_H']
 
+opencv_dep = dependency('opencv4')
+
 cdata = configuration_data()
 cdata.set_quoted('PACKAGE_VERSION', gst_version)
 cdata.set_quoted('PACKAGE', 'gst-drpai-plugin')
@@ -25,7 +27,7 @@ gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep, thread_dep, dl_dep],
+  dependencies : [gst_dep, thread_dep, dl_dep, opencv_dep],
   install : true,
   install_dir : join_paths('/usr/lib64', 'gstreamer-1.0'),
 )
