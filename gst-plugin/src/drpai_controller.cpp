@@ -38,8 +38,7 @@ void DRPAI_Controller::open_resources() {
     /* Filter the bit higher than 32 bit */
     udmabuf_address &=0xFFFFFFFF;
 
-    if (image_mapped_udma.map_udmabuf() < 0)
-        throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
+    image_mapped_udma.map_udmabuf();
 
     /**********************************************************************/
     /* Inference preparation                                              */

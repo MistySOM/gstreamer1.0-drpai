@@ -96,6 +96,10 @@ int8_t load_post_process_params_file(const std::string& params_file_name)
         best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
     else if (value == "softmax")
         best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
+    else {
+        std::cerr << std::endl << "[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " << value << std::endl;
+        return -1;
+    }
 
     if (get_param(params_file_name, "[anchor_divide_size]", value) != 0)
         return -1;
@@ -103,6 +107,10 @@ int8_t load_post_process_params_file(const std::string& params_file_name)
         anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
     else if (value == "num_grid")
         anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
+    else {
+        std::cerr << std::endl << "[ERROR] Failed to load value for param [anchor_divide_size]: " << value << std::endl;
+        return -1;
+    }
     return 0;
 }
 

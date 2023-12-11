@@ -17,7 +17,7 @@ class DRPAI_Connection {
 
 public:
     DRPAI_Connection() = default;
-    ~DRPAI_Connection() = default;
+    virtual ~DRPAI_Connection() = default;
 
     fps rate{};
     std::string prefix;

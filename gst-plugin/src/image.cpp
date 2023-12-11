@@ -47,29 +47,24 @@ Image::~Image()
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::map_udmabuf()
+void Image::map_udmabuf()
 {
     udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
     if (udmabuf_fd < 0)
-    {
-        return -1;
-    }
-    img_buffer =(uint8_t*) mmap(nullptr, size ,PROT_READ|PROT_WRITE, MAP_SHARED,  udmabuf_fd, 0);
+        throw std::runtime_error("[ERROR] Failed to open image buffer to UDMA.");
+
+    img_buffer = (uint8_t *) mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, udmabuf_fd, 0);
 
     if (img_buffer == MAP_FAILED)
-    {
-        return -1;
-    }
+        throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
     /* Write once to allocate physical memory to u-dma-buf virtual space.
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (int32_t i = 0 ; i < size; i++)
-        {
+        for (int32_t i = 0; i < size; i++) {
             img_buffer[i] = 0;
         }
     }
-    return 0;
 }
 
 /*****************************************
@@ -81,7 +76,7 @@ uint8_t Image::map_udmabuf()
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::read_bmp(const std::string& filename)
+void Image::read_bmp(const std::string& filename)
 {
     uint32_t width = img_w;
     uint32_t height = img_h;
@@ -96,16 +91,14 @@ uint8_t Image::read_bmp(const std::string& filename)
     /*  Read header for Windows Bitmap v3 file. */
     fp = fopen(filename.c_str(), "rb");
     if (nullptr == fp)
-    {
-        return -1;
-    }
+        throw std::runtime_error("[ERROR] Failed to open file: " + filename);
 
     /* Read all header */
     ret = fread(bmp_header.data(), sizeof(uint8_t), header_size, fp);
     if (!ret)
     {
         fclose(fp);
-        return -1;
+        throw std::runtime_error("[ERROR] Failed to read the header of file: " + filename);
     }
     /* Single row image data */
     bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
@@ -113,7 +106,7 @@ uint8_t Image::read_bmp(const std::string& filename)
     {
         free(bmp_line_data);
         fclose(fp);
-        return -1;
+        throw std::runtime_error("[ERROR] Failed to allocate memory for file: " + filename);
     }
 
     for (int32_t i = (int32_t)height-1; i >= 0; i--)
@@ -123,14 +116,13 @@ uint8_t Image::read_bmp(const std::string& filename)
         {
             free(bmp_line_data);
             fclose(fp);
-            return -1;
+            throw std::runtime_error("[ERROR] Failed to read contents of file: " + filename);
         }
         std::memcpy(img_buffer+i*width*channel, bmp_line_data, sizeof(uint8_t)*width*channel);
     }
 
     free(bmp_line_data);
     fclose(fp);
-    return 0;
 }
 
 
@@ -143,7 +135,7 @@ uint8_t Image::read_bmp(const std::string& filename)
 * Return value  : 0 if suceeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::save_bmp(const std::string& filename) const
+void Image::save_bmp(const std::string& filename) const
 {
     FILE * fp = nullptr;
     uint8_t * bmp_line_data;
@@ -157,9 +149,7 @@ uint8_t Image::save_bmp(const std::string& filename) const
 
     fp = fopen(filename.c_str(), "wb");
     if (nullptr == fp)
-    {
-        return -1;
-    }
+        throw std::runtime_error("[ERROR] Failed to open file: " + filename);
 
     /* Write header for Windows Bitmap v3 file. */
     fwrite(bmp_header.data(), sizeof(uint8_t), header_size, fp);
@@ -169,7 +159,7 @@ uint8_t Image::save_bmp(const std::string& filename) const
     {
         free(bmp_line_data);
         fclose(fp);
-        return -1;
+        throw std::runtime_error("[ERROR] Failed to allocate memory for file: " + filename);
     }
 
     for (int32_t i = (int32_t)height - 1; i >= 0; i--)
@@ -180,12 +170,11 @@ uint8_t Image::save_bmp(const std::string& filename) const
         {
             free(bmp_line_data);
             fclose(fp);
-            return -1;
+            throw std::runtime_error("[ERROR] Failed to write contents to file: " + filename);
         }
     }
     free(bmp_line_data);
     fclose(fp);
-    return 0;
 }
 
 /*****************************************
@@ -354,17 +343,17 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str)
+void Image::draw_rect(int32_t center_x, int32_t center_y, int32_t w, int32_t h, const std::string& str)
 {
-    int32_t x_min = x - (int32_t)round(w / 2.);
-    int32_t y_min = y - (int32_t)round(h / 2.);
-    int32_t x_max = x + (int32_t)round(w / 2.) - 1;
-    int32_t y_max = y + (int32_t)round(h / 2.) - 1;
+    int32_t x_min = center_x - (int32_t)round(w / 2.);
+    int32_t y_min = center_y - (int32_t)round(h / 2.);
+    int32_t x_max = center_x + (int32_t)round(w / 2.) - 1;
+    int32_t y_max = center_y + (int32_t)round(h / 2.) - 1;
     /* Check the bounding box is in the image range */
-    x_min = x_min < 1 ? 1 : x_min;
-    x_max = ((img_w - 2) < x_max) ? (img_w - 2) : x_max;
-    y_min = y_min < 1 ? 1 : y_min;
-    y_max = ((img_h - 2) < y_max) ? (img_h - 2) : y_max;
+    x_min = std::max(x_min, 1);
+    x_max = std::min(x_max, img_w -2);
+    y_min = std::max(y_min, 1);
+    y_max = std::min(y_max, img_h -2);
 
     /* Draw the class and probability */
     write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
