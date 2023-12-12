@@ -403,11 +403,12 @@ void Image::set(int32_t a, uint8_t val)
 ******************************************/
 void Image::convert_bgra_to_yuyv() {
     cv::Mat yuyv_image(img_h, img_w, CV_8UC4, img_buffer);
+    cv::flip(yuyv_image, yuyv_image, 1);
     cv::Mat bgra_image;
     cv::Mat out_image(img_h, img_w, CV_8UC2, img_buffer);
     cv::cvtColor(yuyv_image, bgra_image, cv::COLOR_BGRA2YUV_YV12);
     img_c = 2;
-    memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
+    std::memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
 }
 
 /*****************************************
@@ -422,5 +423,6 @@ void Image::convert_yuyv_to_bgra() {
     cv::Mat out_image(img_h, img_w, CV_8UC4, img_buffer);
     cv::cvtColor(yuyv_image, bgra_image, cv::COLOR_YUV2BGRA_YUYV);
     img_c = 4;
-    memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
+    std::memcpy(out_image.data, bgra_image.data, img_w * img_h * img_c);
+    cv::flip(out_image, out_image, 1);
 }
