@@ -29,7 +29,7 @@ class DRPAI_Controller {
 public:
     explicit DRPAI_Controller():
             drpai(false),
-            image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR)
+            image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, nullptr)
     {}
 
     bool multithread = true;

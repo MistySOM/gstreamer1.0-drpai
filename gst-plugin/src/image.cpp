@@ -67,6 +67,11 @@ void Image::map_udmabuf()
     }
 }
 
+void Image::copy(uint8_t* data) {
+    if(img_buffer != nullptr)
+        std::memcpy(img_buffer, data, size);
+}
+
 /*****************************************
 * Function Name : read_bmp
 * Description   : Function to load BMP file into img_buffer

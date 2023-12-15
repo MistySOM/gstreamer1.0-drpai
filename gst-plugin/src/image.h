@@ -30,16 +30,15 @@
 class Image
 {
     public:
-        Image(int32_t w, int32_t h, int32_t c):
-            img_w(w), img_h(h), img_c(c), size(w * h * c) {};
+        explicit Image(int32_t w, int32_t h, int32_t c, uint8_t* data):
+            img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
         ~Image();
 
-        uint8_t* img_buffer = nullptr;
-        [[nodiscard]] std::size_t get_size() const { return size; }
         [[nodiscard]] uint8_t at(int32_t a) const;
         void set(int32_t a, uint8_t val);
 
         void map_udmabuf();
+        void copy(uint8_t* data);
         void read_bmp(const std::string& filename);
         void save_bmp(const std::string& filename) const;
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
@@ -54,6 +53,7 @@ class Image
         int32_t img_h;
         int32_t img_c;
         int32_t size;
+        uint8_t* img_buffer = nullptr;
 
         int32_t front_color = RED_DATA;
         int32_t back_color = BLACK_DATA;
