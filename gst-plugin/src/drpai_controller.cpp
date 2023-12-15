@@ -60,8 +60,7 @@ int DRPAI_Controller::process_image(uint8_t* img_data) {
                 return -1;
 
             case Ready:
-                if(image_mapped_udma.img_buffer)
-                    std::memcpy(image_mapped_udma.img_buffer, img_data, image_mapped_udma.get_size());
+                image_mapped_udma.copy(img_data);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread)
@@ -83,9 +82,7 @@ int DRPAI_Controller::process_image(uint8_t* img_data) {
             return -1;
         }
 
-    Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_YUV2);
-    img.img_buffer = img_data;
-    img.convert_yuyv_to_bgra();
+    Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
