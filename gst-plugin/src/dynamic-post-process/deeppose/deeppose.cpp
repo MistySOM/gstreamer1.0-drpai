@@ -17,6 +17,7 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
     post_process_release();
 
     try {
+        std::cout << "\tLoading : " << ML_DESC_NAME << std::endl;
         tree = cv::ml::RTrees::create();
         dtree = tree->load(ML_DESC_NAME);
     }

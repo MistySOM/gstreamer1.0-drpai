@@ -27,6 +27,10 @@
 
 #include "define.h"
 
+namespace cv {
+    class Mat;
+}
+
 class Image
 {
     public:
@@ -39,6 +43,7 @@ class Image
 
         void map_udmabuf();
         void copy(uint8_t* data);
+        void copy_convert_bgr_to_yuyv(uint8_t* data);
         void read_bmp(const std::string& filename);
         void save_bmp(const std::string& filename) const;
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
@@ -54,6 +59,7 @@ class Image
         int32_t img_c;
         int32_t size;
         uint8_t* img_buffer = nullptr;
+        cv::Mat* img_cv = nullptr;
 
         int32_t front_color = RED_DATA;
         int32_t back_color = BLACK_DATA;
