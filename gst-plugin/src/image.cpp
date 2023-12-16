@@ -413,7 +413,18 @@ void Image::copy_convert_bgr_to_yuyv(uint8_t* data) {
     if(img_cv == nullptr)
         img_cv = new cv::Mat(img_h, img_w, CV_8UC2, img_buffer);
 
-    cv::Mat bgra_image(img_h, img_w, CV_8UC4, data);
-    cv::cvtColor(bgra_image, *img_cv, cv::COLOR_BGR2YUV);
+    cv::Mat bgr_image(img_h, img_w, CV_8UC3, data);
+    cv::cvtColor(bgr_image, *img_cv, cv::COLOR_BGR2YUV);
     cv::flip(*img_cv, *img_cv, 1);
+
+    // convert YUYV to YUY2
+    for (int i = 0; i < img_w*img_h; i++) {
+        // Copy Y values
+        img_buffer[i * 2] = img_buffer[i * 2];
+        img_buffer[i * 2 + 2] = img_buffer[i * 2 + 2];
+
+        // Copy U and V values
+        img_buffer[i * 2 + 1] = img_buffer[i * 4 + 1];
+        img_buffer[i * 2 + 3] = img_buffer[i * 4 + 3];
+    }
 }
