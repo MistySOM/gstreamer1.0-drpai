@@ -293,11 +293,12 @@ void DRPAI_Connection::open_resource(uint32_t data_in_address) {
 }
 
 void DRPAI_Connection::release_resource() {
-    post_process.post_process_release();
+    if (post_process.post_process_release != nullptr)
+        post_process.post_process_release();
     post_process.dynamic_library_close();
 
     errno = 0;
-    if (close(drpai_fd) != 0)
+    if (drpai_fd > 0 && close(drpai_fd) != 0)
         throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
