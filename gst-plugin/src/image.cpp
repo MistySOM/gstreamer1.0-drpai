@@ -27,6 +27,7 @@
 ******************************************/
 #include "image.h"
 #include "ascii.h"
+#include <algorithm>
 
 Image::~Image()
 {

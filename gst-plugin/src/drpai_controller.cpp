@@ -139,6 +139,5 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
-    image_mapped_udma.copy_convert_bgr_to_yuy2(image_thread);
     drpai.run_inference();
 }
