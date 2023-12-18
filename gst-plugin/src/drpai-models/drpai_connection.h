@@ -8,7 +8,6 @@
 #include "src/define.h"
 #include "src/linux/drpai.h"
 #include "src/fps.h"
-#include "src/tracker.h"
 #include "src/box.h"
 #include "src/dynamic-post-process/postprocess.h"
 #include "src/image.h"

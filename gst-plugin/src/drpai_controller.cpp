@@ -51,13 +51,13 @@ void DRPAI_Controller::open_resources() {
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
-int DRPAI_Controller::process_image(uint8_t* img_data) {
+void DRPAI_Controller::process_image(uint8_t* img_data) {
     if (drpai.rate.max_rate != 0 && thread_state != Processing) {
         switch (thread_state) {
             case Failed:
             case Unknown:
             case Closing:
-                return -1;
+                throw std::exception();
 
             case Ready:
                 image_mapped_udma.copy(img_data);
@@ -79,7 +79,7 @@ int DRPAI_Controller::process_image(uint8_t* img_data) {
         catch (const std::runtime_error& e) {
             std::cerr << e.what() << std::endl;
             thread_state = Failed;
-            return -1;
+            throw e;
         }
 
     Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, img_data);
@@ -93,8 +93,6 @@ int DRPAI_Controller::process_image(uint8_t* img_data) {
     }
     drpai.render_detections_on_image(img);
     drpai.render_text_on_image(img);
-
-    return 0;
 }
 
 void DRPAI_Controller::release_resources() {
@@ -141,5 +139,6 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
+    image_mapped_udma.copy_convert_bgr_to_yuy2(image_thread);
     drpai.run_inference();
 }

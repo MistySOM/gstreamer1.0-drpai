@@ -39,7 +39,7 @@ public:
 
     void open_resources();
     void release_resources();
-    int process_image(uint8_t* img_data);
+    void process_image(uint8_t* img_data);
 
 private:
     Image image_mapped_udma;

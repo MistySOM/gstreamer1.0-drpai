@@ -476,7 +476,11 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
-    if (obj->drpai_controller->process_image(info.data) == -1) {
+    try {
+        obj->drpai_controller->process_image(info.data);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
         if(obj->stop_error) {
             gst_buffer_unref (buf);
             return GST_FLOW_ERROR;
