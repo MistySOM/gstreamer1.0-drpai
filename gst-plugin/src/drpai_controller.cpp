@@ -60,7 +60,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
                 throw std::exception();
 
             case Ready:
-                image_mapped_udma.copy_convert_bgr_to_yuyv(img_data);
+                image_thread.copy(img_data);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread)

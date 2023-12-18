@@ -29,7 +29,8 @@ class DRPAI_Controller {
 public:
     explicit DRPAI_Controller():
             drpai(false),
-            image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_YUV2, nullptr)
+            image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_YUV2, nullptr),
+            image_thread(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, image_thread_buffer)
     {}
 
     bool multithread = true;
@@ -43,6 +44,8 @@ public:
 
 private:
     Image image_mapped_udma;
+    Image image_thread;
+    uint8_t image_thread_buffer[DRPAI_IN_WIDTH*DRPAI_IN_HEIGHT*DRPAI_IN_CHANNEL_BGR];
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
