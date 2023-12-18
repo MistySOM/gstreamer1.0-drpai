@@ -238,10 +238,8 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
     const auto str_size = (int32_t)pcode.size();
     if (str_size == 0) return;
 
-    x = std::max(0, x);
-    x = std::min(img_w - str_size*font_w - 2, x);
-    y = std::max(0, y);
-    y = std::min(img_h - font_h - 2, y);
+    x = std::clamp(x, 0, img_w - str_size*font_w - 2);
+    y = std::clamp(y, 0, img_h - font_h - 2);
 
     int32_t right = margin * 2 + str_size * font_w - 1;
     int32_t bottom = margin * 2 + font_h - 1;
@@ -402,29 +400,47 @@ void Image::set(int32_t a, uint8_t val)
 }
 
 /*****************************************
-* Function Name : convert_bgra_to_yuyv
-* Description   : Convert YUYV image to BGRA format
+* Function Name : convert_bgr_to_yuy2
+* Description   : Convert BGR image to YUY2 format
 * Arguments     : -
 * Return value  : -
 ******************************************/
-void Image::copy_convert_bgr_to_yuyv(uint8_t* data) {
+void Image::copy_convert_bgr_to_yuy2(uint8_t* data) {
     if(img_buffer == nullptr)
         return;
-    if(img_cv == nullptr)
-        img_cv = new cv::Mat(img_h, img_w, CV_8UC2, img_buffer);
 
-    cv::Mat bgr_image(img_h, img_w, CV_8UC3, data);
-    cv::cvtColor(bgr_image, *img_cv, cv::COLOR_BGR2YUV);
-    cv::flip(*img_cv, *img_cv, 1);
+    for (int y = 0; y < img_h; ++y) {
+        const auto bgrRow = &data[3 * img_w * y];
+        auto yuy2Row = &img_buffer[2 * img_w * y];
 
-    // convert YUYV to YUY2
-    for (int i = 0; i < img_w*img_h; i++) {
-        // Copy Y values
-        img_buffer[i * 2] = img_buffer[i * 2];
-        img_buffer[i * 2 + 2] = img_buffer[i * 2 + 2];
+        for (int x = 0; x < img_w; x += 2) {
+            // Convert two BGR pixels to YUY2 format
+            auto bgrIdx1 = 3 * x;
+            auto bgrIdx2 = 3 * (x + 1);
 
-        // Copy U and V values
-        img_buffer[i * 2 + 1] = img_buffer[i * 4 + 1];
-        img_buffer[i * 2 + 3] = img_buffer[i * 4 + 3];
+            auto b1 = bgrRow[bgrIdx1];
+            auto g1 = bgrRow[bgrIdx1 + 1];
+            auto r1 = bgrRow[bgrIdx1 + 2];
+
+            auto b2 = bgrRow[bgrIdx2];
+            auto g2 = bgrRow[bgrIdx2 + 1];
+            auto r2 = bgrRow[bgrIdx2 + 2];
+
+            // Calculate Y, U, and V values for the first pixel
+            auto y1 = static_cast<uint8_t>(0.299 * r1 + 0.587 * g1 + 0.114 * b1);
+            auto u1 = static_cast<uint8_t>(-0.14713 * r1 - 0.288862 * g1 + 0.436 * b1 + 128);
+            auto v1 = static_cast<uint8_t>(0.615 * r1 - 0.51498 * g1 - 0.10001 * b1 + 128);
+
+            // Calculate Y, U, and V values for the second pixel
+            auto y2 = static_cast<uint8_t>(0.299 * r2 + 0.587 * g2 + 0.114 * b2);
+            // auto u2 = static_cast<uint8_t>(-0.14713 * r2 - 0.288862 * g2 + 0.436 * b2 + 128);
+            // auto v2 = static_cast<uint8_t>(0.615 * r2 - 0.51498 * g2 - 0.10001 * b2 + 128);
+
+            // Pack the Y, U, and Y, V values into a 32-bit word
+            yuy2Row[2 * x] = y1;
+            yuy2Row[2 * x + 1] = u1;
+            yuy2Row[2 * x + 2] = y2;
+            yuy2Row[2 * x + 3] = v1;
+        }
     }
 }

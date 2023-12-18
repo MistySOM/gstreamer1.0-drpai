@@ -43,7 +43,8 @@ class Image
 
         void map_udmabuf();
         void copy(uint8_t* data);
-        void copy_convert_bgr_to_yuyv(uint8_t* data);
+        void copy_convert_bgr_to_yuy2(uint8_t* data);
+        void copy_convert_bgr_to_yuy2(const Image& img) { copy_convert_bgr_to_yuy2(img.img_buffer); }
         void read_bmp(const std::string& filename);
         void save_bmp(const std::string& filename) const;
         void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
