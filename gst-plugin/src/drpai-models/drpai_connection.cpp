@@ -393,78 +393,12 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std
 }
 
 void DRPAI_Connection::crop(Box& crop_region) {
-    float cropx = 0, cropy = 0;
-    float croph = crop_region.h + CROP_ADJ_X;
-    float cropw = crop_region.w + CROP_ADJ_Y;
-    /*Checks that cropping height and width does not exceed image dimension*/
-    if(croph < 1)
-    {
-        croph = 1;
-    }
-    else if(croph > IMREAD_IMAGE_HEIGHT)
-    {
-        croph = IMREAD_IMAGE_HEIGHT;
-    }
-    else
-    {
-        /*Do Nothing*/
-    }
-    if(cropw < 1)
-    {
-        cropw = 1;
-    }
-    else if(cropw > IMREAD_IMAGE_WIDTH)
-    {
-        cropw = IMREAD_IMAGE_WIDTH;
-    }
-    else
-    {
-        /*Do Nothing*/
-    }
-    /*Compute Cropping Y Position based on Detection Result*/
-    /*If Negative Cropping Position*/
-    if(crop_region.y < (croph/2))
-    {
-        cropy = 0;
-    }
-    else if(crop_region.y > (IMREAD_IMAGE_HEIGHT-croph/2)) /*If Exceeds Image Area*/
-    {
-        cropy = IMREAD_IMAGE_HEIGHT-croph;
-    }
-    else
-    {
-        cropy = (int16_t)crop_region.y - croph/2;
-    }
-    /*Compute Cropping X Position based on Detection Result*/
-    /*If Negative Cropping Position*/
-    if(crop_region.x < (cropw/2))
-    {
-        cropx = 0;
-    }
-    else if(crop_region.x > (IMREAD_IMAGE_WIDTH-cropw/2)) /*If Exceeds Image Area*/
-    {
-        cropx = IMREAD_IMAGE_WIDTH-cropw;
-    }
-    else
-    {
-        cropx = (int16_t)crop_region.x - cropw/2;
-    }
-    /*Checks that combined cropping position with width and height does not exceed the image dimension*/
-    if(cropx + cropw > IMREAD_IMAGE_WIDTH)
-    {
-        cropw = IMREAD_IMAGE_WIDTH - cropx;
-    }
-    if(cropy + croph > IMREAD_IMAGE_HEIGHT)
-    {
-        croph = IMREAD_IMAGE_HEIGHT - cropy;
-    }
-
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
-    crop_param.img_owidth = (uint16_t) cropw;
-    crop_param.img_oheight = (uint16_t) croph;
-    crop_param.pos_x = (uint16_t) cropx;
-    crop_param.pos_y = (uint16_t) cropy;
+    crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, DRPAI_IN_WIDTH);
+    crop_param.img_oheight = std::clamp(static_cast<int>(crop_region.h), 1, DRPAI_IN_HEIGHT);
+    crop_param.pos_x = std::clamp(static_cast<int>(crop_region.x - crop_region.w/2), 0, DRPAI_IN_WIDTH - crop_param.img_owidth);
+    crop_param.pos_y = std::clamp(static_cast<int>(crop_region.y - crop_region.h/2), 0, DRPAI_IN_HEIGHT - crop_param.img_oheight);
     crop_param.obj.address = proc[DRPAI_INDEX_DRP_PARAM].address;
     crop_param.obj.size = proc[DRPAI_INDEX_DRP_PARAM].size;
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
