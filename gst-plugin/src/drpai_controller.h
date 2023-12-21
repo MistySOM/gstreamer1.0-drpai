@@ -5,23 +5,15 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 #define GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 
-#include <string>
-#include <vector>
-#include <array>
 #include <thread>
-#include <functional>
 #include <mutex>
 #include <condition_variable>
 
 /*DRPAI Driver Header*/
 #include "linux/drpai.h"
 /*Definition of Macros & other variables*/
-#include "define.h"
-#include "box.h"
 #include "image.h"
 #include "fps.h"
-#include "dynamic-post-process/postprocess.h"
-#include "tracker.h"
 #include "src/drpai-models/drpai_deeppose.h"
 
 class DRPAI_Controller {
@@ -29,8 +21,9 @@ class DRPAI_Controller {
 public:
     explicit DRPAI_Controller():
             drpai(false),
-            image_mapped_udma(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_YUV2, nullptr),
-            image_thread(DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, image_thread_buffer)
+            image_mapped_udma(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, nullptr),
+            image_thread(drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, image_thread_buffer),
+            image_thread_buffer(new uint8_t[drpai.IN_WIDTH * drpai.IN_HEIGHT * 3])
     {}
 
     bool multithread = true;
@@ -45,7 +38,7 @@ public:
 private:
     Image image_mapped_udma;
     Image image_thread;
-    uint8_t image_thread_buffer[DRPAI_IN_WIDTH*DRPAI_IN_HEIGHT*DRPAI_IN_CHANNEL_BGR];
+    uint8_t* image_thread_buffer;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };

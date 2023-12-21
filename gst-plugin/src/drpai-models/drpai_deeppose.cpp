@@ -35,11 +35,11 @@ void DRPAI_DeepPose::extract_detections() {
     uint8_t det_size = NUM_OUTPUT_KEYPOINT;
     detection det[det_size];
     det[0].bbox = crop_region;
-    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
+    const auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
 
     yawn_detected = ret & (1 << 4);
     blink_detected = ret & (1 << 3);
-    last_head_pose = (HeadPose)(ret % (1 << 3));
+    last_head_pose = static_cast<HeadPose>(ret % (1 << 3));
 
     /* Non-Maximum Suppression filter */
     filter_boxes_nms(det, det_size, TH_NMS);
@@ -49,8 +49,8 @@ void DRPAI_DeepPose::extract_detections() {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
 
-        det[i].bbox.x += OUTPUT_ADJ_X;
-        det[i].bbox.y += OUTPUT_ADJ_Y;
+        det[i].bbox.x += CROP_ADJ_X;
+        det[i].bbox.y += CROP_ADJ_Y;
         last_det.push_back(det[i]);
     }
 
@@ -72,9 +72,9 @@ void DRPAI_DeepPose::open_resource(uint32_t data_in_address) {
     DRPAI_Connection::open_resource(data_in_address);
 
     /*DRP Param Info Preparation*/
-    auto drpai_param_file = prefix + "/drp_param_info.txt";
+    const auto drpai_param_file = prefix + "/drp_param_info.txt";
     std::ifstream param_file(drpai_param_file, std::ifstream::ate);
-    auto drp_param_info_size = static_cast<uint32_t>(param_file.tellg());
+    const auto drp_param_info_size = static_cast<uint32_t>(param_file.tellg());
     /*Load DRPAI Parameter for Cropping later*/
     load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file, drp_param_info_size);
 }

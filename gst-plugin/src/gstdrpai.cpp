@@ -62,6 +62,7 @@
 
 #include <gst/gst.h>
 #include <iostream>
+#include <sstream>
 #include "gstdrpai.h"
 #include "drpai_controller.h"
 
@@ -103,6 +104,8 @@ enum {
  *
  * describe the real formats here.
  */
+#define CAP_WIDTH (640)
+#define CAP_HEIGHT (480)
 auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
 static GstStaticPadTemplate sink_factory =
         GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
@@ -128,11 +131,8 @@ static GstStateChangeReturn gst_drpai_change_state (GstElement * element, GstSta
 /* initialize the plugin's class */
 static void
 gst_drpai_class_init(GstDRPAIClass *klass) {
-    GObjectClass *gobject_class;
-    GstElementClass *gstelement_class;
-
-    gobject_class = (GObjectClass *) klass;
-    gstelement_class = (GstElementClass *) klass;
+    const auto gobject_class = reinterpret_cast<GObjectClass *>(klass);
+    const auto gstelement_class = reinterpret_cast<GstElementClass *>(klass);
 
     gobject_class->set_property = gst_drpai_set_property;
     gobject_class->get_property = gst_drpai_get_property;
@@ -198,19 +198,19 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
     g_object_class_install_property(gobject_class, PROP_FILTER_LEFT,
         g_param_spec_uint("filter_left", "Filter Left",
                           "The left edge of the region of interest to filter the detection.",
-                          0, DRPAI_IN_WIDTH-1, 0, G_PARAM_READWRITE));
+                          0, CAP_WIDTH-1, 0, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_FILTER_TOP,
         g_param_spec_uint("filter_top", "Filter Top",
                           "The top edge of the region of interest to filter the detection.",
-                          0, DRPAI_IN_HEIGHT-1, 0, G_PARAM_READWRITE));
+                          0, CAP_HEIGHT-1, 0, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_FILTER_WIDTH,
         g_param_spec_uint("filter_width", "Filter Width",
                           "The width of the region of interest to filter the detection.",
-                          1, DRPAI_IN_WIDTH, DRPAI_IN_WIDTH, G_PARAM_READWRITE));
+                          1, CAP_WIDTH, CAP_WIDTH, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_FILTER_HEIGHT,
         g_param_spec_uint("filter_height", "Filter Height",
                           "The height of the region of interest to filter the detection.",
-                          1, DRPAI_IN_HEIGHT, DRPAI_IN_HEIGHT, G_PARAM_READWRITE));
+                          1, CAP_HEIGHT, CAP_HEIGHT, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -229,26 +229,26 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
  * initialize instance structure
  */
 static void
-gst_drpai_init(GstDRPAI *obj) {
-    obj->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
-    gst_pad_set_event_function (obj->sinkpad,
+gst_drpai_init(GstDRPAI* self) {
+    self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
+    gst_pad_set_event_function (self->sinkpad,
                                 GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
-    gst_pad_set_chain_function (obj->sinkpad,
+    gst_pad_set_chain_function (self->sinkpad,
                                 GST_DEBUG_FUNCPTR(gst_drpai_chain));
-    GST_PAD_SET_PROXY_CAPS (obj->sinkpad);
-    gst_element_add_pad(GST_ELEMENT (obj), obj->sinkpad);
+    GST_PAD_SET_PROXY_CAPS (self->sinkpad);
+    gst_element_add_pad(GST_ELEMENT (self), self->sinkpad);
 
-    obj->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
-    GST_PAD_SET_PROXY_CAPS (obj->srcpad);
-    gst_element_add_pad(GST_ELEMENT (obj), obj->srcpad);
+    self->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
+    GST_PAD_SET_PROXY_CAPS (self->srcpad);
+    gst_element_add_pad(GST_ELEMENT (self), self->srcpad);
 
-    obj->drpai_controller = new DRPAI_Controller();
-    obj->stop_error = TRUE;
+    self->drpai_controller = new DRPAI_Controller();
+    self->stop_error = TRUE;
 }
 
 static GstStateChangeReturn
-gst_drpai_change_state (GstElement * element, GstStateChange transition) {
-    auto *obj = (GstDRPAI*) &element->object;
+gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
+    const auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
 
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
@@ -286,7 +286,7 @@ gst_drpai_change_state (GstElement * element, GstStateChange transition) {
     return state_change_ret;
 }
 static void
-gst_drpai_set_property(GObject *object, guint prop_id,
+gst_drpai_set_property(GObject *object, const guint prop_id,
                               const GValue *value, GParamSpec *pspec) {
     GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
 
@@ -331,7 +331,7 @@ gst_drpai_set_property(GObject *object, guint prop_id,
             obj->drpai_controller->drpai.yolo.det_tracker.doa_threshold = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
-            std::string csv_classes = g_value_get_string(value);
+            const std::string csv_classes = g_value_get_string(value);
             obj->drpai_controller->drpai.yolo.filter_classes.clear();
             if (!csv_classes.empty()) {
                 std::stringstream ss(csv_classes);
@@ -342,16 +342,16 @@ gst_drpai_set_property(GObject *object, guint prop_id,
             break;
         }
         case PROP_FILTER_LEFT:
-            obj->drpai_controller->drpai.filter_region.x = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.x = static_cast<float>(g_value_get_uint(value));
             break;
         case PROP_FILTER_TOP:
-            obj->drpai_controller->drpai.filter_region.y = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.y = static_cast<float>(g_value_get_uint(value));
             break;
         case PROP_FILTER_WIDTH:
-            obj->drpai_controller->drpai.filter_region.w = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.w = static_cast<float>(g_value_get_uint(value));
             break;
         case PROP_FILTER_HEIGHT:
-            obj->drpai_controller->drpai.filter_region.h = (float)g_value_get_uint(value);
+            obj->drpai_controller->drpai.filter_region.h = static_cast<float>(g_value_get_uint(value));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -360,9 +360,9 @@ gst_drpai_set_property(GObject *object, guint prop_id,
 }
 
 static void
-gst_drpai_get_property(GObject *object, guint prop_id,
+gst_drpai_get_property(GObject *object, const guint prop_id,
                               GValue *value, GParamSpec *pspec) {
-    GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
+    const GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
 
     switch (prop_id) {
         case PROP_MULTITHREAD:
@@ -415,16 +415,16 @@ gst_drpai_get_property(GObject *object, guint prop_id,
             break;
         }
         case PROP_FILTER_LEFT:
-            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.x);
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.x));
             break;
         case PROP_FILTER_TOP:
-            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.y);
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.y));
             break;
         case PROP_FILTER_WIDTH:
-            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.w);
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.w));
             break;
         case PROP_FILTER_HEIGHT:
-            g_value_set_uint(value, (uint)obj->drpai_controller->drpai.filter_region.h);
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.h));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -438,10 +438,8 @@ gst_drpai_get_property(GObject *object, guint prop_id,
 static gboolean
 gst_drpai_sink_event(GstPad *pad, GstObject *parent,
                             GstEvent *event) {
-    GstDRPAI *obj;
     gboolean ret;
-
-    obj = GST_PLUGIN_DRPAI(parent);
+    const auto obj = GST_PLUGIN_DRPAI(parent);
 
     GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT,
                     GST_EVENT_TYPE_NAME(event), event);
@@ -469,9 +467,8 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
  */
 static GstFlowReturn
 gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
-    GstDRPAI *obj;
-
-    obj = GST_PLUGIN_DRPAI(parent);
+    
+    const auto obj = GST_PLUGIN_DRPAI(parent);
 
     GstMapInfo info;
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);

@@ -7,13 +7,15 @@
 
 
 #include "drpai_connection.h"
-#include "src/dynamic-post-process/deeppose/deeppose.h"
 #include "drpai_yolo.h"
+
+enum HeadPose: int8_t { Center=0, Down, Right, Left, Up  };
 
 class DRPAI_DeepPose: public DRPAI_Connection {
 
 public:
     explicit DRPAI_DeepPose(bool log_detects):
+            DRPAI_Connection(640, 480, 2),
             log_detects(log_detects),
             yolo(true)
     {}
@@ -31,6 +33,11 @@ public:
     void extract_detections() override;
     void run_inference() override;
     void render_detections_on_image(Image &img) override;
+
+private:
+    constexpr static uint8_t NUM_OUTPUT_KEYPOINT = 98;
+    constexpr static int8_t CROP_ADJ_X    = 20;
+    constexpr static int8_t CROP_ADJ_Y    = 20;
 };
 
 

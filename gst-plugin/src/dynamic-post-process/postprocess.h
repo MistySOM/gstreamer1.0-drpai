@@ -8,7 +8,7 @@
 #include "../box.h"
 #include <cstdint>
 #include <algorithm>
-#define CLIP(n,lower,upper) std::max(lower, std::min(n, upper))
+#include <fstream>
 
 #ifdef POST_PROCESS_LIBRARY
 
@@ -48,9 +48,9 @@ public:
         {
             line.erase( remove( line.begin(), line.end(), ' ' ), line.end() );
             if (infile.fail()) return -1;
-            else if (line.empty()) continue;
-            else if (found) { value = line; break; }
-            else if (line == param) found = true;
+            if (line.empty()) continue;
+            if (found) { value = line; break; }
+            if (line == param) found = true;
         }
         infile.close();
         return 0;

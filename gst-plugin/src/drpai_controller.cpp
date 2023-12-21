@@ -4,6 +4,9 @@
 
 #include <memory>
 #include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <cstring>
 #include "drpai_controller.h"
 
 
@@ -25,7 +28,7 @@ void DRPAI_Controller::open_resources() {
     /* Obtain udmabuf memory area starting address */
     char addr[1024];
     errno = 0;
-    auto fd = open("/sys/class/u-dma-buf/udmabuf0/phys_addr", O_RDONLY);
+    const auto fd = open("/sys/class/u-dma-buf/udmabuf0/phys_addr", O_RDONLY);
     if (0 > fd)
         throw std::runtime_error("[ERROR] Failed to open udmabuf0/phys_addr : errno="  + std::string(std::strerror(errno)));
     if ( read(fd, addr, 1024) < 0 )
@@ -79,16 +82,16 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         catch (const std::runtime_error& e) {
             std::cerr << e.what() << std::endl;
             thread_state = Failed;
-            throw e;
+            throw;
         }
 
-    Image img (DRPAI_IN_WIDTH, DRPAI_IN_HEIGHT, DRPAI_IN_CHANNEL_BGR, img_data);
+    Image img (drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
     drpai.corner_text.clear();
     if(show_fps) {
-        drpai.corner_text.push_back("Video Rate: " + std::to_string(int(video_rate.get_smooth_rate())) + " fps");
+        drpai.corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
         drpai.add_corner_text();
     }
     drpai.render_detections_on_image(img);
@@ -105,7 +108,7 @@ void DRPAI_Controller::release_resources() {
         process_thread->join();
         delete process_thread;
     }
-
+    delete image_thread_buffer;
     drpai.release_resource();
 }
 
@@ -129,7 +132,7 @@ void DRPAI_Controller::thread_function_loop() {
 
 void DRPAI_Controller::thread_function_single() {
     {
-        std::unique_lock<std::mutex> lock(state_mutex);
+        std::unique_lock lock(state_mutex);
         if (thread_state == Closing)
             throw std::exception();
 

@@ -9,6 +9,8 @@
 /*opencv for machine learning*/
 #include <opencv2/ml.hpp>
 
+#include "../yolo/yolo.h"
+
 /*ML model inferencing*/
 static cv::Ptr<cv::ml::RTrees> tree = nullptr;
 static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
@@ -52,8 +54,7 @@ int8_t post_process_release() {
 ******************************************/
 int8_t post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
 {
-    Box crop_box = det[0].bbox;
-    *det_len = std::min(*det_len, (uint8_t)NUM_OUTPUT_KEYPOINT);
+    const Box& crop_box = det[0].bbox;
 
     for (uint8_t i = 0; i < *det_len; i++)
     {
@@ -61,8 +62,8 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
         auto posx = output_buf[2*i]   * crop_box.w + crop_box.x + OUTPUT_ADJ_X;
         auto posy = output_buf[2*i+1] * crop_box.h + crop_box.y + OUTPUT_ADJ_Y;
         /* Make sure the coordinates are not off the screen. */
-        CLIP(posx, 0.0f, IMREAD_IMAGE_WIDTH - KEY_POINT_SIZE - 1.0f);
-        CLIP(posy, 0.0f, IMREAD_IMAGE_HEIGHT - KEY_POINT_SIZE - 1.0f);
+        posx = std::clamp(posx, 0.0f, IN_WIDTH - KEY_POINT_SIZE - 1.0f);
+        posy = std::clamp(posy, 0.0f, IN_HEIGHT - KEY_POINT_SIZE - 1.0f);
         det[i].bbox.x = posx;
         det[i].bbox.y = posy;
         det[i].bbox.w = det[i].bbox.h = KEY_POINT_SIZE;
@@ -73,15 +74,15 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
     const auto X = cv::Mat(1, INF_OUT_SIZE, CV_32F, const_cast<float *>(output_buf));
     cv::Mat preds = {};
     dtree->predict(X, preds);
-    auto random_forest_preds = (int8_t)(preds.at<float>(0) - 1);
+    const auto random_forest_preds = (int8_t)(preds.at<float>(0) - 1);
 
-    auto lips_width = det[KEYPOINT_LIP_LEFT].bbox % det[KEYPOINT_LIP_RIGHT].bbox;
-    auto lips_height = det[KEYPOINT_LIP_TOP].bbox % det[KEYPOINT_LIP_BOTTOM].bbox;
-    auto yawn_flag = (lips_width/lips_height < 1.1);
+    const auto lips_width = det[KEYPOINT_LIP_LEFT].bbox % det[KEYPOINT_LIP_RIGHT].bbox;
+    const auto lips_height = det[KEYPOINT_LIP_TOP].bbox % det[KEYPOINT_LIP_BOTTOM].bbox;
+    const auto yawn_flag = (lips_width/lips_height < 1.1);
 
-    auto left_eye_height = det[KEYPOINT_LEFT_EYE_TOP].bbox % det[KEYPOINT_LEFT_EYE_BOTTOM].bbox;
-    auto right_eye_height = det[KEYPOINT_RIGHT_EYE_TOP].bbox % det[KEYPOINT_RIGHT_EYE_BOTTOM].bbox;
-    auto blink_flag = ((left_eye_height < 5.0) && (right_eye_height < 5.0));
+    const auto left_eye_height = det[KEYPOINT_LEFT_EYE_TOP].bbox % det[KEYPOINT_LEFT_EYE_BOTTOM].bbox;
+    const auto right_eye_height = det[KEYPOINT_RIGHT_EYE_TOP].bbox % det[KEYPOINT_RIGHT_EYE_BOTTOM].bbox;
+    const auto blink_flag = ((left_eye_height < 5.0) && (right_eye_height < 5.0));
 
     return (int8_t)((yawn_flag << 4) | (blink_flag << 3) | random_forest_preds);
 }

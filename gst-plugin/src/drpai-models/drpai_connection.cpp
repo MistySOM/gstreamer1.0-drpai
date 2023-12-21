@@ -5,6 +5,11 @@
 #include "drpai_connection.h"
 #include "src/dynamic-post-process/deeppose/deeppose.h"
 #include <iostream>
+#include <sstream>
+#include <cstring>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 /*****************************************
 * Function Name : read_addrmap_txt
@@ -94,7 +99,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
 {
     int32_t obj_fd;
     uint8_t drpai_buf[BUF_SIZE];
-    drpai_data_t drpai_data {from, size};
+    drpai_data_t drpai_data { from, size };
 
     std::cout << "Loading : " << data << std::endl;
     errno = 0;
@@ -194,10 +199,11 @@ void DRPAI_Connection::load_drpai_data()
 ******************************************/
 void DRPAI_Connection::get_result()
 {
-    drpai_data_t drpai_data;
+    drpai_data_t drpai_data {
+        static_cast<uint32_t>(drpai_address.data_out_addr),
+        static_cast<uint32_t>(drpai_address.data_out_size)
+    };
     float drpai_buf[BUF_SIZE];
-    drpai_data.address = drpai_address.data_out_addr;
-    drpai_data.size = drpai_address.data_out_size;
 
     errno = 0;
     /* Assign the memory address and size to be read */
@@ -240,11 +246,14 @@ void DRPAI_Connection::wait() const {
     switch (select(drpai_fd + 1, &rfds, nullptr, nullptr, &tv)) {
         case 0:
             throw std::runtime_error("[ERROR] DRP-AI select() Timeout :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-        case -1:
+        case -1: {
             auto s = "[ERROR] DRP-AI select() Error :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno));
             if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1)
                 s += "\n[ERROR] Failed to run DRPAI_GET_STATUS :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno));
             throw std::runtime_error(s);
+        }
+        default:
+            break;
     }
 
     if (FD_ISSET(drpai_fd, &rfds)) {
@@ -304,14 +313,13 @@ void DRPAI_Connection::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
-        img.draw_rect((int32_t)detection.bbox.x, (int32_t)detection.bbox.y,
-                      (int32_t)detection.bbox.w, (int32_t)detection.bbox.h, detection.to_string_hr());
+        img.draw_rect(detection.bbox, detection.to_string_hr());
     }
 }
 
 void DRPAI_Connection::render_text_on_image(Image &img) {
-    for(size_t i=0; i<corner_text.size(); i++) {
-        img.write_string(corner_text.at(i), 0, i*15, WHITE_DATA, BLACK_DATA, 5);
+    for(std::size_t i=0; i<corner_text.size(); i++) {
+        img.write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
     }
 }
 
@@ -361,11 +369,8 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std
 {
     uint8_t drpai_buf[BUF_SIZE];
 
-    drpai_assign_param_t crop_assign;
-    crop_assign.info_size = file_size;
-    crop_assign.obj.address = proc.address;
-    crop_assign.obj.size = proc.size;
-    if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &crop_assign))
+    drpai_assign_param_t assign_param { file_size, proc };
+    if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &assign_param))
         throw std::runtime_error("[ERROR] DRPAI Assign Parameter Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
     auto obj_fd = open(param_file.c_str(), O_RDONLY);
@@ -392,17 +397,14 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std
     close(obj_fd);
 }
 
-void DRPAI_Connection::crop(Box& crop_region) {
+void DRPAI_Connection::crop(const Box& crop_region) {
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
-    crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, DRPAI_IN_WIDTH);
-    crop_param.img_oheight = std::clamp(static_cast<int>(crop_region.h), 1, DRPAI_IN_HEIGHT);
-    crop_param.pos_x = std::clamp(static_cast<int>(crop_region.x - crop_region.w/2), 0, DRPAI_IN_WIDTH - crop_param.img_owidth);
-    crop_param.pos_y = std::clamp(static_cast<int>(crop_region.y - crop_region.h/2), 0, DRPAI_IN_HEIGHT - crop_param.img_oheight);
-    crop_param.obj.address = proc[DRPAI_INDEX_DRP_PARAM].address;
-    crop_param.obj.size = proc[DRPAI_INDEX_DRP_PARAM].size;
+    crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, IN_WIDTH);
+    crop_param.img_oheight = std::clamp(static_cast<int>(crop_region.h), 1, IN_HEIGHT);
+    crop_param.pos_x = std::clamp(static_cast<int>(crop_region.x - crop_region.w/2), 0, IN_WIDTH - crop_param.img_owidth);
+    crop_param.pos_y = std::clamp(static_cast<int>(crop_region.y - crop_region.h/2), 0, IN_HEIGHT - crop_param.img_oheight);
+    crop_param.obj = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-
-    crop_region = Box{cropx, cropy, cropw, croph};
 }

@@ -25,7 +25,11 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include "define.h"
+#include "box.h"
+
+constexpr uint32_t RED_DATA   = 0x0000FFu;
+constexpr uint32_t WHITE_DATA = 0xFFFFFFu;
+constexpr uint32_t BLACK_DATA = 0x000000u;
 
 namespace cv {
     class Mat;
@@ -38,22 +42,18 @@ class Image
             img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
         ~Image();
 
-        [[nodiscard]] uint8_t at(int32_t a) const;
-        void set(int32_t a, uint8_t val);
+        [[nodiscard]] uint8_t at(int32_t a) const { return img_buffer[a]; }
+        void set(int32_t a, uint8_t val) { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(uint8_t* data);
-        void copy_convert_bgr_to_yuy2(uint8_t* data);
+        void copy(const uint8_t* data);
+        void copy_convert_bgr_to_yuy2(const uint8_t* data);
         void copy_convert_bgr_to_yuy2(const Image& img) { copy_convert_bgr_to_yuy2(img.img_buffer); }
-        void read_bmp(const std::string& filename);
-        void save_bmp(const std::string& filename) const;
-        void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
+        void draw_rect(const Box& box, const std::string& str);
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
                           int32_t color, int32_t backcolor, int8_t margin=0);
 
     private:
-        uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
-        std::array<uint8_t, FILEHEADERSIZE+INFOHEADERSIZE_W_V3> bmp_header {};
         uint8_t udmabuf_fd = 0;
         int32_t img_w;
         int32_t img_h;
@@ -62,11 +62,11 @@ class Image
         uint8_t* img_buffer = nullptr;
         cv::Mat* img_cv = nullptr;
 
-        int32_t front_color = RED_DATA;
-        int32_t back_color = BLACK_DATA;
-        int32_t font_w = CPU_DRAW_FONT_WIDTH;
-        int32_t font_h = CPU_DRAW_FONT_HEIGHT;
-        void draw_point(int32_t x, int32_t y, int32_t color);
+        constexpr static uint32_t front_color = RED_DATA;
+        constexpr static uint32_t back_color = BLACK_DATA;
+        constexpr static int32_t font_w = 6;
+        constexpr static int32_t font_h = 8;
+        void draw_point(uint32_t x, uint32_t y, uint32_t color);
         void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
         void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
 };
