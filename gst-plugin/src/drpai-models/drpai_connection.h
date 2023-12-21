@@ -5,6 +5,7 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
 #define GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
 
+#include <vector>
 #include "src/linux/drpai.h"
 #include "src/fps.h"
 #include "src/box.h"
