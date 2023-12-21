@@ -6,12 +6,10 @@
 #include "src/box.h"
 #include <iostream>
 
-bool in(const std::string& search, const std::vector<std::string>& array) {
-    for (auto& item: array) {
-        if (item == search)
-            return true;
-    }
-    return false;
+inline bool in(const std::string& search, const std::vector<std::string>& array) {
+    return std::any_of(array.begin(), array.end(), [&](const std::string& i) {
+        return i == search;
+    });
 }
 
 /*****************************************
@@ -62,7 +60,7 @@ void DRPAI_Yolo::extract_detections()
         if (det[i].prob == 0) continue;
 
         /* Skip the bounding boxes outside of region of interest */
-        if (!filter_classes.empty() && !in(det[i].name, filter_classes)) continue;
+        if (!filter_classes.empty() && in(det[i].name, filter_classes)) continue;
         if ((filter_region & det[i].bbox) == 0) continue;
 
         if (det_tracker.active)
@@ -105,8 +103,7 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
         for (const auto& tracked: last_tracked_detection)
         {
             /* Draw the bounding box on the image */
-            img.draw_rect((int32_t)tracked.last_detection.bbox.x, (int32_t)tracked.last_detection.bbox.y,
-                          (int32_t)tracked.last_detection.bbox.w, (int32_t)tracked.last_detection.bbox.h, tracked.to_string_hr());
+            img.draw_rect(tracked.last_detection.bbox, tracked.to_string_hr());
         }
     else
         DRPAI_Connection::render_detections_on_image(img);

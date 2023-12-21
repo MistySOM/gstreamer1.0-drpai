@@ -18,14 +18,14 @@ public:
     explicit fps(): last_time(std::chrono::steady_clock::now()) {}
 
     void inform_frame() {
-        auto now = std::chrono::steady_clock::now();
-        uint32_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_time).count();
+        const auto now = std::chrono::steady_clock::now();
+        const uint32_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_time).count();
         frame_durations.push_front(duration);
         if (frame_durations.size() > smooth_rate)
             frame_durations.pop_back();
         last_time = now;
 
-        auto s = int32_t(1000.f/max_rate) - int32_t(duration) + last_sleep_duration;
+        const auto s = static_cast<int32_t>(1000.f/max_rate) - static_cast<int32_t>(duration) + last_sleep_duration;
         if (s > 0) {
             last_sleep_duration = s;
             //for some reason I had to add 25 milliseconds to this sleep to match the max_rate result. I don't know why.
@@ -34,10 +34,10 @@ public:
     }
 
     [[nodiscard]] float get_smooth_durations() const {
-        return (float)std::accumulate(frame_durations.begin(), frame_durations.end(), 0.0)
-                / (float)frame_durations.size();
+        return static_cast<float>(std::accumulate(frame_durations.begin(), frame_durations.end(), 0.0))
+                / static_cast<float>(frame_durations.size());
     }
-    [[nodiscard]] float get_last_rate() const { return 1000.0f / float(frame_durations.front()); }
+    [[nodiscard]] float get_last_rate() const { return 1000.0f / static_cast<float>(frame_durations.front()); }
     [[nodiscard]] float get_smooth_rate() const { return 1000.0f / get_smooth_durations(); }
 
 private:

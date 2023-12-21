@@ -26,7 +26,6 @@
 * Includes
 ******************************************/
 #include "box.h"
-#include "math.h"
 
 /*****************************************
 * Function Name : overlap
@@ -39,12 +38,12 @@
 ******************************************/
 float Box::overlap(float x1, float w1, float x2, float w2)
 {
-    float l1 = x1 - w1/2;
-    float l2 = x2 - w2/2;
-    float left = l1 > l2 ? l1 : l2;
-    float r1 = x1 + w1/2;
-    float r2 = x2 + w2/2;
-    float right = r1 < r2 ? r1 : r2;
+    const float l1 = x1 - w1/2;
+    const float l2 = x2 - w2/2;
+    const float left = l1 > l2 ? l1 : l2;
+    const float r1 = x1 + w1/2;
+    const float r2 = x2 + w2/2;
+    const float right = r1 < r2 ? r1 : r2;
     return right - left;
 }
 
@@ -57,13 +56,13 @@ float Box::overlap(float x1, float w1, float x2, float w2)
 ******************************************/
 float Box::operator&(const Box& b) const
 {
-    float _w = overlap(x, w, b.x, b.w);
-    float _h = overlap(y, h, b.y, b.h);
+    const float _w = overlap(x, w, b.x, b.w);
+    const float _h = overlap(y, h, b.y, b.h);
     if(_w < 0 || _h < 0)
     {
         return 0;
     }
-    float area = _w*_h;
+    const float area = _w*_h;
     return area;
 }
 
@@ -76,8 +75,8 @@ float Box::operator&(const Box& b) const
 ******************************************/
 float Box::operator|(const Box& b) const
 {
-    float i = operator&(b);
-    float u = area() + b.area() - i;
+    const float i = operator&(b);
+    const float u = area() + b.area() - i;
     return u;
 }
 
@@ -95,13 +94,13 @@ float Box::iou_with(const Box& b) const
 
 float Box::doa_with(const Box& b) const
 {
-    float my_center_x = x+w/2;
-    float my_center_y = y+h/2;
-    float b_center_x = b.x+b.w/2;
-    float b_center_y = b.y+b.h/2;
-    double distance = std::pow(my_center_x-b_center_x, 2) + std::pow(my_center_y-b_center_y, 2);
-    double avg_area = (area() + b.area()) / 2.0;
-    return (float)(distance/avg_area);
+    const float my_center_x = x+w/2;
+    const float my_center_y = y+h/2;
+    const float b_center_x = b.x+b.w/2;
+    const float b_center_y = b.y+b.h/2;
+    const double distance = std::pow(my_center_x-b_center_x, 2) + std::pow(my_center_y-b_center_y, 2);
+    const double avg_area = (area() + b.area()) / 2.0;
+    return static_cast<float>(distance/avg_area);
 }
 
 /*****************************************
@@ -116,7 +115,7 @@ void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
 {
     for (uint8_t i = 0; i < size; i++)
     {
-        Box a = det[i].bbox;
+        const Box& a = det[i].bbox;
         for (uint8_t j = 0; j < size; j++)
         {
             if (i == j)
@@ -127,8 +126,8 @@ void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
             {
                 continue;
             }
-            Box b = det[j].bbox;
-            float b_intersection = a & b;
+            const Box& b = det[j].bbox;
+            const float b_intersection = a & b;
             if ((a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
                 if (det[i].prob > det[j].prob)

@@ -44,8 +44,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef __GST_PLUGIN_DRPAI_H__
-#define __GST_PLUGIN_DRPAI_H__
+#ifndef GST_PLUGIN_DRPAI_H
+#define GST_PLUGIN_DRPAI_H
 
 #include <gst/gst.h>
 
@@ -69,4 +69,4 @@ struct _GstDRPAI
 
 G_END_DECLS
 
-#endif /* __GST_PLUGIN_DRPAI_H__ */
+#endif /* GST_PLUGIN_DRPAI_H */

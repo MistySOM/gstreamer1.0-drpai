@@ -26,8 +26,8 @@
 #define BOX_H
 
 #include <cinttypes>
+#include <cmath>
 #include <string>
-#include <math.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size

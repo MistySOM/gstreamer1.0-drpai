@@ -5,11 +5,11 @@
 #ifndef GSTREAMER1_0_DRPAI_YOLO_H
 #define GSTREAMER1_0_DRPAI_YOLO_H
 
-#define IN_WIDTH          (640)
-#define IN_HEIGHT         (480)
-#define TH_PROB           (0.5f)
-#define MODEL_IN_W        (416)
-#define MODEL_IN_H        (416)
+constexpr int32_t IN_WIDTH        = 640;
+constexpr int32_t IN_HEIGHT       = 480;
+constexpr float   TH_PROB         = 0.5f;
+constexpr int32_t MODEL_IN_W      = 416;
+constexpr int32_t MODEL_IN_H      = 416;
 
 enum BEST_CLASS_PREDICTION_ALGORITHM {
     BEST_CLASS_PREDICTION_ALGORITHM_NONE = 0,
