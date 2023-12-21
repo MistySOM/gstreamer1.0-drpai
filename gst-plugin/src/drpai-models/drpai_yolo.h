@@ -29,8 +29,6 @@ public:
     void print_box(detection d, int32_t i);
 
 private:
-    constexpr static float TH_NMS                   = 0.5f;
-
     uint32_t detection_buffer_size = 10;
     std::vector<tracked_detection> last_tracked_detection {};
 };

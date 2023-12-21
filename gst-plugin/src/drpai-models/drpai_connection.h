@@ -64,6 +64,8 @@ protected:
     std::vector<float> drpai_output_buf {};
     PostProcess post_process;
 
+    constexpr static float TH_NMS = 0.5f;
+
     explicit DRPAI_Connection(int32_t IN_WIDTH, int32_t IN_HEIGHT, int32_t IN_CHANNEL):
         filter_region{ 0, 0, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)},
         IN_WIDTH(IN_WIDTH), IN_HEIGHT(IN_HEIGHT), IN_CHANNEL(IN_CHANNEL)
