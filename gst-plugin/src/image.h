@@ -31,10 +31,6 @@ constexpr uint32_t RED_DATA   = 0x0000FFu;
 constexpr uint32_t WHITE_DATA = 0xFFFFFFu;
 constexpr uint32_t BLACK_DATA = 0x000000u;
 
-namespace cv {
-    class Mat;
-}
-
 class Image
 {
     public:
@@ -60,7 +56,6 @@ class Image
         int32_t img_c;
         int32_t size;
         uint8_t* img_buffer = nullptr;
-        cv::Mat* img_cv = nullptr;
 
         constexpr static uint32_t front_color = RED_DATA;
         constexpr static uint32_t back_color = BLACK_DATA;

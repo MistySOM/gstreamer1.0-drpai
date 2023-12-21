@@ -37,7 +37,6 @@
 
 Image::~Image()
 {
-    delete img_cv;
     if(udmabuf_fd != 0) {
         munmap(img_buffer, size);
         close(udmabuf_fd);
