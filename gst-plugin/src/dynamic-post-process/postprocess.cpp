@@ -24,15 +24,15 @@ void PostProcess::dynamic_library_open(const std::string& prefix) {
         throw std::runtime_error("[ERROR] Failed to open library " + std::string(dlerror()));
 
     dlerror();    /* Clear any existing error */
-    post_process_initialize = (typeof(post_process_initialize)) dlsym(dynamic_library_handle, "post_process_initialize");
+    post_process_initialize = reinterpret_cast<decltype(post_process_initialize)>(dlsym(dynamic_library_handle, "post_process_initialize"));
     if ((error = dlerror()) != nullptr)
         throw std::runtime_error("[ERROR] Failed to locate function in " + prefix + ": error=" + error);
 
-    post_process_release = (typeof(post_process_release)) dlsym(dynamic_library_handle, "post_process_release");
+    post_process_release = reinterpret_cast<decltype(post_process_release)>(dlsym(dynamic_library_handle, "post_process_release"));
     if ((error = dlerror()) != nullptr)
         throw std::runtime_error("[ERROR] Failed to locate function in " + prefix + ": error=" + error);
 
-    post_process_output = (typeof(post_process_output)) dlsym(dynamic_library_handle, "post_process_output");
+    post_process_output = reinterpret_cast<decltype(post_process_output)>(dlsym(dynamic_library_handle, "post_process_output"));
     if ((error = dlerror()) != nullptr)
         throw std::runtime_error("[ERROR] Failed to locate function in " + prefix + ": error=" + error);
 }

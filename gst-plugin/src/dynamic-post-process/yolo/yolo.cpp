@@ -96,6 +96,10 @@ int8_t load_post_process_params_file(const std::string& params_file_name)
         best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
     else if (value == "softmax")
         best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
+    else {
+        std::cerr << std::endl << "[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " << value << std::endl;
+        return -1;
+    }
 
     if (get_param(params_file_name, "[anchor_divide_size]", value) != 0)
         return -1;
@@ -103,6 +107,10 @@ int8_t load_post_process_params_file(const std::string& params_file_name)
         anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
     else if (value == "num_grid")
         anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
+    else {
+        std::cerr << std::endl << "[ERROR] Failed to load value for param [anchor_divide_size]: " << value << std::endl;
+        return -1;
+    }
     return 0;
 }
 
@@ -122,12 +130,12 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
         return -1;
     }
 
-    std::string find = "Width";
+    const std::string find = "Width";
     std::string line;
     while (getline(infile,line))
     {
         if (line.find(find) != std::string::npos) {
-            std::size_t pos = line.find(':') + 2;
+            const auto pos = line.find(':') + 2;
             num_grids.push_back(std::stoi(line.substr(pos)));
         }
         if (infile.fail())
@@ -140,7 +148,7 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
 }
 
 int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
-    std::string prefix { model_prefix };
+    const std::string prefix { model_prefix };
     post_process_release();
 
     /*Load Label from label_list file*/
@@ -211,7 +219,7 @@ int8_t post_process_release() {
 *                 channel = channel to access each bounding box attribute.
 * Return value  : index to access the bounding box attribute.
 ******************************************/
-uint32_t yolo_index(uint8_t num_grid, uint32_t offs, uint32_t channel)
+inline uint32_t yolo_index(uint8_t num_grid, uint32_t offs, uint32_t channel)
 {
     return offs + channel * num_grid * num_grid;
 }
@@ -228,7 +236,7 @@ uint32_t yolo_index(uint8_t num_grid, uint32_t offs, uint32_t channel)
 ******************************************/
 uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x)
 {
-    uint8_t num = num_grids[n];
+    const uint8_t& num = num_grids[n];
     uint32_t prev_layer_num = 0;
 
     for (int32_t i = 0 ; i < n; i++)
@@ -244,11 +252,11 @@ uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x)
 * Arguments     : x = input argument for the calculation
 * Return value  : sigmoid result of input x
 ******************************************/
-float sigmoid(float x)
+inline float sigmoid(float x)
 {
     return 1.0f/(1.0f + expf(-x));
 }
-void sigmoid(std::vector<float>& val) {
+inline void sigmoid(std::vector<float>& val) {
     for (auto& v: val)
         v = sigmoid(v);
 }
@@ -294,7 +302,7 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
     float new_w, new_h;
     float correct_w = 1.f;
     float correct_h = 1.f;
-    if ((float) (MODEL_IN_W / correct_w) < (float) (MODEL_IN_H/correct_h) )
+    if (MODEL_IN_W / correct_w < MODEL_IN_H/correct_h)
     {
         new_w = (float) MODEL_IN_W;
         new_h = correct_h * MODEL_IN_W / correct_w;
@@ -307,8 +315,8 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
 
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
-        uint8_t num_grid = num_grids[n];
-        uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
+        const uint8_t& num_grid = num_grids[n];
+        const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
         for (uint32_t b = 0;b<num_bb;b++)
         {
@@ -316,9 +324,9 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
             {
                 for (int32_t x = 0;x<num_grid;x++)
                 {
-                    uint32_t offs = yolo_offset(n, b, y, x);
-                    float tc = output_buf[yolo_index(num_grid, offs, 4)];
-                    float objectness = sigmoid(tc);
+                    const uint32_t offs = yolo_offset(n, b, y, x);
+                    const float& tc = output_buf[yolo_index(num_grid, offs, 4)];
+                    const float objectness = sigmoid(tc);
 
                     std::vector<float> classes (labels.size());
                     /* Get the class prediction */
@@ -344,15 +352,15 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
                     }
 
                     /* Store the result into the list if the probability is more than the threshold */
-                    float probability = max_pred * objectness;
+                    const float probability = max_pred * objectness;
                     if (probability > TH_PROB)
                     {
                         if(*det_len < det_array_size)
                         {
-                            float tx = output_buf[offs];
-                            float ty = output_buf[yolo_index(num_grid, offs, 1)];
-                            float tw = output_buf[yolo_index(num_grid, offs, 2)];
-                            float th = output_buf[yolo_index(num_grid, offs, 3)];
+                            const float& tx = output_buf[offs];
+                            const float& ty = output_buf[yolo_index(num_grid, offs, 1)];
+                            const float& tw = output_buf[yolo_index(num_grid, offs, 2)];
+                            const float& th = output_buf[yolo_index(num_grid, offs, 3)];
 
                             /* Compute the bounding box */
                             /*get_yolo_box/get_region_box in paper implementation*/
