@@ -84,10 +84,8 @@ typedef struct detection
     }
     [[nodiscard]] json_object get_json() const {
         json_object j;
-        if (name) {
-            j.add("class", name);
-            j.add("probability", prob);
-        }
+        j.add("class", name);
+        j.add("probability", prob, 2);
         j.add("box", bbox.get_json());
         return j;
     }
