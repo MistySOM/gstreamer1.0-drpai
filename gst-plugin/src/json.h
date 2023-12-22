@@ -20,9 +20,15 @@ protected:
     std::string s;
 
     virtual void add(const float value, const int precision) {
-        if (precision != -1)
-            { std::ostringstream out; out << std::fixed << std::setprecision(precision) << value; s += out.str(); }
-        else s += std::to_string(value);
+        switch (precision) {
+            case -1: s += std::to_string(value); return;
+            case 0: add(static_cast<int>(value)); return;
+            default: {
+                std::ostringstream out;
+                out << std::fixed << std::setprecision(precision) << value;
+                s += out.str();
+            }
+        }
     }
     virtual void add(const int value) { s += std::to_string(value); }
     virtual void add(const unsigned int value) { s += std::to_string(value); }

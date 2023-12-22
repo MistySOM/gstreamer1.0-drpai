@@ -39,10 +39,10 @@ typedef struct Box
 
     [[nodiscard]] json_object get_json() const {
         json_object j;
-        j.add("centerX", x);
-        j.add("centerY", y);
-        j.add("width", w);
-        j.add("height", h);
+        j.add("centerX", x, 0);
+        j.add("centerY", y, 0);
+        j.add("width", w, 0);
+        j.add("height", h, 0);
         return j;
     }
 
