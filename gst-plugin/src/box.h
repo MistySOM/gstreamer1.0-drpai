@@ -28,6 +28,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <string>
+#include "json.h"
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -36,11 +37,13 @@ typedef struct Box
 {
     float x, y, w, h;
 
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ \"x\"=" + std::to_string(x) +
-               ", \"y\"=" + std::to_string(y) +
-               ", \"width\"=" + std::to_string(w) +
-               ", \"height\"=" + std::to_string(h) + " }";
+    [[nodiscard]] json_object get_json() const {
+        json_object j;
+        j.add("centerX", x);
+        j.add("centerY", y);
+        j.add("width", w);
+        j.add("height", h);
+        return j;
     }
 
     [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
@@ -79,16 +82,14 @@ typedef struct detection
         else
             return "";
     }
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ " + to_string_json_inline() + " }";
-    }
-    [[nodiscard]] std::string to_string_json_inline() const {
-        if (name)
-            return "\"class\"=" + std::string(name) +
-                   ", \"probability\"=" + std::to_string(prob) +
-                   ", \"box\"=" + bbox.to_string_json();
-        else
-            return "\"box\"=" + bbox.to_string_json();
+    [[nodiscard]] json_object get_json() const {
+        json_object j;
+        if (name) {
+            j.add("class", name);
+            j.add("probability", prob);
+        }
+        j.add("box", bbox.get_json());
+        return j;
     }
 } detection;
 

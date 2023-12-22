@@ -5,11 +5,20 @@
 #include <algorithm>
 #include "tracker.h"
 
-std::string to_string(const tracking_time& time) {
+std::string tracked_detection::to_string(const tracking_time& time) {
     const std::time_t t = std::chrono::system_clock::to_time_t(time);
     std::string ts = std::ctime(&t);
     ts.resize(ts.size()-1);
     return ts;
+}
+
+json_object tracked_detection::get_json() const {
+    json_object j;
+    j.add("id", id);
+    j.add("seen_first", to_string(seen_first));
+    j.add("seen_last", to_string(seen_last));
+    j.concatenate(last_detection.get_json());
+    return j;
 }
 
 tracked_detection& tracker::track(const detection& det) {

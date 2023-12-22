@@ -115,3 +115,14 @@ void DRPAI_Yolo::add_corner_text() {
         corner_text.push_back("Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f)));
     }
 }
+
+json_array DRPAI_Yolo::get_detections_json() const {
+    if (det_tracker.active) {
+        json_array a;
+        for(auto det: last_tracked_detection)
+            a.add(det.get_json());
+        return a;
+    }
+    else
+        return DRPAI_Connection::get_detections_json();
+}

@@ -326,6 +326,21 @@ void DRPAI_Connection::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(int(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
+json_array DRPAI_Connection::get_detections_json() const {
+    json_array a;
+    for(auto det: last_det)
+        a.add(det.get_json());
+    return a;
+}
+
+json_object DRPAI_Connection::get_json() const {
+    json_object j;
+    j.add("drpai-rate", rate.get_smooth_rate(), 1);
+    auto d = get_detections_json();
+    j.add("detections", get_detections_json());
+    return j;
+}
+
 void DRPAI_Connection::run_inference() {
     if(drpai_fd) {
         rate.inform_frame();

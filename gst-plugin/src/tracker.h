@@ -10,7 +10,6 @@
 #include <list>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
-std::string to_string(const tracking_time& time);
 
 struct tracked_detection {
     const uint32_t id;
@@ -25,13 +24,10 @@ struct tracked_detection {
     [[nodiscard]] std::string to_string_hr() const {
         return std::to_string(id) + "." + last_detection.to_string_hr();
     }
+    [[nodiscard]] json_object get_json() const;
 
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ \"id\"=" + std::to_string(id) +
-               ", \"seen_first\"=" + to_string(seen_first) +
-               ", \"seen_last\"=" + to_string(seen_last) +
-               last_detection.to_string_json_inline() + " }";
-    }
+private:
+    [[nodiscard]] static std::string to_string(const tracking_time& time);
 };
 
 class tracker {
