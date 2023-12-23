@@ -25,8 +25,7 @@ public:
             frame_durations.pop_back();
         last_time = now;
 
-        const auto s = static_cast<int32_t>(1000.f/max_rate) - static_cast<int32_t>(duration) + last_sleep_duration;
-        if (s > 0) {
+        if (const auto s = static_cast<int32_t>(1000.f/max_rate) - static_cast<int32_t>(duration) + last_sleep_duration; s > 0) {
             last_sleep_duration = s;
             //for some reason I had to add 25 milliseconds to this sleep to match the max_rate result. I don't know why.
             std::this_thread::sleep_for(std::chrono::milliseconds(s + 25));

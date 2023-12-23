@@ -147,7 +147,7 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
     return 0;
 }
 
-int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
+int8_t post_process_initialize(const char model_prefix[], const uint32_t output_len) {
     const std::string prefix { model_prefix };
     post_process_release();
 
@@ -219,7 +219,7 @@ int8_t post_process_release() {
 *                 channel = channel to access each bounding box attribute.
 * Return value  : index to access the bounding box attribute.
 ******************************************/
-inline uint32_t yolo_index(uint8_t num_grid, uint32_t offs, uint32_t channel)
+inline uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
 {
     return offs + channel * num_grid * num_grid;
 }
@@ -234,7 +234,7 @@ inline uint32_t yolo_index(uint8_t num_grid, uint32_t offs, uint32_t channel)
 *                 x = Number to indicate which region [0~13]
 * Return value  : offset to access the bounding box attributes.
 ******************************************/
-uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x)
+uint32_t yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x)
 {
     const uint8_t& num = num_grids[n];
     uint32_t prev_layer_num = 0;
@@ -252,7 +252,7 @@ uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x)
 * Arguments     : x = input argument for the calculation
 * Return value  : sigmoid result of input x
 ******************************************/
-inline float sigmoid(float x)
+inline float sigmoid(const float x)
 {
     return 1.0f/(1.0f + expf(-x));
 }
@@ -294,24 +294,8 @@ void softmax(std::vector<float>& val)
 ******************************************/
 int8_t post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
 {
-    uint8_t det_array_size = *det_len;
+    const uint8_t det_array_size = *det_len;
     *det_len = 0;
-
-    /* Following variables are required for correct_yolo/region_boxes in Darknet implementation*/
-    /* Note: This implementation refers to the "darknet detector test" */
-    float new_w, new_h;
-    float correct_w = 1.f;
-    float correct_h = 1.f;
-    if (MODEL_IN_W / correct_w < MODEL_IN_H/correct_h)
-    {
-        new_w = (float) MODEL_IN_W;
-        new_h = correct_h * MODEL_IN_W / correct_w;
-    }
-    else
-    {
-        new_w = correct_w * MODEL_IN_H / correct_h;
-        new_h = MODEL_IN_H;
-    }
 
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
@@ -352,8 +336,7 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
                     }
 
                     /* Store the result into the list if the probability is more than the threshold */
-                    const float probability = max_pred * objectness;
-                    if (probability > TH_PROB)
+                    if (const float probability = max_pred * objectness; probability > TH_PROB)
                     {
                         if(*det_len < det_array_size)
                         {
@@ -364,31 +347,24 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
 
                             /* Compute the bounding box */
                             /*get_yolo_box/get_region_box in paper implementation*/
-                            float center_x = ((float) x + sigmoid(tx)) / (float) num_grid;
-                            float center_y = ((float) y + sigmoid(ty)) / (float) num_grid;
+                            float center_x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
+                            float center_y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
                             float box_w = expf(tw) * anchors[anchor_offset + 2 * b + 0];
                             float box_h = expf(th) * anchors[anchor_offset + 2 * b + 1];
                             if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_MODEL_IN) {
                                 box_w /= MODEL_IN_W;
                                 box_h /= MODEL_IN_H;
                             } else if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_NUM_GRID) {
-                                box_w /= (float) num_grid;
-                                box_h /= (float) num_grid;
+                                box_w /= static_cast<float>(num_grid);
+                                box_h /= static_cast<float>(num_grid);
                             }
-
-                            /* Adjustment for VGA size */
-                            /* correct_yolo/region_boxes */
-                            center_x = (center_x - (MODEL_IN_W - new_w) / 2.f / MODEL_IN_W) / (new_w / MODEL_IN_W);
-                            center_y = (center_y - (MODEL_IN_H - new_h) / 2.f / MODEL_IN_H) / (new_h / MODEL_IN_H);
-                            box_w *= (float) (MODEL_IN_W / new_w);
-                            box_h *= (float) (MODEL_IN_H / new_h);
 
                             center_x = roundf(center_x * IN_WIDTH);
                             center_y = roundf(center_y * IN_HEIGHT);
                             box_w = roundf(box_w * IN_WIDTH);
                             box_h = roundf(box_h * IN_HEIGHT);
 
-                            Box bb = {center_x, center_y, box_w, box_h};
+                            const Box bb = {center_x, center_y, box_w, box_h};
 
                             det[*det_len].bbox = bb;
                             det[*det_len].c = pred_class;

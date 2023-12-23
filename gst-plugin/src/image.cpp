@@ -74,7 +74,7 @@ void Image::map_udmabuf()
     }
 }
 
-void Image::copy(const uint8_t* data) {
+void Image::copy(const uint8_t* data) const {
     if(img_buffer != nullptr)
         std::memcpy(img_buffer, data, size);
 }
@@ -89,7 +89,7 @@ void Image::copy(const uint8_t* data) {
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
+void Image::write_char(const char code, const int32_t x, const int32_t y, const int32_t color, const int32_t backcolor) const
 {
     // Pick the pattern related to the ASCII code from the elements of the g_ascii_table array.
     // The array doesn't include the non-printable characters, so we need to shift the code to match the element.
@@ -128,7 +128,7 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
 * Return Value  : -
 ******************************************/
 void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
-                         int32_t color, int32_t backcolor, int8_t margin)
+                         const int32_t color, const int32_t backcolor, int8_t margin) const
 {
     const auto str_size = static_cast<int32_t>(pcode.size());
     if (str_size == 0) return;
@@ -160,7 +160,7 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
 *                 color = point color
 * Return Value  : -
 ******************************************/
-void Image::draw_point(uint32_t x, uint32_t y, uint32_t color)
+void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color) const
 {
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 1] = (color >> 8)  & 0x000000FF;
@@ -177,7 +177,7 @@ void Image::draw_point(uint32_t x, uint32_t y, uint32_t color)
 *                 color = line color
 * Return Value  : -
 ******************************************/
-void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color)
+void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const int32_t color) const
 {
     auto dx = static_cast<float>(x1 - x0);
     auto dy = static_cast<float>(y1 - y0);
@@ -243,7 +243,7 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(const Box& box, const std::string& str)
+void Image::draw_rect(const Box& box, const std::string& str) const
 {
     auto x_min = static_cast<int32_t>(box.x - round(box.w / 2.));
     auto y_min = static_cast<int32_t>(box.y - round(box.h / 2.));
@@ -274,7 +274,7 @@ void Image::draw_rect(const Box& box, const std::string& str)
 * Arguments     : -
 * Return value  : -
 ******************************************/
-void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) {
+void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
     if(img_buffer == nullptr)
         return;
 

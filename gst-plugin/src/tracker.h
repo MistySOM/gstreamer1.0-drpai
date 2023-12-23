@@ -19,7 +19,7 @@ struct tracked_detection {
     tracking_time seen_first;
     tracking_time seen_last;
 
-    tracked_detection(uint32_t id, const detection& det, const tracking_time& time):
+    tracked_detection(const uint32_t id, const detection& det, const tracking_time& time):
             id(id), smoothed(1), last_detection(det), seen_first(time), seen_last(time) {}
 
     [[nodiscard]] std::string to_string_hr() const {
@@ -39,7 +39,7 @@ public:
     float doa_threshold;
     uint16_t bbox_smooth_rate;
 
-    tracker(bool active, float time_threshold, float doa_threshold, uint16_t bbox_smooth_rate):
+    tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold),
         bbox_smooth_rate(bbox_smooth_rate) {}
 

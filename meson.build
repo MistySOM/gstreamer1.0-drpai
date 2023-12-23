@@ -1,4 +1,4 @@
-project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL', default_options: ['cpp_std=c++17'])
+project('gst-drpai', 'c', 'cpp', version : '1.19.0.1', license : 'LGPL', default_options: ['cpp_std=c++20'])
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')

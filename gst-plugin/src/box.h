@@ -54,14 +54,14 @@ typedef struct Box
     [[nodiscard]] float operator&(const Box& b) const; // intersection
     [[nodiscard]] float operator|(const Box& b) const; // union
     [[nodiscard]] float operator%(const Box& b) const { // euclidean distance
-        auto dx = x - b.x;
-        auto dy = y - b.y;
+        const auto dx = x - b.x;
+        const auto dy = y - b.y;
         return std::sqrt(dx*dx + dy*dy);
     }
-    [[nodiscard]] Box operator*(float a) const { return Box {x*a, y*a, w*a, h*a}; }
-    [[nodiscard]] Box operator/(float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] Box operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] Box operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
     [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
-    [[nodiscard]] Box average_with(float my_weight, float other_weight, const Box& other) const {
+    [[nodiscard]] Box average_with(const float my_weight, const float other_weight, const Box& other) const {
         return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
     }
 } Box;
@@ -78,7 +78,7 @@ typedef struct detection
 
     [[nodiscard]] std::string to_string_hr() const {
         if (name)
-            return std::string(name) + " (" + std::to_string(int(prob*100)) + "%)";
+            return std::string(name) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
         else
             return "";
     }

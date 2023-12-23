@@ -34,20 +34,20 @@ constexpr uint32_t BLACK_DATA = 0x000000u;
 class Image
 {
     public:
-        explicit Image(int32_t w, int32_t h, int32_t c, uint8_t* data):
+        explicit Image(const int32_t w, const int32_t h, const int32_t c, uint8_t* data):
             img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
         ~Image();
 
-        [[nodiscard]] uint8_t at(int32_t a) const { return img_buffer[a]; }
-        void set(int32_t a, uint8_t val) { img_buffer[a] = val; }
+        [[nodiscard]] uint8_t at(const int32_t a) const { return img_buffer[a]; }
+        void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(const uint8_t* data);
-        void copy_convert_bgr_to_yuy2(const uint8_t* data);
-        void copy_convert_bgr_to_yuy2(const Image& img) { copy_convert_bgr_to_yuy2(img.img_buffer); }
-        void draw_rect(const Box& box, const std::string& str);
+        void copy(const uint8_t* data) const;
+        void copy_convert_bgr_to_yuy2(const uint8_t* data) const;
+        void copy_convert_bgr_to_yuy2(const Image& img) const { copy_convert_bgr_to_yuy2(img.img_buffer); }
+        void draw_rect(const Box& box, const std::string& str) const;
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
-                          int32_t color, int32_t backcolor, int8_t margin=0);
+                          int32_t color, int32_t backcolor, int8_t margin=0) const;
 
     private:
         uint8_t udmabuf_fd = 0;
@@ -61,9 +61,9 @@ class Image
         constexpr static uint32_t back_color = BLACK_DATA;
         constexpr static int32_t font_w = 6;
         constexpr static int32_t font_h = 8;
-        void draw_point(uint32_t x, uint32_t y, uint32_t color);
-        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
-        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
+        void draw_point(uint32_t x, uint32_t y, uint32_t color) const;
+        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) const;
+        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor) const;
 };
 
 #endif

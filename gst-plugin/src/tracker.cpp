@@ -53,7 +53,7 @@ tracked_detection& tracker::track(const detection& det) {
 
 uint32_t tracker::count(float duration) const {
     const auto now = std::chrono::system_clock::now();
-    return std::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
+    return std::ranges::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
     });
 }

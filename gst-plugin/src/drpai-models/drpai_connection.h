@@ -68,20 +68,20 @@ protected:
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection(int32_t IN_WIDTH, int32_t IN_HEIGHT, int32_t IN_CHANNEL):
+    explicit DRPAI_Connection(const int32_t IN_WIDTH, const int32_t IN_HEIGHT, const int32_t IN_CHANNEL):
         filter_region{ 0, 0, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)},
         IN_WIDTH(IN_WIDTH), IN_HEIGHT(IN_HEIGHT), IN_CHANNEL(IN_CHANNEL)
     {};
     virtual ~DRPAI_Connection() = default;
 
     void read_addrmap_txt(const std::string& addr_file);
-    void load_drpai_data();
+    void load_drpai_data() const;
     void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
-    void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size);
+    void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size) const;
     void get_result();
     void start();
     void wait() const;
-    void crop(const Box& crop_region);
+    void crop(const Box& crop_region) const;
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;

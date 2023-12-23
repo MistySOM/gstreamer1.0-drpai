@@ -94,15 +94,13 @@ void DRPAI_Connection::read_addrmap_txt(const std::string& addr_file)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const
+void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t from, const uint32_t size) const
 {
-    int32_t obj_fd;
-    uint8_t drpai_buf[BUF_SIZE];
     drpai_data_t drpai_data { from, size };
 
     std::cout << "Loading : " << data << std::endl;
     errno = 0;
-    obj_fd = open(data.c_str(), O_RDONLY);
+    const auto obj_fd = open(data.c_str(), O_RDONLY);
     if (0 > obj_fd)
         throw std::runtime_error("[ERROR] Failed to open: " + data + "  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
@@ -111,6 +109,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
         if ( ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data) == -1 )
             throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
+        uint8_t drpai_buf[BUF_SIZE];
         for (uint32_t i = 0; i < (drpai_data.size / BUF_SIZE); i++)
         {
             errno = 0;
@@ -128,9 +127,9 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
                 throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
         }
     }
-    catch (std::runtime_error& e) {
+    catch (std::runtime_error&) {
         close(obj_fd);
-        throw e;
+        throw;
     }
     close(obj_fd);
 }
@@ -142,9 +141,9 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, uint32_t from, 
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_data()
+void DRPAI_Connection::load_drpai_data() const
 {
-    std::string drpai_file_path[5] =
+    const std::string drpai_file_path[5] =
     {
         prefix + "/drp_desc.bin",
         prefix + "/" + prefix + "_drpcfg.mem",
@@ -229,8 +228,7 @@ void DRPAI_Connection::get_result()
 
 void DRPAI_Connection::start() {
     errno = 0;
-    int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]);
-    if (0 != ret)
+    if (const int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]); 0 != ret)
         throw std::runtime_error("[ERROR] Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
@@ -262,8 +260,8 @@ void DRPAI_Connection::wait() const {
     }
 }
 
-void DRPAI_Connection::open_resource(uint32_t data_in_address) {
-    std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
+void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
+    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
     std::cout << "Loading : " << drpai_address_file << std::endl;
     read_addrmap_txt(drpai_address_file);
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
@@ -323,7 +321,7 @@ void DRPAI_Connection::render_text_on_image(Image &img) {
 }
 
 void DRPAI_Connection::add_corner_text() {
-    corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(int(rate.get_smooth_rate())) + " fps" : "N/A"));
+    corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
 json_array DRPAI_Connection::get_detections_json() const {
@@ -376,18 +374,17 @@ void DRPAI_Connection::run_inference() {
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size)
+void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, const uint32_t file_size) const
 {
-    uint8_t drpai_buf[BUF_SIZE];
-
     drpai_assign_param_t assign_param { file_size, proc };
     if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &assign_param))
         throw std::runtime_error("[ERROR] DRPAI Assign Parameter Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
-    auto obj_fd = open(param_file.c_str(), O_RDONLY);
+    const auto obj_fd = open(param_file.c_str(), O_RDONLY);
     if (obj_fd < 0)
         throw std::runtime_error("[ERROR] Failed to open parameter file " + param_file);
     try {
+        uint8_t drpai_buf[BUF_SIZE];
         for (uint32_t i = 0; i < (file_size / BUF_SIZE); i++) {
             if (0 > read(obj_fd, drpai_buf, BUF_SIZE))
                 throw std::runtime_error("[ERROR] Failed to read parameter file " + param_file);
@@ -401,14 +398,14 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& proc, const std
                 throw std::runtime_error("[ERROR] DRPAI Write Failed:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
         }
     }
-    catch (std::runtime_error& e) {
+    catch (std::runtime_error&) {
         close(obj_fd);
-        throw e;
+        throw;
     }
     close(obj_fd);
 }
 
-void DRPAI_Connection::crop(const Box& crop_region) {
+void DRPAI_Connection::crop(const Box& crop_region) const {
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
     crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, IN_WIDTH);
