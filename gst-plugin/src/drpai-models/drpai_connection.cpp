@@ -336,7 +336,6 @@ json_array DRPAI_Connection::get_detections_json() const {
 json_object DRPAI_Connection::get_json() const {
     json_object j;
     j.add("drpai-rate", rate.get_smooth_rate(), 1);
-    auto d = get_detections_json();
     j.add("detections", get_detections_json());
     return j;
 }
