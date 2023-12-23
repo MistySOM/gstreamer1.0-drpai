@@ -11,10 +11,10 @@
 
 enum HeadPose: int8_t { Center=0, Down, Right, Left, Up  };
 
-class DRPAI_DeepPose: public DRPAI_Connection {
+class DRPAI_DeepPose final: public DRPAI_Connection {
 
 public:
-    explicit DRPAI_DeepPose(bool log_detects):
+    explicit DRPAI_DeepPose(const bool log_detects):
             DRPAI_Connection(640, 480, 2),
             log_detects(log_detects),
             yolo(true)
