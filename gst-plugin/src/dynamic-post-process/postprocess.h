@@ -24,7 +24,7 @@ class PostProcess {
 public:
     PostProcess();
     void dynamic_library_open(const std::string& prefix);
-    void dynamic_library_close();
+    void dynamic_library_close() const;
 
 #endif
 
@@ -46,7 +46,7 @@ public:
         std::string line;
         while (getline(infile,line))
         {
-            line.erase( remove( line.begin(), line.end(), ' ' ), line.end() );
+            line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
             if (infile.fail()) return -1;
             if (line.empty()) continue;
             if (found) { value = line; break; }

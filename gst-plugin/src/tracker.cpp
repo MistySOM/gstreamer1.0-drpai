@@ -40,13 +40,13 @@ tracked_detection& tracker::track(const detection& det) {
     return items.front();
 }
 
-uint32_t tracker::count(uint32_t c) const {
+uint32_t tracker::count(const uint32_t c) const {
     return std::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
         return item.last_detection.c == c;
     });
 }
 
-uint32_t tracker::count(float duration) const {
+uint32_t tracker::count(const float duration) const {
     const auto now = std::chrono::system_clock::now();
     return std::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
