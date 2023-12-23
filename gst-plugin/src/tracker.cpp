@@ -37,7 +37,7 @@ std::vector<tracked_detection*> tracker::track(std::vector<detection> detections
             }
         }
     }
-    std::ranges::sort(m.begin(), m.end(), [](const track_map& a, const track_map& b) {
+    std::sort(m.begin(), m.end(), [](const track_map& a, const track_map& b) {
         return a.distance < b.distance;
     });
 
@@ -52,9 +52,9 @@ std::vector<tracked_detection*> tracker::track(std::vector<detection> detections
         t->seen_last = now;
         result.emplace_back(t);
 
-        std::erase_if(m, [&](const track_map& items) { return &items.t == &t; });
-        std::erase_if(m, [&](const track_map& items) { return &items.det == &d; });
-        std::erase_if(detections, [&](const detection& item) { return &item == d; });
+        m.erase(std::remove_if(m.begin(), m.end(), [&](const track_map& items) { return &items.t == &t; }), m.end());
+        m.erase(std::remove_if(m.begin(), m.end(), [&](const track_map& items) { return &items.det == &d; }), m.end());;
+        detections.erase(std::remove_if(detections.begin(), detections.end(), [&](const detection& item) { return &item == d; }), detections.end());
     }
 
     for (auto& d: detections) {
@@ -66,10 +66,10 @@ std::vector<tracked_detection*> tracker::track(std::vector<detection> detections
 }
 
 uint32_t tracker::count(const uint32_t c) const {
-    const auto c1 = std::ranges::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
+    const auto c1 = std::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
         return item.last_detection.c == c;
     });
-    const auto c2 = std::ranges::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
+    const auto c2 = std::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
         return item.last_detection.c == c;
     });
     return c1 + c2;
@@ -77,10 +77,10 @@ uint32_t tracker::count(const uint32_t c) const {
 
 uint32_t tracker::count(const float duration) const {
     const auto now = std::chrono::system_clock::now();
-    const auto c1 = std::ranges::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
+    const auto c1 = std::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
     });
-    const auto c2 = std::ranges::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
+    const auto c2 = std::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
     });
     return c1 + c2;
