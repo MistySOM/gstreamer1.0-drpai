@@ -36,7 +36,7 @@
 *                 w2 = size of second line
 * Return value  : overlapped line size
 ******************************************/
-float Box::overlap(float x1, float w1, float x2, float w2)
+float Box::overlap(const float x1, const float w1, const float x2, const float w2)
 {
     const float l1 = x1 - w1/2;
     const float l2 = x2 - w2/2;
@@ -111,7 +111,7 @@ float Box::doa_with(const Box& b) const
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
+void filter_boxes_nms(detection det[], const uint8_t size, const float th_nms)
 {
     for (uint8_t i = 0; i < size; i++)
     {
@@ -127,8 +127,7 @@ void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
                 continue;
             }
             const Box& b = det[j].bbox;
-            const float b_intersection = a & b;
-            if ((a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
+            if (const float b_intersection = a & b; (a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
                 if (det[i].prob > det[j].prob)
                 {

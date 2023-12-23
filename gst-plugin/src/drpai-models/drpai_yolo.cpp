@@ -41,10 +41,9 @@ void DRPAI_Yolo::extract_detections()
 {
     uint8_t det_size = detection_buffer_size;
     detection det[det_size];
-    auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size);
-    if (ret == 1) {
+    if (const auto ret = post_process.post_process_output(drpai_output_buf.data(), det, &det_size); ret == 1) {
         // if detected items are more than the array size
-        uint8_t tmp = detection_buffer_size;
+        const uint8_t tmp = detection_buffer_size;
         detection_buffer_size = det_size;   // set a new array size for the next run
         det_size = tmp;                     // but keep the array size valid
     } else if (ret < 0) // if an error occurred
@@ -91,7 +90,7 @@ void DRPAI_Yolo::extract_detections()
     }
 }
 
-void DRPAI_Yolo::open_resource(uint32_t data_in_address) {
+void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
     if (det_tracker.active)
