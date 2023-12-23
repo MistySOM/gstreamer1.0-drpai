@@ -32,7 +32,8 @@ protected:
     }
     virtual void add(const int value) { s += std::to_string(value); }
     virtual void add(const unsigned int value) { s += std::to_string(value); }
-    virtual void add(const std::string& value) { s += value; }
+    virtual void add(const unsigned long value) { s += std::to_string(value); }
+    virtual void add(const std::string& value) { s += format_string(value); }
     virtual void add(const json_base& value) { s += value.to_string(); }
     void add_comma() { if (!s.empty()) s += ", "; }
 
@@ -44,6 +45,7 @@ public:
     void add(const std::string& key, const float value, const int precision=-1) { add_key(key); json_base::add(value, precision); }
     void add(const std::string& key, const int value) { add_key(key); json_base::add(value); }
     void add(const std::string& key, const unsigned int value) { add_key(key); json_base::add(value); }
+    void add(const std::string& key, const unsigned long value) { add_key(key); json_base::add(value); }
     void add(const std::string& key, const std::string& value) { add_key(key); json_base::add(value); }
     void add(const std::string& key, const json_base& value) { add_key(key); json_base::add(value); }
 
@@ -58,6 +60,7 @@ public:
     void add(const float value, const int precision) override { add_comma(); json_base::add(value, precision); }
     void add(const int value) override { add_comma(); json_base::add(value); }
     void add(const unsigned int value) override { add_comma(); json_base::add(value); }
+    void add(const unsigned long value) override { add_comma(); json_base::add(value); }
     void add(const std::string& value) override { add_comma(); json_base::add(value); }
     void add(const json_base& value) override { add_comma(); json_base::add(value); }
 

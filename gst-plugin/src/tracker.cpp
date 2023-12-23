@@ -15,8 +15,8 @@ std::string tracked_detection::to_string(const tracking_time& time) {
 json_object tracked_detection::get_json() const {
     json_object j;
     j.add("id", id);
-    j.add("seen_first", to_string(seen_first));
-    j.add("seen_last", to_string(seen_last));
+    j.add("seen-first", to_string(seen_first));
+    j.add("seen-last", to_string(seen_last));
     j.concatenate(last_detection.get_json());
     return j;
 }
@@ -45,14 +45,10 @@ tracked_detection& tracker::track(const detection& det) {
     }
 
     const auto item = tracked_detection(items.size() + 1, det, now);
+    names[det.c] = det.name;
+    counts[det.c]++;
     items.push_front(item);
     return items.front();
-}
-
-uint32_t tracker::count(uint32_t c) const {
-    return std::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
-        return item.last_detection.c == c;
-    });
 }
 
 uint32_t tracker::count(float duration) const {
@@ -60,4 +56,12 @@ uint32_t tracker::count(float duration) const {
     return std::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
     });
+}
+
+json_object tracker::get_json() const {
+    json_object j;
+    j.add("total", items.size());
+    for (auto const& [c, name] : names)
+        j.add(name, counts.at(c));
+    return j;
 }

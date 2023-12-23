@@ -8,6 +8,7 @@
 #include "box.h"
 #include <chrono>
 #include <list>
+#include <map>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -44,11 +45,14 @@ public:
 
     [[nodiscard]] tracked_detection& track(const detection& det);
     [[nodiscard]] uint32_t count() const { return items.size(); }
-    [[nodiscard]] uint32_t count(uint32_t c) const;
+    [[nodiscard]] uint32_t count(uint32_t c) const { return counts.at(c); }
     [[nodiscard]] uint32_t count(float duration) const;
+    [[nodiscard]] json_object get_json() const;
 
 private:
     std::list<tracked_detection> items;
+    std::map<uint32_t, const char*> names;
+    std::map<uint32_t, uint32_t> counts;
 };
 
 

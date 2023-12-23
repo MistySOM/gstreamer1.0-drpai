@@ -26,6 +26,7 @@ public:
     void render_detections_on_image(Image &img) override;
     void add_corner_text() override;
     [[nodiscard]] json_array get_detections_json() const override;
+    [[nodiscard]] json_object get_json() const override;
 
     void print_box(detection d, int32_t i);
 

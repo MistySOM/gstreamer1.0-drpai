@@ -126,3 +126,10 @@ json_array DRPAI_Yolo::get_detections_json() const {
     else
         return DRPAI_Connection::get_detections_json();
 }
+
+json_object DRPAI_Yolo::get_json() const {
+    json_object j = DRPAI_Connection::get_json();
+    if(det_tracker.active)
+        j.add("tracked-count", det_tracker.get_json());
+    return j;
+}
