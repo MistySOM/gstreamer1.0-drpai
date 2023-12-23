@@ -8,6 +8,7 @@
 #include "box.h"
 #include <chrono>
 #include <list>
+#include <vector>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 std::string to_string(const tracking_time& time);
