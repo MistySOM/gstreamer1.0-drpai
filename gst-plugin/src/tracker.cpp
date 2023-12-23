@@ -12,43 +12,76 @@ std::string to_string(const tracking_time& time) {
     return ts;
 }
 
-tracked_detection& tracker::track(const detection& det) {
+struct track_map {
+    detection* det;
+    tracked_detection* t;
+    float distance;
+};
+
+std::vector<tracked_detection*> tracker::track(std::vector<detection> detections) {
     const auto now = std::chrono::system_clock::now();
 
-    for(auto& item: items) {
-      if(item.last_detection.c == det.c) {
-          if(std::chrono::duration<double>(now - item.seen_last).count() < time_threshold) {
-              if (item.last_detection.bbox.doa_with(det.bbox) < doa_threshold) {
+    std::vector<track_map> m;
+    for(auto& det_item: detections) {
+        for(auto track_item = current_items.begin(); track_item != current_items.end(); ++track_item) {
+            if(std::chrono::duration<double>(now - track_item->seen_last).count() < time_threshold) {
+                if(track_item->last_detection.c == det_item.c) {
+                    if (const auto distance = track_item->last_detection.bbox.doa_with(det_item.bbox); distance < doa_threshold) {
+                        m.push_back(track_map {&det_item, track_item.operator->(), distance});
+                    }
+                }
+            }
+            else {
+                historical_items.push_front(*track_item);
+                current_items.erase(track_item);
+            }
+        }
+    }
+    std::ranges::sort(m.begin(), m.end(), [](const track_map& a, const track_map& b) {
+        return a.distance < b.distance;
+    });
 
-                  ++item.smoothed;
-                  if (item.smoothed > bbox_smooth_rate)
-                      item.smoothed = bbox_smooth_rate;
-                  item.last_detection.bbox = item.last_detection.bbox.average_with(static_cast<float>(item.smoothed-1), 1, det.bbox);
-                  item.last_detection.prob = det.prob;
-                  item.seen_last = now;
+    std::vector<tracked_detection*> result;
+    while(!m.empty()) {
+        const auto& [d, t, distance] = m.front();
+        ++t->smoothed;
+        if (t->smoothed > bbox_smooth_rate)
+            t->smoothed = bbox_smooth_rate;
+        t->last_detection.bbox = t->last_detection.bbox.average_with(static_cast<float>(t->smoothed-1), 1, d->bbox);
+        t->last_detection.prob = d->prob;
+        t->seen_last = now;
+        result.emplace_back(t);
 
-                  return item;
-              }
-          }
-          else
-              break;
-      }
+        std::erase_if(m, [&](const track_map& items) { return &items.t == &t; });
+        std::erase_if(m, [&](const track_map& items) { return &items.det == &d; });
+        std::erase_if(detections, [&](const detection& item) { return &item == d; });
     }
 
-    const auto item = tracked_detection(items.size() + 1, det, now);
-    items.push_front(item);
-    return items.front();
+    for (auto& d: detections) {
+        auto item = tracked_detection(count() + 1, d, now);
+        current_items.push_front(item);
+        result.emplace_back(&item);
+    }
+    return result;
 }
 
 uint32_t tracker::count(const uint32_t c) const {
-    return std::ranges::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
+    const auto c1 = std::ranges::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
         return item.last_detection.c == c;
     });
+    const auto c2 = std::ranges::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
+        return item.last_detection.c == c;
+    });
+    return c1 + c2;
 }
 
 uint32_t tracker::count(const float duration) const {
     const auto now = std::chrono::system_clock::now();
-    return std::ranges::count_if(items.begin(), items.end(), [&](const tracked_detection& item) {
+    const auto c1 = std::ranges::count_if(current_items.begin(), current_items.end(), [&](const tracked_detection& item) {
         return std::chrono::duration<double>(now - item.seen_last).count() < duration;
     });
+    const auto c2 = std::ranges::count_if(historical_items.begin(), historical_items.end(), [&](const tracked_detection& item) {
+        return std::chrono::duration<double>(now - item.seen_last).count() < duration;
+    });
+    return c1 + c2;
 }

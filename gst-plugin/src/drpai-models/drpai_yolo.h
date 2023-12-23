@@ -30,7 +30,7 @@ public:
 
 private:
     uint32_t detection_buffer_size = 10;
-    std::vector<tracked_detection> last_tracked_detection {};
+    std::vector<tracked_detection*> last_tracked_detection {};
 };
 
 
