@@ -7,6 +7,7 @@
 
 #include "../box.h"
 #include <cstdint>
+#include <algorithm>
 #include <fstream>
 
 #ifdef POST_PROCESS_LIBRARY
@@ -45,7 +46,7 @@ public:
         std::string line;
         while (getline(infile,line))
         {
-            std::erase(line, ' ');
+            line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
             if (infile.fail()) return -1;
             if (line.empty()) continue;
             if (found) { value = line; break; }
