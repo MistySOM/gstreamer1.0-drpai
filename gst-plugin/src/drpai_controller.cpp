@@ -145,6 +145,8 @@ void DRPAI_Controller::set_socket_address(const std::string& address) {
     }
 
     freeaddrinfo(result);
+
+    std::cout << "Option: Sending UDP packets to " << address << std::endl;
 }
 
 void DRPAI_Controller::release_resources() {

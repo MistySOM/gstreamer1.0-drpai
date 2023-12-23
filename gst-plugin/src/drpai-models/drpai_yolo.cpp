@@ -95,7 +95,7 @@ void DRPAI_Yolo::open_resource(uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
     if (det_tracker.active)
-        std::cout << "Detection Tracking is Active!" << std::endl;
+        std::cout << "Option: Detection Tracking is Active!" << std::endl;
 }
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
