@@ -47,7 +47,7 @@ public:
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
-    [[nodiscard]] std::vector<tracked_detection*> track(std::vector<detection> detections);
+    [[nodiscard]] std::vector<const tracked_detection*> track(const std::vector<detection>& detections);
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
     [[nodiscard]] uint32_t count(uint32_t c) const;
     [[nodiscard]] uint32_t count(float duration) const;
