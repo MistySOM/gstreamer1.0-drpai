@@ -47,13 +47,22 @@ public:
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
+    /** @brief Track detected items based on previous detections
+     *  @param detections A list of detected items in one frame
+     *  @returns A list of items corresponding to detections that were present earlier.
+     *           The order of items in the output list is not the same as the input list. */
     [[nodiscard]] std::vector<const tracked_detection*> track(const std::vector<detection>& detections);
+
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
     [[nodiscard]] uint32_t count(uint32_t c) const;
     [[nodiscard]] uint32_t count(float duration) const;
 
 private:
+    /** List of tracked items that are still visible (t < time_threshold)
+     * They will be used for tracking process */
     std::list<tracked_detection> current_items;
+    /** List of tracked items that are gone (t > time_threshold)
+     * They can be used to query the history and counting. */
     std::list<tracked_detection> historical_items;
 };
 
