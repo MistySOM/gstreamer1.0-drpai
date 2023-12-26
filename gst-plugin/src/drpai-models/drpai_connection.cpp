@@ -266,8 +266,15 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     read_addrmap_txt(drpai_address_file);
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
 
+    /*Load pixel format from data_in_list file*/
+    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
+    std::cout << "Loading : " << data_in_list << std::endl;
+    read_data_in_list(data_in_list);
+    if (filter_region.w == 0)
+        filter_region = {0, 0, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
+
     post_process.dynamic_library_open(prefix);
-    if (post_process.post_process_initialize(prefix.c_str(), drpai_output_buf.size()) != 0)
+    if (post_process.post_process_initialize(prefix.c_str(), IN_WIDTH, IN_HEIGHT, drpai_output_buf.size()) != 0)
         throw std::runtime_error("[ERROR] Failed to run post_process_initialize.");
 
     /* Open DRP-AI Driver */
@@ -294,6 +301,47 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     proc[DRPAI_INDEX_WEIGHT].size         = drpai_address.weight_size;
     proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
+}
+
+void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
+    std::ifstream infile(data_in_list);
+
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to load data in file: " + data_in_list);
+
+    std::string line;
+    while (getline(infile,line))
+    {
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to load data in file: " + data_in_list);
+        if (line.find("Width") != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            IN_WIDTH = std::stoi(line.substr(pos));
+        }
+        if (line.find("Height") != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            IN_WIDTH = std::stoi(line.substr(pos));
+        }
+        if (line.find("Width") != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            IN_HEIGHT = std::stoi(line.substr(pos));
+        }
+        if (line.find("Channel") != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            IN_CHANNEL = std::stoi(line.substr(pos));
+        }
+        if (line.find("Input_node_name") != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            const auto value = line.substr(pos);
+            if (value == "bgr_data")
+                IN_FORMAT = BGR_DATA;
+            else if (value == "yuv_data")
+                IN_FORMAT = YUV_DATA;
+            else
+                throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
+        }
+    }
+    infile.close();
 }
 
 void DRPAI_Connection::release_resource() {

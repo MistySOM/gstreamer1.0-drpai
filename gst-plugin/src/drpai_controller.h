@@ -20,10 +20,7 @@ class DRPAI_Controller {
 
 public:
     explicit DRPAI_Controller():
-            drpai(false),
-            image_mapped_udma(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, nullptr),
-            image_thread(drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, image_thread_buffer),
-            image_thread_buffer(new uint8_t[drpai.IN_WIDTH * drpai.IN_HEIGHT * 3])
+            drpai(false)
     {}
 
     bool multithread = true;
@@ -36,14 +33,12 @@ public:
     void process_image(uint8_t* img_data);
 
 private:
-    Image image_mapped_udma;
-    Image image_thread;
-    uint8_t* image_thread_buffer;
+    std::unique_ptr<Image> image_mapped_udma = nullptr;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
     ThreadState thread_state = Unknown;
-    std::thread* process_thread = nullptr;
+    std::unique_ptr<std::thread> process_thread = nullptr;
     std::mutex state_mutex;
     std::condition_variable v;
     void thread_function_loop();

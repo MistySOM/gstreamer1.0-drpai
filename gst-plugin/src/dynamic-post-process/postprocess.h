@@ -56,7 +56,7 @@ public:
         return 0;
     }
 
-    int8_t EXPORT(post_process_initialize) (const char model_prefix[], uint32_t output_len);
+    int8_t EXPORT(post_process_initialize) (const char model_prefix[], uint32_t in_width, uint32_t in_height, uint32_t output_len);
     int8_t EXPORT(post_process_release) ();
     int8_t EXPORT(post_process_output) (const float output_buf[], struct detection det[], uint8_t *det_len);
 

@@ -11,11 +11,16 @@
 
 #include "../yolo/yolo.h"
 
+static uint32_t IN_WIDTH = 0;
+static uint32_t IN_HEIGHT = 0;
+
 /*ML model inferencing*/
 static cv::Ptr<cv::ml::RTrees> tree = nullptr;
 static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
 
-int8_t post_process_initialize(const char model_prefix[], uint32_t output_len) {
+int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uint32_t in_height, uint32_t output_len) {
+    IN_WIDTH = in_width;
+    IN_HEIGHT = in_height;
     post_process_release();
 
     try {

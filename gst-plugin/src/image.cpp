@@ -74,9 +74,16 @@ void Image::map_udmabuf()
     }
 }
 
-void Image::copy(const uint8_t* data) const {
-    if(img_buffer != nullptr)
+void Image::copy(const uint8_t* data, IMAGE_FORMAT f) const {
+    if(img_buffer == nullptr)
+        return;
+
+    if (format == f)
         std::memcpy(img_buffer, data, size);
+    else if(format == YUV_DATA && f == BGR_DATA)
+        copy_convert_bgr_to_yuy2(data);
+    else
+        throw std::runtime_error("[ERROR] Can't convert image formats.");
 }
 
 /*****************************************

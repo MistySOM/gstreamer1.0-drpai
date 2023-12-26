@@ -30,19 +30,24 @@
 constexpr uint32_t RED_DATA   = 0x0000FFu;
 constexpr uint32_t WHITE_DATA = 0xFFFFFFu;
 constexpr uint32_t BLACK_DATA = 0x000000u;
+enum IMAGE_FORMAT {
+    BGR_DATA, YUV_DATA
+};
 
 class Image
 {
     public:
-        explicit Image(const int32_t w, const int32_t h, const int32_t c, uint8_t* data):
-            img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
+        explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
+            format(format), img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
         ~Image();
+
+        IMAGE_FORMAT format;
 
         [[nodiscard]] uint8_t at(const int32_t a) const { return img_buffer[a]; }
         void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(const uint8_t* data) const;
+        void copy(const uint8_t* data, IMAGE_FORMAT format) const;
         void copy_convert_bgr_to_yuy2(const uint8_t* data) const;
         void copy_convert_bgr_to_yuy2(const Image& img) const { copy_convert_bgr_to_yuy2(img.img_buffer); }
         void draw_rect(const Box& box, const std::string& str) const;
