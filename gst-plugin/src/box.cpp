@@ -94,11 +94,7 @@ float Box::iou_with(const Box& b) const
 
 float Box::doa_with(const Box& b) const
 {
-    const float my_center_x = x+w/2;
-    const float my_center_y = y+h/2;
-    const float b_center_x = b.x+b.w/2;
-    const float b_center_y = b.y+b.h/2;
-    const double distance = std::pow(my_center_x-b_center_x, 2) + std::pow(my_center_y-b_center_y, 2);
+    const double distance = std::pow(x-b.x, 2) + std::pow(y-b.y, 2);
     const double avg_area = (area() + b.area()) / 2.0;
     return static_cast<float>(distance/avg_area);
 }
