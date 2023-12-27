@@ -41,9 +41,6 @@ void DRPAI_Controller::open_resources() {
     /* Filter the bit higher than 32 bit */
     udmabuf_address &=0xFFFFFFFF;
 
-    image_mapped_udma = std::make_unique<Image>(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, drpai.IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf();
-
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
@@ -51,6 +48,8 @@ void DRPAI_Controller::open_resources() {
     /* Read DRP-AI Object files address and size */
     drpai.open_resource(udmabuf_address);
 
+    image_mapped_udma = std::make_unique<Image>(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, drpai.IN_FORMAT, nullptr);
+    image_mapped_udma->map_udmabuf();
 
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
