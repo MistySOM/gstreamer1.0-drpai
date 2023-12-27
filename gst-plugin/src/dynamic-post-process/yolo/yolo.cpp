@@ -15,6 +15,8 @@ static std::vector<std::string> labels {};
 static std::vector<float> anchors {};
 static std::vector<uint32_t> num_grids {};
 static uint32_t num_bb = 0;
+static uint32_t IN_WIDTH = 0;
+static uint32_t IN_HEIGHT = 0;
 static BEST_CLASS_PREDICTION_ALGORITHM best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_NONE;
 static ANCHOR_DIVIDE_SIZE anchor_divide_size = ANCHOR_DIVIDE_SIZE_NONE;
 
@@ -147,7 +149,9 @@ int8_t load_num_grids(const std::string& data_out_list_file_name)
     return 0;
 }
 
-int8_t post_process_initialize(const char model_prefix[], const uint32_t output_len) {
+int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uint32_t in_height, uint32_t output_len) {
+    IN_WIDTH = in_width;
+    IN_HEIGHT = in_height;
     const std::string prefix { model_prefix };
     post_process_release();
 
