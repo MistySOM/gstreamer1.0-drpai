@@ -326,9 +326,9 @@ void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
 
 void Image::prepare() {
     if (convert_buffer != nullptr) {
-        if (convert_from_format == YUV_DATA && format == BGR_DATA) {
+        if (convert_from_format == BGR_DATA && format == YUV_DATA) {
             copy_convert_bgr_to_yuy2(convert_buffer.get());
-            convert_from_format = BGR_DATA;
+            convert_from_format = format;
         }
     }
 }
