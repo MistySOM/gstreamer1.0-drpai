@@ -30,7 +30,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
-#include <cstring>
 #include "image.h"
 #include "ascii.h"
 #include "box.h"
@@ -79,12 +78,12 @@ void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
         return;
 
     if (format == f)
-        std::memcpy(img_buffer, data, size);
+        std::copy(data, data+size, img_buffer);
     else if(format == YUV_DATA && f == BGR_DATA) {
         const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
         if (convert_buffer == nullptr)
-            convert_buffer = std::make_unique<uint8_t>(s);
-        std::memcpy(convert_buffer.get(), data, s);
+            convert_buffer = std::make_unique<uint8_t[]>(s);
+        std::copy(data, data+s, convert_buffer.get());
         convert_from_format = f;
     } else
         throw std::runtime_error("[ERROR] Can't convert image formats.");
@@ -285,12 +284,12 @@ void Image::draw_rect(const Box& box, const std::string& str) const
 * Arguments     : -
 * Return value  : -
 ******************************************/
-void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
+void Image::copy_convert_bgr_to_yuy2() const {
     if(img_buffer == nullptr)
         return;
 
     for (int y = 0; y < img_h; ++y) {
-        const auto& bgrRow = &data[BGR_NUM_CHANNEL * img_w * y];
+        const auto& bgrRow = &convert_buffer.get()[BGR_NUM_CHANNEL * img_w * y];
         const auto& yuy2Row = &img_buffer[YUV2_NUM_CHANNEL * img_w * y];
 
         for (int x = 0; x < img_w; x += 2) {
@@ -328,7 +327,7 @@ void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
 void Image::prepare() {
     if (convert_buffer != nullptr) {
         if (convert_from_format == BGR_DATA && format == YUV_DATA) {
-            copy_convert_bgr_to_yuy2(convert_buffer.get());
+            copy_convert_bgr_to_yuy2();
             convert_from_format = format;
         }
     }

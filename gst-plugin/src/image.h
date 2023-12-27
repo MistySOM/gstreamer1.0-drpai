@@ -66,8 +66,8 @@ class Image
         constexpr static uint32_t BGR_NUM_CHANNEL = 3;
         constexpr static uint32_t YUV2_NUM_CHANNEL = 2;
         IMAGE_FORMAT convert_from_format;
-        std::unique_ptr<uint8_t> convert_buffer = nullptr;
-        void copy_convert_bgr_to_yuy2(const uint8_t* data) const;
+        std::unique_ptr<uint8_t[]> convert_buffer = nullptr;
+        void copy_convert_bgr_to_yuy2() const;
 
         /* drawing section */
         constexpr static uint32_t front_color = RED_DATA;
