@@ -257,7 +257,7 @@ gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
                 obj->drpai_controller->open_resources();
             }
             catch (std::runtime_error &e) {
-                std::cerr << e.what() << std::endl;
+                std::cerr << std::endl << e.what() << std::endl << std::endl;
                 if (obj->stop_error)
                     return GST_STATE_CHANGE_FAILURE;
             }
@@ -275,7 +275,7 @@ gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
                 obj->drpai_controller->release_resources();
             }
             catch (std::runtime_error &e) {
-                std::cerr << e.what() << std::endl;
+                std::cerr << std::endl << e.what() << std::endl << std::endl;
                 state_change_ret = GST_STATE_CHANGE_FAILURE;
             }
             delete obj->drpai_controller;
@@ -477,7 +477,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
         obj->drpai_controller->process_image(info.data);
     }
     catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << std::endl << e.what() << std::endl << std::endl;
         if(obj->stop_error) {
             gst_buffer_unref (buf);
             return GST_FLOW_ERROR;
