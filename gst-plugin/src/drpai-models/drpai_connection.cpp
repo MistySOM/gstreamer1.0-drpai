@@ -318,17 +318,17 @@ void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
         if (line.find("Height") != std::string::npos) {
             const auto pos = line.find(':') + 2;
             IN_WIDTH = std::stoi(line.substr(pos));
-            std::cout << "\t" << IN_WIDTH;
+            std::cout << " " << IN_WIDTH;
         }
         if (line.find("Width") != std::string::npos) {
             const auto pos = line.find(':') + 2;
             IN_HEIGHT = std::stoi(line.substr(pos));
-            std::cout << "\t" << IN_HEIGHT;
+            std::cout << " " << IN_HEIGHT;
         }
         if (line.find("Channel") != std::string::npos) {
             const auto pos = line.find(':') + 2;
             IN_CHANNEL = std::stoi(line.substr(pos));
-            std::cout << "\t" << IN_CHANNEL;
+            std::cout << " " << IN_CHANNEL;
         }
         if (line.find("Input_node_name") != std::string::npos) {
             const auto pos = line.find(':') + 2;
@@ -339,7 +339,7 @@ void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
                 IN_FORMAT = YUV_DATA;
             else
                 throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
-            std::cout << "\t" << value;
+            std::cout << " " << value;
         }
     }
     infile.close();

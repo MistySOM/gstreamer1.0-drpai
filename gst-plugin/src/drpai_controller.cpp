@@ -143,5 +143,6 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
+    image_mapped_udma->prepare();
     drpai.run_inference();
 }

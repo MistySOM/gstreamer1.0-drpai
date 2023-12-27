@@ -25,6 +25,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include <memory>
 #include "box.h"
 
 constexpr uint32_t RED_DATA   = 0x0000FFu;
@@ -38,18 +39,16 @@ class Image
 {
     public:
         explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
-            format(format), img_w(w), img_h(h), img_c(c), size(img_w*img_h*img_c), img_buffer(data) {};
+            img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c), img_buffer(data),
+            convert_from_format(format) {};
         ~Image();
-
-        IMAGE_FORMAT format;
 
         [[nodiscard]] uint8_t at(const int32_t a) const { return img_buffer[a]; }
         void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(const uint8_t* data, IMAGE_FORMAT format) const;
-        void copy_convert_bgr_to_yuy2(const uint8_t* data) const;
-        void copy_convert_bgr_to_yuy2(const Image& img) const { copy_convert_bgr_to_yuy2(img.img_buffer); }
+        void copy(const uint8_t* data, IMAGE_FORMAT format);
+        void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
                           int32_t color, int32_t backcolor, int8_t margin=0) const;
@@ -59,9 +58,16 @@ class Image
         int32_t img_w;
         int32_t img_h;
         int32_t img_c;
+        IMAGE_FORMAT format;
         int32_t size;
         uint8_t* img_buffer = nullptr;
 
+        /* converting section */
+        IMAGE_FORMAT convert_from_format;
+        std::unique_ptr<uint8_t> convert_buffer = nullptr;
+        void copy_convert_bgr_to_yuy2(const uint8_t* data) const;
+
+        /* drawing section */
         constexpr static uint32_t front_color = RED_DATA;
         constexpr static uint32_t back_color = BLACK_DATA;
         constexpr static int32_t font_w = 6;

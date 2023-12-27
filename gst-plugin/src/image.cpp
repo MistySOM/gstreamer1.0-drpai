@@ -74,15 +74,18 @@ void Image::map_udmabuf()
     }
 }
 
-void Image::copy(const uint8_t* data, IMAGE_FORMAT f) const {
+void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
     if(img_buffer == nullptr)
         return;
 
     if (format == f)
         std::memcpy(img_buffer, data, size);
-    else if(format == YUV_DATA && f == BGR_DATA)
-        copy_convert_bgr_to_yuy2(data);
-    else
+    else if(format == YUV_DATA && f == BGR_DATA) {
+        if (convert_buffer == nullptr)
+            convert_buffer = std::make_unique<uint8_t>(size);
+        std::memcpy(convert_buffer.get(), data, size);
+        convert_from_format = f;
+    } else
         throw std::runtime_error("[ERROR] Can't convert image formats.");
 }
 
@@ -317,6 +320,15 @@ void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
             yuy2Row[2 * x + 1] = u1;
             yuy2Row[2 * x + 2] = y2;
             yuy2Row[2 * x + 3] = v1;
+        }
+    }
+}
+
+void Image::prepare() {
+    if (convert_buffer != nullptr) {
+        if (convert_from_format == YUV_DATA && format == BGR_DATA) {
+            copy_convert_bgr_to_yuy2(convert_buffer.get());
+            convert_from_format = BGR_DATA;
         }
     }
 }
