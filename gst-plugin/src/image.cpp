@@ -81,9 +81,10 @@ void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
     if (format == f)
         std::memcpy(img_buffer, data, size);
     else if(format == YUV_DATA && f == BGR_DATA) {
+        const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
         if (convert_buffer == nullptr)
-            convert_buffer = std::make_unique<uint8_t>(size);
-        std::memcpy(convert_buffer.get(), data, size);
+            convert_buffer = std::make_unique<uint8_t>(s);
+        std::memcpy(convert_buffer.get(), data, s);
         convert_from_format = f;
     } else
         throw std::runtime_error("[ERROR] Can't convert image formats.");
@@ -289,13 +290,13 @@ void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
         return;
 
     for (int y = 0; y < img_h; ++y) {
-        const auto& bgrRow = &data[3 * img_w * y];
-        const auto& yuy2Row = &img_buffer[2 * img_w * y];
+        const auto& bgrRow = &data[BGR_NUM_CHANNEL * img_w * y];
+        const auto& yuy2Row = &img_buffer[YUV2_NUM_CHANNEL * img_w * y];
 
         for (int x = 0; x < img_w; x += 2) {
             // Convert two BGR pixels to YUY2 format
-            const auto bgrIdx1 = 3 * x;
-            const auto bgrIdx2 = 3 * (x + 1);
+            const auto bgrIdx1 = BGR_NUM_CHANNEL * x;
+            const auto bgrIdx2 = BGR_NUM_CHANNEL * (x + 1);
 
             const auto& b1 = bgrRow[bgrIdx1];
             const auto& g1 = bgrRow[bgrIdx1 + 1];
@@ -316,10 +317,10 @@ void Image::copy_convert_bgr_to_yuy2(const uint8_t* data) const {
             // const auto v2 = static_cast<uint8_t>(0.615 * r2 - 0.51498 * g2 - 0.10001 * b2 + 128);
 
             // Pack the Y, U, and Y, V values into a 32-bit word
-            yuy2Row[2 * x] = y1;
-            yuy2Row[2 * x + 1] = u1;
-            yuy2Row[2 * x + 2] = y2;
-            yuy2Row[2 * x + 3] = v1;
+            yuy2Row[YUV2_NUM_CHANNEL * x] = y1;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 1] = u1;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 2] = y2;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 3] = v1;
         }
     }
 }
