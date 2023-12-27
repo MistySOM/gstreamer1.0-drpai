@@ -363,10 +363,10 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
                                 box_h /= static_cast<float>(num_grid);
                             }
 
-                            center_x = roundf(center_x * IN_WIDTH);
-                            center_y = roundf(center_y * IN_HEIGHT);
-                            box_w = roundf(box_w * IN_WIDTH);
-                            box_h = roundf(box_h * IN_HEIGHT);
+                            center_x = std::roundf(center_x * static_cast<float>(IN_WIDTH));
+                            center_y = std::roundf(center_y * static_cast<float>(IN_HEIGHT));
+                            box_w = std::roundf(box_w * static_cast<float>(IN_WIDTH));
+                            box_h = std::roundf(box_h * static_cast<float>(IN_HEIGHT));
 
                             const Box bb = {center_x, center_y, box_w, box_h};
 

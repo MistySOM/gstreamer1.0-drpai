@@ -4,12 +4,10 @@
 
 #include <fstream>
 #include <vector>
+#include <opencv2/ml.hpp>
 #include "deeppose.h"
 #include "../postprocess.h"
 /*opencv for machine learning*/
-#include <opencv2/ml.hpp>
-
-#include "../yolo/yolo.h"
 
 static uint32_t IN_WIDTH = 0;
 static uint32_t IN_HEIGHT = 0;
@@ -57,7 +55,7 @@ int8_t post_process_release() {
 *                 1 if succeeded, but the detection array is not big enough
 *                 otherwise, succeeded
 ******************************************/
-int8_t post_process_output(const float output_buf[], struct detection det[], const uint8_t* det_len)
+int8_t post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
 {
     const auto& [crop_x, crop_y, crop_w, crop_h] = det[0].bbox;
 
@@ -67,8 +65,8 @@ int8_t post_process_output(const float output_buf[], struct detection det[], con
         auto posx = output_buf[2*i]   * crop_w + crop_x + OUTPUT_ADJ_X;
         auto posy = output_buf[2*i+1] * crop_h + crop_y + OUTPUT_ADJ_Y;
         /* Make sure the coordinates are not off the screen. */
-        posx = std::clamp(posx, 0.0f, IN_WIDTH - KEY_POINT_SIZE - 1.0f);
-        posy = std::clamp(posy, 0.0f, IN_HEIGHT - KEY_POINT_SIZE - 1.0f);
+        posx = std::clamp(posx, 0.0f, static_cast<float>(IN_WIDTH) - KEY_POINT_SIZE - 1);
+        posy = std::clamp(posy, 0.0f, static_cast<float>(IN_HEIGHT) - KEY_POINT_SIZE - 1);
         det[i].bbox.x = posx;
         det[i].bbox.y = posy;
         det[i].bbox.w = det[i].bbox.h = KEY_POINT_SIZE;
