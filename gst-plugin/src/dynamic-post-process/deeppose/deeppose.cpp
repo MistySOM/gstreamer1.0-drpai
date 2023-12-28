@@ -57,7 +57,7 @@ int8_t post_process_release() {
 ******************************************/
 int8_t post_process_output(const float output_buf[], struct detection det[], uint8_t* det_len)
 {
-    const auto& [crop_x, crop_y, crop_w, crop_h] = det[0].bbox;
+    const auto [crop_x, crop_y, crop_w, crop_h] = det[0].bbox;
 
     for (uint8_t i = 0; i < *det_len; i++)
     {
