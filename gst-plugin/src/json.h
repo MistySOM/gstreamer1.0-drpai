@@ -7,6 +7,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
 class json_base {
 
@@ -57,6 +58,9 @@ private:
 
 class json_array final: public json_base {
 public:
+    json_array() = default;
+    explicit json_array(const std::vector<std::string>& array) { for(auto& a: array) add(a); }
+
     void add(const float value, const int precision) override { add_comma(); json_base::add(value, precision); }
     void add(const int value) override { add_comma(); json_base::add(value); }
     void add(const unsigned int value) override { add_comma(); json_base::add(value); }

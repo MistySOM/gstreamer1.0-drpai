@@ -18,7 +18,6 @@ public:
 
     bool log_detects = false;
     tracker det_tracker;
-    std::vector<std::string> filter_classes {};
 
     void open_resource(uint32_t data_in_address) override;
     void extract_detections() override;

@@ -28,9 +28,12 @@
 #include <memory>
 #include "box.h"
 
-constexpr uint32_t RED_DATA   = 0x0000FFu;
-constexpr uint32_t WHITE_DATA = 0xFFFFFFu;
 constexpr uint32_t BLACK_DATA = 0x000000u;
+constexpr uint32_t RED_DATA   = 0x0000FFu;
+constexpr uint32_t GREEN_DATA = RED_DATA << 8;
+constexpr uint32_t BLUE_DATA  = GREEN_DATA << 8;
+constexpr uint32_t YELLOW_DATA= RED_DATA | GREEN_DATA;
+constexpr uint32_t WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
 enum IMAGE_FORMAT {
     BGR_DATA, YUV_DATA
 };
@@ -49,9 +52,10 @@ class Image
         void map_udmabuf();
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
-        void draw_rect(const Box& box, const std::string& str) const;
+        void draw_rect(const Box& box, const std::string& str, uint32_t front_color, uint32_t back_color) const;
+        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, uint32_t color, int32_t expand) const;
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
-                          int32_t color, int32_t backcolor, int8_t margin=0) const;
+                          uint32_t color, uint32_t backcolor, int8_t margin=0) const;
 
     private:
         uint8_t udmabuf_fd = 0;
@@ -70,13 +74,11 @@ class Image
         void copy_convert_bgr_to_yuy2() const;
 
         /* drawing section */
-        constexpr static uint32_t front_color = RED_DATA;
-        constexpr static uint32_t back_color = BLACK_DATA;
         constexpr static int32_t font_w = 6;
         constexpr static int32_t font_h = 8;
         void draw_point(uint32_t x, uint32_t y, uint32_t color) const;
-        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) const;
-        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor) const;
+        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color) const;
+        void write_char(char code, int32_t x, int32_t y, uint32_t color, uint32_t backcolor) const;
 };
 
 #endif

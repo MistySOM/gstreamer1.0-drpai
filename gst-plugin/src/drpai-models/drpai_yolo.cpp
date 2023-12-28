@@ -99,7 +99,7 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
         for (const auto& tracked: last_tracked_detection)
         {
             /* Draw the bounding box on the image */
-            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr());
+            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr(), RED_DATA, BLACK_DATA);
         }
     else
         DRPAI_Connection::render_detections_on_image(img);

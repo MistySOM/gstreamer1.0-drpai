@@ -95,6 +95,8 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         drpai.corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
         drpai.add_corner_text();
     }
+    if (drpai.show_filter)
+        drpai.render_filter_region(img);
     drpai.render_detections_on_image(img);
     drpai.render_text_on_image(img);
 

@@ -37,31 +37,29 @@ typedef struct Box
 {
     float x, y, w, h;
 
-    [[nodiscard]] json_object get_json() const {
-        json_object j;
-        j.add("centerX", x, 0);
-        j.add("centerY", y, 0);
-        j.add("width", w, 0);
-        j.add("height", h, 0);
-        return j;
-    }
+    inline void setLeft(const float _x) { x = _x + w/2; }
+    inline void setTop(const float _y) { y = _y + h/2; }
+
+    [[nodiscard]] inline float getLeft() const { return x - w/2; }
+    [[nodiscard]] inline float getTop() const { return y - h/2; }
+    [[nodiscard]] json_object get_json(bool center_origin=true) const;
 
     [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float doa_with(const Box& b) const;
-    [[nodiscard]] float area() const { return w*h; };
+    [[nodiscard]] float inline area() const { return w*h; };
 
     [[nodiscard]] float operator&(const Box& b) const; // intersection
     [[nodiscard]] float operator|(const Box& b) const; // union
-    [[nodiscard]] float operator%(const Box& b) const { // euclidean distance
+    [[nodiscard]] float inline operator%(const Box& b) const { // euclidean distance
         const auto dx = x - b.x;
         const auto dy = y - b.y;
         return std::sqrt(dx*dx + dy*dy);
     }
-    [[nodiscard]] Box operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
-    [[nodiscard]] Box operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
-    [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
-    [[nodiscard]] Box average_with(const float my_weight, const float other_weight, const Box& other) const {
+    [[nodiscard]] Box inline operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] Box inline operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] Box inline operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
+    [[nodiscard]] Box inline average_with(const float my_weight, const float other_weight, const Box& other) const {
         return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
     }
 } Box;
@@ -86,7 +84,7 @@ typedef struct detection
         json_object j;
         j.add("class", name);
         j.add("probability", prob, 2);
-        j.add("box", bbox.get_json());
+        j.add("box", bbox.get_json(true));
         return j;
     }
 } detection;
