@@ -27,7 +27,7 @@ gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep, thread_dep, dl_dep, opencv_dep],
+  dependencies : [gst_dep, thread_dep, dl_dep],
   install : true,
   install_dir : join_paths('/usr/lib64', 'gstreamer-1.0'),
 )

@@ -48,7 +48,7 @@ void DRPAI_DeepPose::extract_detections() {
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
-        
+
         last_det.push_back(det[i]);
     }
 

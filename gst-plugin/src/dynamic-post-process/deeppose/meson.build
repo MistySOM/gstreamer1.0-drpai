@@ -5,7 +5,7 @@ deeppose_sources = [
 deeppose = library('postprocess-deeppose',
     deeppose_sources,
     cpp_args: ['-DPOST_PROCESS_LIBRARY'],
-    dependencies: [opencv_dep],
+    dependencies: [],
     install : true,
     install_dir : '/usr/lib64',
 )
