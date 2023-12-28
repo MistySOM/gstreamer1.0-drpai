@@ -12,7 +12,6 @@ class DRPAI_Yolo final: public DRPAI_Connection {
 
 public:
     explicit DRPAI_Yolo(const bool log_detects):
-            DRPAI_Connection(640, 480, 3),
             log_detects(log_detects),
             det_tracker(true, 2, 2.25, 1)
     {}
@@ -32,7 +31,7 @@ public:
 
 private:
     uint32_t detection_buffer_size = 10;
-    std::vector<tracked_detection> last_tracked_detection {};
+    std::vector<const tracked_detection*> last_tracked_detection {};
 };
 
 

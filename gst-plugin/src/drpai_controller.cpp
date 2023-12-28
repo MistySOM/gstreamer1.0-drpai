@@ -22,7 +22,7 @@ void DRPAI_Controller::open_resources() {
     std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
 
     if (multithread)
-        process_thread = new std::thread(&DRPAI_Controller::thread_function_loop, this);
+        process_thread = std::make_unique<std::thread>(&DRPAI_Controller::thread_function_loop, this);
     else
         thread_state = Ready;
 
@@ -42,8 +42,6 @@ void DRPAI_Controller::open_resources() {
     /* Filter the bit higher than 32 bit */
     udmabuf_address &=0xFFFFFFFF;
 
-    image_mapped_udma.map_udmabuf();
-
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
@@ -51,6 +49,8 @@ void DRPAI_Controller::open_resources() {
     /* Read DRP-AI Object files address and size */
     drpai.open_resource(udmabuf_address);
 
+    image_mapped_udma = std::make_unique<Image>(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, drpai.IN_FORMAT, nullptr);
+    image_mapped_udma->map_udmabuf();
 
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
@@ -64,7 +64,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
                 throw std::exception();
 
             case Ready:
-                image_mapped_udma.copy(img_data);
+                image_mapped_udma->copy(img_data, BGR_DATA);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread)
@@ -86,7 +86,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
             throw;
         }
 
-    Image img (drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, img_data);
+    Image img (drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, BGR_DATA, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
@@ -157,10 +157,11 @@ void DRPAI_Controller::release_resources() {
             v.notify_one();
         }
         process_thread->join();
-        delete process_thread;
+        process_thread.reset();
     }
 
     drpai.release_resource();
+    image_mapped_udma.reset();
 }
 
 void DRPAI_Controller::thread_function_loop() {
@@ -193,5 +194,6 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
+    image_mapped_udma->prepare();
     drpai.run_inference();
 }

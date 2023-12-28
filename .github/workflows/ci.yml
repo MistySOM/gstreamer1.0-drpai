@@ -23,8 +23,11 @@ jobs:
     - name: setup meson
       run: meson setup build
       
-    - name: make
-      run: ninja -C build
+    - name: compile
+      run: meson compile -C build
+
+    - name: test
+      run: meson test -C build
       
     - name: gst-inspect
       run: gst-inspect-1.0 build/gst-plugin/libgstdrpai.so

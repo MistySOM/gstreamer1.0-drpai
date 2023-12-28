@@ -38,16 +38,17 @@ typedef struct
 class DRPAI_Connection {
 
 public:
-    fps rate{};
+    fps rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
-    Box filter_region;
+    Box filter_region {};
     std::vector<std::string> corner_text {};
 
     /*DRP-AI Input image information*/
-    int32_t IN_WIDTH;
-    int32_t IN_HEIGHT;
-    int32_t IN_CHANNEL;
+    int32_t IN_WIDTH = 0;
+    int32_t IN_HEIGHT = 0;
+    int32_t IN_CHANNEL = 0;
+    IMAGE_FORMAT IN_FORMAT = BGR_DATA;
 
     virtual void run_inference();
     virtual void open_resource(uint32_t data_in_address);
@@ -68,15 +69,9 @@ protected:
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection(const int32_t IN_WIDTH, const int32_t IN_HEIGHT, const int32_t IN_CHANNEL):
-        filter_region{ 0, 0, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)},
-        IN_WIDTH(IN_WIDTH), IN_HEIGHT(IN_HEIGHT), IN_CHANNEL(IN_CHANNEL)
-    {};
+    explicit DRPAI_Connection() {};
     virtual ~DRPAI_Connection() = default;
 
-    void read_addrmap_txt(const std::string& addr_file);
-    void load_drpai_data() const;
-    void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
     void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size) const;
     void get_result();
     void start();
@@ -90,6 +85,11 @@ private:
     enum DRPAI_INDEX {
         INDEX_D=0, INDEX_C, INDEX_P, INDEX_A, INDEX_W
     };
+
+    void read_addrmap_txt(const std::string& addr_file);
+    void read_data_in_list(const std::string &data_in_list);
+    void load_drpai_data() const;
+    void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 };
 
 

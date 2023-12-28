@@ -53,7 +53,6 @@ void DRPAI_Yolo::extract_detections()
     filter_boxes_nms(det, det_size, TH_NMS);
 
     last_det.clear();
-    last_tracked_detection.clear();
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
         if (det[i].prob == 0) continue;
@@ -62,20 +61,18 @@ void DRPAI_Yolo::extract_detections()
         if (!filter_classes.empty() && in(det[i].name, filter_classes)) continue;
         if ((filter_region & det[i].bbox) == 0) continue;
 
-        if (det_tracker.active)
-            last_tracked_detection.push_back(det_tracker.track(det[i]));
-        else
-            last_det.push_back(det[i]);
+        last_det.push_back(det[i]);
     }
+    last_tracked_detection = det_tracker.track(last_det);
 
     /* Print details */
     if(log_detects) {
         if (det_tracker.active) {
             std::cout << "DRP-AI tracked items:  ";
-            for (const auto &detection: last_tracked_detection) {
+            for (const auto detection: last_tracked_detection) {
                 /* Print the box details on console */
                 //print_box(detection, n++);
-                std::cout << detection.to_string_hr() + "\t";
+                std::cout << detection->to_string_hr() + "\t";
             }
         }
         else {
@@ -102,7 +99,7 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
         for (const auto& tracked: last_tracked_detection)
         {
             /* Draw the bounding box on the image */
-            img.draw_rect(tracked.last_detection.bbox, tracked.to_string_hr());
+            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr());
         }
     else
         DRPAI_Connection::render_detections_on_image(img);
@@ -119,7 +116,7 @@ json_array DRPAI_Yolo::get_detections_json() const {
     if (det_tracker.active) {
         json_array a;
         for(auto det: last_tracked_detection)
-            a.add(det.get_json());
+            a.add(det->get_json());
         return a;
     }
     else
