@@ -9,16 +9,16 @@
 #include "../postprocess.h"
 /*opencv for machine learning*/
 
-static uint32_t IN_WIDTH = 0;
-static uint32_t IN_HEIGHT = 0;
+static float IN_WIDTH = 0;
+static float IN_HEIGHT = 0;
 
 /*ML model inferencing*/
 static cv::Ptr<cv::ml::RTrees> tree = nullptr;
 static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
 
 int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uint32_t in_height, uint32_t output_len) {
-    IN_WIDTH = in_width;
-    IN_HEIGHT = in_height;
+    IN_WIDTH = static_cast<float>(in_width);
+    IN_HEIGHT = static_cast<float>(in_height);
     post_process_release();
 
     try {
@@ -62,11 +62,11 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
     for (uint8_t i = 0; i < *det_len; i++)
     {
         /* Conversion from input image coordinates to display image coordinates. */
-        auto posx = output_buf[2*i]   * crop_w + crop_x + OUTPUT_ADJ_X;
-        auto posy = output_buf[2*i+1] * crop_h + crop_y + OUTPUT_ADJ_Y;
+        auto posx = output_buf[2*i]   * crop_w + crop_x - crop_w/2 + OUTPUT_ADJ_X;
+        auto posy = output_buf[2*i+1] * crop_h + crop_y - crop_h/2 + OUTPUT_ADJ_Y;
         /* Make sure the coordinates are not off the screen. */
-        posx = std::clamp(posx, 0.0f, static_cast<float>(IN_WIDTH) - KEY_POINT_SIZE - 1);
-        posy = std::clamp(posy, 0.0f, static_cast<float>(IN_HEIGHT) - KEY_POINT_SIZE - 1);
+        posx = std::clamp(posx, 0.0f, IN_WIDTH - KEY_POINT_SIZE - 1);
+        posy = std::clamp(posy, 0.0f, IN_HEIGHT - KEY_POINT_SIZE - 1);
         det[i].bbox.x = posx;
         det[i].bbox.y = posy;
         det[i].bbox.w = det[i].bbox.h = KEY_POINT_SIZE;
