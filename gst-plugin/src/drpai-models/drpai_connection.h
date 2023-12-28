@@ -64,10 +64,11 @@ protected:
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     std::vector<float> drpai_output_buf {};
     PostProcess post_process;
+    bool log_detects = false;
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection() {};
+    explicit DRPAI_Connection(const bool log_detects): log_detects(log_detects) {};
     virtual ~DRPAI_Connection() = default;
 
     void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size) const;

@@ -15,11 +15,10 @@ class DRPAI_DeepPose final: public DRPAI_Connection {
 
 public:
     explicit DRPAI_DeepPose(const bool log_detects):
-            log_detects(log_detects),
-            yolo(true)
+            DRPAI_Connection(log_detects),
+            yolo(log_detects)
     {}
 
-    bool log_detects = false;
     bool yawn_detected = false, blink_detected = false;
     HeadPose last_head_pose = Center;
     Box crop_region = filter_region;
@@ -35,8 +34,6 @@ public:
 
 private:
     constexpr static uint8_t NUM_OUTPUT_KEYPOINT = 98;
-    constexpr static int8_t CROP_ADJ_X    = 20;
-    constexpr static int8_t CROP_ADJ_Y    = 20;
 };
 
 

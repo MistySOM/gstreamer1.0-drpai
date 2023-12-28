@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
-//#include <opencv2/ml.hpp>
+#include <opencv2/ml.hpp>
 #include "deeppose.h"
 #include "../postprocess.h"
 
@@ -13,8 +13,8 @@ static float IN_WIDTH = 0;
 static float IN_HEIGHT = 0;
 
 /*ML model inferencing*/
-//static cv::Ptr<cv::ml::RTrees> tree = nullptr;
-//static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
+static cv::Ptr<cv::ml::RTrees> tree = nullptr;
+static cv::Ptr<cv::ml::RTrees> dtree = nullptr;
 
 int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uint32_t in_height, uint32_t output_len) {
     IN_WIDTH = static_cast<float>(in_width);
@@ -22,9 +22,9 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uin
     post_process_release();
 
     try {
-//        std::cout << "\tLoading : " << ML_DESC_NAME << std::endl;
-//        tree = cv::ml::RTrees::create();
-//        dtree = tree->load(ML_DESC_NAME);
+        std::cout << "\tLoading : " << ML_DESC_NAME << std::endl;
+        tree = cv::ml::RTrees::create();
+        dtree = tree->load(ML_DESC_NAME);
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -35,14 +35,14 @@ int8_t post_process_initialize(const char model_prefix[], uint32_t in_width, uin
 }
 
 int8_t post_process_release() {
-//    if (dtree != nullptr) {
-//        dtree.release();
-//        dtree = nullptr;
-//    }
-//    if (tree != nullptr) {
-//        tree.release();
-//        tree = nullptr;
-//    }
+    if (dtree != nullptr) {
+        dtree.release();
+        dtree = nullptr;
+    }
+    if (tree != nullptr) {
+        tree.release();
+        tree = nullptr;
+    }
     return 0;
 }
 
@@ -74,10 +74,10 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
         det[i].c = 0;
     }
 
-//    const auto X = cv::Mat(1, INF_OUT_SIZE, CV_32F, const_cast<float *>(output_buf));
-//    cv::Mat preds = {};
-//    dtree->predict(X, preds);
-//    const auto random_forest_preds = static_cast<int8_t>(preds.at<float>(0) - 1);
+    const auto X = cv::Mat(1, INF_OUT_SIZE, CV_32F, const_cast<float *>(output_buf));
+    cv::Mat preds = {};
+    dtree->predict(X, preds);
+    const auto random_forest_preds = static_cast<int8_t>(preds.at<float>(0) - 1);
 
     const auto lips_width = det[KEYPOINT_LIP_LEFT].bbox % det[KEYPOINT_LIP_RIGHT].bbox;
     const auto lips_height = det[KEYPOINT_LIP_TOP].bbox % det[KEYPOINT_LIP_BOTTOM].bbox;
@@ -87,5 +87,5 @@ int8_t post_process_output(const float output_buf[], struct detection det[], uin
     const auto right_eye_height = det[KEYPOINT_RIGHT_EYE_TOP].bbox % det[KEYPOINT_RIGHT_EYE_BOTTOM].bbox;
     const auto blink_flag = ((left_eye_height < 5.0) && (right_eye_height < 5.0));
 
-    return static_cast<int8_t>((yawn_flag << 4) | (blink_flag << 3) | 0);
+    return static_cast<int8_t>((yawn_flag << 4) | (blink_flag << 3) | random_forest_preds);
 }
