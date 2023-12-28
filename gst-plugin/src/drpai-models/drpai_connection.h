@@ -38,6 +38,7 @@ typedef struct
 class DRPAI_Connection {
 
 public:
+    bool log_detects = false;
     fps rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
@@ -64,7 +65,6 @@ protected:
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     std::vector<float> drpai_output_buf {};
     PostProcess post_process;
-    bool log_detects = false;
 
     constexpr static float TH_NMS = 0.5f;
 
