@@ -68,8 +68,9 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
                 }
             }
         ],
-        "tracked-count": {
-            "total": 6,
+        "track-history": {
+            "minutes": 60,
+            "total-count": 6,
             "person": 2,
             "wine glass": 3,
             "chair": 1

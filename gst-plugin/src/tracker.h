@@ -38,10 +38,11 @@ public:
     bool active;
     float time_threshold;
     float doa_threshold;
+    float history_length; // Minutes to keep the tracking history.
     uint16_t bbox_smooth_rate;
 
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
-        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold),
+        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
     /** @brief Track detected items based on previous detections
@@ -51,7 +52,6 @@ public:
     [[nodiscard]] std::vector<const tracked_detection*> track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
-    [[nodiscard]] uint32_t count(float duration) const;
     [[nodiscard]] json_object get_json() const;
 
 private:

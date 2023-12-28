@@ -52,6 +52,7 @@ public:
     [[nodiscard]] std::string to_string() const override { return "{" + s + "}"; }
 
 private:
+    using json_base::add;
     void add_key(const std::string& key) { add_comma(); s += format_string(key) + ": "; }
 };
 
