@@ -91,7 +91,7 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
     if (det_tracker.active)
-        std::cout << "Detection Tracking is Active!" << std::endl;
+        std::cout << "Option: Detection Tracking is Active!" << std::endl;
 }
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
@@ -110,4 +110,22 @@ void DRPAI_Yolo::add_corner_text() {
     if (det_tracker.active) {
         corner_text.push_back("Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f)));
     }
+}
+
+json_array DRPAI_Yolo::get_detections_json() const {
+    if (det_tracker.active) {
+        json_array a;
+        for(auto det: last_tracked_detection)
+            a.add(det->get_json());
+        return a;
+    }
+    else
+        return DRPAI_Connection::get_detections_json();
+}
+
+json_object DRPAI_Yolo::get_json() const {
+    json_object j = DRPAI_Connection::get_json();
+    if(det_tracker.active)
+        j.add("tracked-count", det_tracker.get_json());
+    return j;
 }

@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <iostream>
+#include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
@@ -96,6 +97,56 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
     }
     drpai.render_detections_on_image(img);
     drpai.render_text_on_image(img);
+
+    if(socket_fd) {
+        json_object j;
+        j.add("video-rate", video_rate.get_smooth_rate(), 1);
+        j.concatenate(drpai.get_json());
+        const auto str = j.to_string() + "\n";
+        const auto r = write(socket_fd, str.c_str(), str.size());
+        if (r < static_cast<ssize_t>(str.size()))
+            // std::cerr << "[ERROR] Error sending log to the server. " << std::endl;
+            return;
+    }
+}
+
+void DRPAI_Controller::set_socket_address(const std::string& address) {
+    const auto& colon_index = address.find(':');
+    const auto host = address.substr(0, colon_index);
+    const auto port = address.substr(colon_index+1);
+    constexpr addrinfo hints {0,  AF_INET, SOCK_DGRAM};
+
+    addrinfo* result = nullptr;
+    int r;
+    if ((r = getaddrinfo(host.c_str(), port.c_str(), &hints, &result)) != 0) {
+        freeaddrinfo(result);
+        std::cerr << "[Warning] Can't resolve " << address << ": " << gai_strerror(r) << std::endl;
+        return;
+    }
+
+    /* getaddrinfo() returns a list of address structures.
+        Try each address until we successfully connect(2).
+        If socket(2) (or connect(2)) fails, we (close the socket and) try the next address. */
+
+    addrinfo* rp;
+    for (rp = result; rp != nullptr; rp = rp->ai_next) {
+        socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (socket_fd == -1)
+            continue;
+
+        if (connect(socket_fd, rp->ai_addr, rp->ai_addrlen) != -1)
+            break; /* Success */
+
+        close(socket_fd);
+    }
+    if (rp == nullptr) { /* No address succeeded */
+        std::cerr << "[Warning] Can't connect to " + address << std::endl;
+        socket_fd = 0;
+    }
+
+    freeaddrinfo(result);
+
+    std::cout << "Option: Sending UDP packets to " << address << std::endl;
 }
 
 void DRPAI_Controller::release_resources() {

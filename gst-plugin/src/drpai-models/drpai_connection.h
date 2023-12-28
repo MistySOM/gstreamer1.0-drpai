@@ -57,6 +57,8 @@ public:
     virtual void render_text_on_image(Image& img);
     virtual void add_corner_text();
     virtual void extract_detections() = 0;
+    [[nodiscard]] virtual json_array get_detections_json() const;
+    [[nodiscard]] virtual json_object get_json() const;
 
 protected:
     int32_t drpai_fd = 0;

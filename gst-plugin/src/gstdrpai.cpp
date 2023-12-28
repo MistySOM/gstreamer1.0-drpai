@@ -83,6 +83,7 @@ enum {
     PROP_SHOW_FPS,
     PROP_LOG_DETECTS,
     PROP_STOP_ERROR,
+    PROP_LOG_SERVER,
 
     PROP_MAX_VIDEO_RATE,
     PROP_MAX_DRPAI_RATE,
@@ -155,6 +156,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_boolean("log_detects", "Log Detects",
                              "Print detected objects in standard output.",
                              FALSE, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_LOG_SERVER,
+        g_param_spec_string("log_server", "Log Server",
+                             "Send UDP messages in JSON about detected objects to the mentioned host:port.",
+                             nullptr, G_PARAM_WRITABLE));
     g_object_class_install_property(gobject_class, PROP_SHOW_FPS,
         g_param_spec_boolean("show_fps", "Show Frame Rates",
                              "Render frame rates of video and DRPAI at the corner of the video.",
@@ -302,6 +307,9 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             break;
         case PROP_LOG_DETECTS:
             obj->drpai_controller->drpai.log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_LOG_SERVER:
+            obj->drpai_controller->set_socket_address(g_value_get_string(value));
             break;
         case PROP_SHOW_FPS:
             obj->drpai_controller->show_fps = g_value_get_boolean(value);

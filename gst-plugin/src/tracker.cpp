@@ -12,11 +12,20 @@ inline double get_duration(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
 }
 
-std::string to_string(const tracking_time& time) {
+std::string tracked_detection::to_string(const tracking_time& time) {
     const std::time_t t = std::chrono::system_clock::to_time_t(time);
     std::string ts = std::ctime(&t);
     ts.resize(ts.size()-1);
     return ts;
+}
+
+json_object tracked_detection::get_json() const {
+    json_object j;
+    j.add("id", id);
+    j.add("seen-first", to_string(seen_first));
+    j.add("seen-last", to_string(seen_last));
+    j.concatenate(last_detection.get_json());
+    return j;
 }
 
 /** @brief Track detected items based on previous detections
@@ -99,16 +108,12 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
      * Let's welcome it to the family! */
     for (auto& d: detections_ptr) {
         auto item = tracked_detection(count() + 1, *d, now);
+        names[d->c] = d->name;
+        counts[d->c]++;
         current_items.push_front(item);
         result.emplace_back(&current_items.front());
     }
     return result;
-}
-
-uint32_t tracker::count(const uint32_t c) const {
-    const auto c1 = std_count_if(current_items, [&](const tracked_detection& item) { return item.last_detection.c == c; });
-    const auto c2 = std_count_if(historical_items, [&](const tracked_detection& item) { return item.last_detection.c == c; });
-    return c1 + c2;
 }
 
 uint32_t tracker::count(const float duration) const {
@@ -116,4 +121,12 @@ uint32_t tracker::count(const float duration) const {
     const auto c1 = std_count_if(current_items, [&](const tracked_detection& item) { return get_duration(now, item.seen_last) < duration; });
     const auto c2 = std_count_if(historical_items, [&](const tracked_detection& item) { return get_duration(now, item.seen_last) < duration; });
     return c1 + c2;
+}
+
+json_object tracker::get_json() const {
+    json_object j;
+    j.add("total", count());
+    for (auto const& [c, name] : names)
+        j.add(name, counts.at(c));
+    return j;
 }

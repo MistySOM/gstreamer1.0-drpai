@@ -9,9 +9,9 @@
 #include <chrono>
 #include <list>
 #include <vector>
+#include <map>
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
-std::string to_string(const tracking_time& time);
 
 struct tracked_detection {
     const uint32_t id;
@@ -26,13 +26,10 @@ struct tracked_detection {
     [[nodiscard]] std::string to_string_hr() const {
         return std::to_string(id) + "." + last_detection.to_string_hr();
     }
+    [[nodiscard]] json_object get_json() const;
 
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ \"id\"=" + std::to_string(id) +
-               ", \"seen_first\"=" + to_string(seen_first) +
-               ", \"seen_last\"=" + to_string(seen_last) +
-               last_detection.to_string_json_inline() + " }";
-    }
+private:
+    [[nodiscard]] static std::string to_string(const tracking_time& time);
 };
 
 class tracker {
@@ -54,8 +51,8 @@ public:
     [[nodiscard]] std::vector<const tracked_detection*> track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
-    [[nodiscard]] uint32_t count(uint32_t c) const;
     [[nodiscard]] uint32_t count(float duration) const;
+    [[nodiscard]] json_object get_json() const;
 
 private:
     /** List of tracked items that are still visible (t < time_threshold)
@@ -64,6 +61,8 @@ private:
     /** List of tracked items that are gone (t > time_threshold)
      * They can be used to query the history and counting. */
     std::list<tracked_detection> historical_items;
+    std::map<uint32_t, const char*> names;
+    std::map<uint32_t, uint32_t> counts;
 };
 
 
