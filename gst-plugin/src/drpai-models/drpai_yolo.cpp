@@ -58,7 +58,7 @@ void DRPAI_Yolo::extract_detections()
         if (det[i].prob == 0) continue;
 
         /* Skip the bounding boxes outside of region of interest */
-        if (!filter_classes.empty() && in(det[i].name, filter_classes)) continue;
+        if (!(filter_classes.empty() || in(det[i].name, filter_classes))) continue;
         if ((filter_region & det[i].bbox) == 0) continue;
 
         last_det.push_back(det[i]);
@@ -91,7 +91,11 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
     if (det_tracker.active)
-        std::cout << "Option: Detection Tracking is Active!" << std::endl;
+        std::cout << "Option : Detection Tracking is Active!" << std::endl;
+    if (!filter_classes.empty())
+        std::cout << "Option : Filtering classes to " << json_array(filter_classes).to_string() << std::endl;
+    if (filter_region.area() < 640*480)
+        std::cout << "Option : Filtering region of interest to " << filter_region.get_json(false).to_string() << std::endl;
 }
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
@@ -99,7 +103,7 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
         for (const auto& tracked: last_tracked_detection)
         {
             /* Draw the bounding box on the image */
-            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr());
+            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr(), RED_DATA, BLACK_DATA);
         }
     else
         DRPAI_Connection::render_detections_on_image(img);

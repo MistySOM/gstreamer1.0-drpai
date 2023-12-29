@@ -100,6 +100,7 @@ enum {
     PROP_FILTER_TOP,
     PROP_FILTER_WIDTH,
     PROP_FILTER_HEIGHT,
+    PROP_FILTER_SHOW,
 };
 
 /* the capabilities of the inputs and outputs.
@@ -221,6 +222,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_uint("filter_height", "Filter Height",
                           "The height of the region of interest to filter the detection.",
                           1, CAP_HEIGHT, CAP_HEIGHT, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_FILTER_SHOW,
+        g_param_spec_boolean("filter_show", "Filter Show",
+                             "Show a yellow box where the filter is applied.",
+                             FALSE, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -347,27 +352,32 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             obj->drpai_controller->drpai.det_tracker.history_length = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
-            const std::string csv_classes = g_value_get_string(value);
+            std::stringstream csv_classes(g_value_get_string(value));
             obj->drpai_controller->drpai.filter_classes.clear();
-            if (!csv_classes.empty()) {
-                std::stringstream ss(csv_classes);
+            while (csv_classes.good()) {
                 std::string item;
-                while (std::getline(ss, item, ','))
-                    obj->drpai_controller->drpai.filter_classes.push_back(std::move(item));
+                std::getline(csv_classes, item, ',');
+                if(!item.empty())
+                    obj->drpai_controller->drpai.filter_classes.push_back(item);
             }
             break;
         }
         case PROP_FILTER_LEFT:
-            obj->drpai_controller->drpai.filter_region.x = static_cast<float>(g_value_get_uint(value));
+            obj->drpai_controller->drpai.filter_region.setLeft(static_cast<float>(g_value_get_uint(value)));
             break;
         case PROP_FILTER_TOP:
-            obj->drpai_controller->drpai.filter_region.y = static_cast<float>(g_value_get_uint(value));
+            obj->drpai_controller->drpai.filter_region.setTop(static_cast<float>(g_value_get_uint(value)));
             break;
         case PROP_FILTER_WIDTH:
             obj->drpai_controller->drpai.filter_region.w = static_cast<float>(g_value_get_uint(value));
+            obj->drpai_controller->drpai.filter_region.setLeft(obj->drpai_controller->drpai.filter_region.x);
             break;
         case PROP_FILTER_HEIGHT:
             obj->drpai_controller->drpai.filter_region.h = static_cast<float>(g_value_get_uint(value));
+            obj->drpai_controller->drpai.filter_region.setTop(obj->drpai_controller->drpai.filter_region.y);
+            break;
+        case PROP_FILTER_SHOW:
+            obj->drpai_controller->drpai.show_filter = g_value_get_boolean(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -434,16 +444,19 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
             break;
         }
         case PROP_FILTER_LEFT:
-            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.x));
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.getLeft()));
             break;
         case PROP_FILTER_TOP:
-            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.y));
+            g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.getTop()));
             break;
         case PROP_FILTER_WIDTH:
             g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.w));
             break;
         case PROP_FILTER_HEIGHT:
             g_value_set_uint(value, static_cast<uint>(obj->drpai_controller->drpai.filter_region.h));
+            break;
+        case PROP_FILTER_SHOW:
+            g_value_set_boolean(value, obj->drpai_controller->drpai.show_filter);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
