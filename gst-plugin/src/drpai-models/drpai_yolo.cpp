@@ -92,6 +92,10 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     DRPAI_Connection::open_resource(data_in_address);
     if (det_tracker.active)
         std::cout << "Option: Detection Tracking is Active!" << std::endl;
+    if (!filter_classes.empty())
+        std::cout << "Option: Filtering classes to " << json_array(filter_classes).to_string() << std::endl;
+    if (filter_region.area() > 0)
+        std::cout << "Option: Filtering region of interest to " << filter_region.get_json(false).to_string() << std::endl;
 }
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {

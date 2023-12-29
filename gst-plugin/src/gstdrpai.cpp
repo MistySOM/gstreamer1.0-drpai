@@ -352,13 +352,13 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             obj->drpai_controller->drpai.det_tracker.history_length = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
-            const std::string csv_classes = g_value_get_string(value);
+            std::stringstream csv_classes(g_value_get_string(value));
             obj->drpai_controller->drpai.filter_classes.clear();
-            if (!csv_classes.empty()) {
-                std::stringstream ss(csv_classes);
+            while (csv_classes.good()) {
                 std::string item;
-                while (std::getline(ss, item, ','))
-                    obj->drpai_controller->drpai.filter_classes.push_back(std::move(item));
+                std::getline(csv_classes, item, ',');
+                if(!item.empty())
+                    obj->drpai_controller->drpai.filter_classes.push_back(item);
             }
             break;
         }
