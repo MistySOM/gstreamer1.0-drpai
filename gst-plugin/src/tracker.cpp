@@ -4,9 +4,9 @@
 
 #include <algorithm>
 #include "tracker.h"
-#define std_erase_all(vector, pred)     vector.erase(std::remove_if(vector.begin(), vector.end(), pred), vector.end())
-#define std_erase_since(vector, pred)   vector.erase(std::find_if(vector.begin(), vector.end(), pred), vector.end())
-#define std_sort(vector, pred)          std::sort(vector.begin(), vector.end(), pred)
+#define std_erase(vector, pred)     vector.erase(std::remove_if(vector.begin(), vector.end(), pred), vector.end())
+#define std_find_if(vector, pred)   std::find_if(vector.begin(), vector.end(), pred)
+#define std_sort(vector, pred)      std::sort(vector.begin(), vector.end(), pred)
 
 inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
@@ -57,16 +57,16 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
     for(auto track_item = current_items.begin(); track_item != current_items.end();) {
 
         // Check to see if previously tracked item has not been seen during the past time_threshold time
-        if(get_duration_seconds(now, track_item->seen_last) < time_threshold) {
+        if(get_duration_seconds(now, (*track_item)->seen_last) < time_threshold) {
             for(auto& det_item: detections_ptr) {
 
                 // Check if both items in previously tracked and newly detected are in the same class
-                if (track_item->last_detection.c == det_item->c) {
+                if ((*track_item)->last_detection.c == det_item->c) {
                     /* Check if both items in previously tracked and newly detected are located nearby.
                      *This is calculated using the DOA (Distance Over Areas) algorithm. */
-                    if (const auto distance = track_item->last_detection.bbox.doa_with(det_item->bbox); distance < doa_threshold) {
+                    if (const auto distance = (*track_item)->last_detection.bbox.doa_with(det_item->bbox); distance < doa_threshold) {
                         // Add to the permutation
-                        permutation.push_back(track_map{det_item, track_item.operator->(), distance});
+                        permutation.push_back(track_map{det_item, *track_item, distance});
                     }
                 }
 
@@ -102,21 +102,23 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         result.push_back(t);
 
         // Remove each pair from the permutation and the list of detected items, so we don't process them again.
-        std_erase_all(permutation, [&](const auto& items) { return items.t == t; });
-        std_erase_all(permutation, [&](const auto& items) { return items.det == d; });
-        std_erase_all(detections_ptr, [&](const auto item) { return item == d; });
+        std_erase(permutation, [&](const auto& items) { return items.t == t; });
+        std_erase(permutation, [&](const auto& items) { return items.det == d; });
+        std_erase(detections_ptr, [&](const auto item) { return item == d; });
     }
 
-    std_erase_since(historical_items, [&](const auto &t) { return get_duration_minutes(now, t.seen_last) > history_length; });
+    auto to_delete_item = std_find_if(historical_items, [&](const auto &t) { return get_duration_minutes(now, t->seen_last) > history_length; });
+    for (auto i = to_delete_item; i != historical_items.end(); ++i) delete *i;
+    historical_items.erase(to_delete_item, historical_items.end());
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
     for (auto d: detections_ptr) {
-        tracked_detection item (count() + 1, *d, now);
+        auto item = new tracked_detection(count() + 1, *d, now);
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
-        result.push_back(&current_items.front());
+        result.push_back(item);
     }
     return result;
 }
@@ -128,4 +130,11 @@ json_object tracker::get_json() const {
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;
+}
+
+tracker::~tracker() {
+    for (auto& i : current_items)
+        delete i;
+    for (auto& i : historical_items)
+        delete i;
 }

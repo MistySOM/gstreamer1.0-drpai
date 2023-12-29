@@ -44,6 +44,7 @@ public:
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
         bbox_smooth_rate(bbox_smooth_rate) {}
+    ~tracker();
 
     /** @brief Track detected items based on previous detections
      *  @param detections A list of detected items in one frame
@@ -57,10 +58,10 @@ public:
 private:
     /** List of tracked items that are still visible (t < time_threshold)
      * They will be used for tracking process */
-    std::list<tracked_detection> current_items;
+    std::list<tracked_detection*> current_items;
     /** List of tracked items that are gone (t > time_threshold)
      * They can be used to query the history and counting. */
-    std::list<tracked_detection> historical_items;
+    std::list<tracked_detection*> historical_items;
     std::map<uint32_t, const char*> names;
     std::map<uint32_t, uint32_t> counts;
 };
