@@ -471,11 +471,11 @@ void DRPAI_Connection::crop(const Box& crop_region) const {
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::render_filter_region(Image &img) {
+void DRPAI_Connection::render_filter_region(Image &img) const {
     if (filter_region.area() > 0)
-        img.draw_rect(static_cast<int32_t>(filter_region.x),
-                      static_cast<int32_t>(filter_region.y),
-                      static_cast<int32_t>(filter_region.x + filter_region.w),
-                      static_cast<int32_t>(filter_region.y + filter_region.h),
+        img.draw_rect(static_cast<int32_t>(filter_region.getLeft()),
+                      static_cast<int32_t>(filter_region.getTop()),
+                      static_cast<int32_t>(filter_region.getRight()),
+                      static_cast<int32_t>(filter_region.getBottom()),
                       YELLOW_DATA, 0);
 }

@@ -28,26 +28,6 @@
 #include "box.h"
 
 /*****************************************
-* Function Name : overlap
-* Description   : Function to compute the overlapped data between coordinate x with size w
-* Arguments     : x1 = 1-dimensional coordinate of first line
-*                 w1 = size of fist line
-*                 x2 = 1-dimensional coordinate of second line
-*                 w2 = size of second line
-* Return value  : overlapped line size
-******************************************/
-float Box::overlap(const float x1, const float w1, const float x2, const float w2)
-{
-    const float l1 = x1 - w1/2;
-    const float l2 = x2 - w2/2;
-    const float left = l1 > l2 ? l1 : l2;
-    const float r1 = x1 + w1/2;
-    const float r2 = x2 + w2/2;
-    const float right = r1 < r2 ? r1 : r2;
-    return right - left;
-}
-
-/*****************************************
 * Function Name : box_intersection
 * Description   : Function to compute the area of intersection of Box a and b
 * Arguments     : a = Box 1
@@ -56,8 +36,8 @@ float Box::overlap(const float x1, const float w1, const float x2, const float w
 ******************************************/
 float Box::operator&(const Box& b) const
 {
-    const float _w = overlap(x, w, b.x, b.w);
-    const float _h = overlap(y, h, b.y, b.h);
+    const float _w = std::min(getRight(), b.getRight()) - std::max(getLeft(), b.getLeft());
+    const float _h = std::min(getBottom(), b.getBottom()) - std::max(getTop(), b.getTop());
     if(_w < 0 || _h < 0)
     {
         return 0;

@@ -42,9 +42,10 @@ typedef struct Box
 
     [[nodiscard]] inline float getLeft() const { return x - w/2; }
     [[nodiscard]] inline float getTop() const { return y - h/2; }
+    [[nodiscard]] inline float getRight() const { return x + w/2; }
+    [[nodiscard]] inline float getBottom() const { return y + h/2; }
     [[nodiscard]] json_object get_json(bool center_origin=true) const;
 
-    [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float doa_with(const Box& b) const;
     [[nodiscard]] float inline area() const { return w*h; };
