@@ -6,6 +6,23 @@ Here is a sample of JSON output when nothing is detected:
         "detections": []
     }
 
+Here is a sample of JSON output when the filters are **on**:
+
+    {
+        "video-rate": 25.0, 
+        "drpai-rate": 5.4, 
+        "filter-classes": [
+            "bottle"
+        ], 
+        "filter-region": {
+            "left": 450, 
+            "top": 350, 
+            "width": 100, 
+            "height": 100
+        }, 
+        "detections": []
+    }
+
 Here is a sample of JSON output of Yolo models when the tracking is **off**:
 
     {
