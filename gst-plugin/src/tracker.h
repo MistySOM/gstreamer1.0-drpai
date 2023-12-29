@@ -38,7 +38,7 @@ public:
     bool active;
     float time_threshold;
     float doa_threshold;
-    float history_length; // Minutes to keep the tracking history.
+    uint16_t history_length; // Minutes to keep the tracking history.
     uint16_t bbox_smooth_rate;
 
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):

@@ -8,8 +8,11 @@
 #define std_erase_since(vector, pred)   vector.erase(std::find_if(vector.begin(), vector.end(), pred), vector.end())
 #define std_sort(vector, pred)          std::sort(vector.begin(), vector.end(), pred)
 
-inline double get_duration(const tracking_time &a, const tracking_time &b) {
+inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
+}
+inline long get_duration_minutes(const tracking_time &a, const tracking_time &b) {
+    return std::chrono::duration_cast<std::chrono::minutes>(a - b).count();
 }
 
 std::string tracked_detection::to_string(const tracking_time& time) {
@@ -54,7 +57,7 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
     for(auto track_item = current_items.begin(); track_item != current_items.end();) {
 
         // Check to see if previously tracked item has not been seen during the past time_threshold time
-        if(get_duration(now, track_item->seen_last) < time_threshold) {
+        if(get_duration_seconds(now, track_item->seen_last) < time_threshold) {
             for(auto& det_item: detections_ptr) {
 
                 // Check if both items in previously tracked and newly detected are in the same class
@@ -104,12 +107,12 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         std_erase_all(detections_ptr, [&](const auto item) { return item == d; });
     }
 
-    std_erase_since(historical_items, [&](const auto &t) { return get_duration(now, t.seen_last) > history_length * 60; });
+    std_erase_since(historical_items, [&](const auto &t) { return get_duration_minutes(now, t.seen_last) > history_length; });
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
-    for (auto& d: detections_ptr) {
-        auto item = tracked_detection(count() + 1, *d, now);
+    for (auto d: detections_ptr) {
+        tracked_detection item (count() + 1, *d, now);
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
