@@ -4,9 +4,9 @@
 
 #include <algorithm>
 #include "tracker.h"
-#define std_erase(vector, pred)     vector.erase(std::remove_if(vector.begin(), vector.end(), pred), vector.end())
-#define std_sort(vector, pred)      std::sort(vector.begin(), vector.end(), pred)
-#define std_count_if(vector, pred)  std::count_if(vector.begin(), vector.end(), pred)
+#define std_erase_all(vector, pred)     vector.erase(std::remove_if(vector.begin(), vector.end(), pred), vector.end())
+#define std_erase_since(vector, pred)   vector.erase(std::find_if(vector.begin(), vector.end(), pred), vector.end())
+#define std_sort(vector, pred)          std::sort(vector.begin(), vector.end(), pred)
 
 inline double get_duration(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
@@ -78,7 +78,7 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         }
     }
     // Sort the permutation by distances. Smaller is a better match.
-    std_sort(permutation, [](const track_map& a, const track_map& b) { return a.distance < b.distance; });
+    std_sort(permutation, [](const auto& a, const auto& b) { return a.distance < b.distance; });
 
     std::vector<const tracked_detection*> result;
     result.reserve(detections.size());
@@ -99,10 +99,12 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         result.emplace_back(t);
 
         // Remove each pair from the permutation and the list of detected items, so we don't process them again.
-        std_erase(permutation, [&](const track_map& items) { return items.t == t; });
-        std_erase(permutation, [&](const track_map& items) { return items.det == d; });
-        std_erase(detections_ptr, [&](const detection* item) { return item == d; });
+        std_erase_all(permutation, [&](const auto& items) { return items.t == t; });
+        std_erase_all(permutation, [&](const auto& items) { return items.det == d; });
+        std_erase_all(detections_ptr, [&](const auto item) { return item == d; });
     }
+
+    std_erase_since(historical_items, [&](const auto &t) { return get_duration(now, t.seen_last) > history_length * 60; });
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
@@ -116,16 +118,10 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
     return result;
 }
 
-uint32_t tracker::count(const float duration) const {
-    const auto now = std::chrono::system_clock::now();
-    const auto c1 = std_count_if(current_items, [&](const tracked_detection& item) { return get_duration(now, item.seen_last) < duration; });
-    const auto c2 = std_count_if(historical_items, [&](const tracked_detection& item) { return get_duration(now, item.seen_last) < duration; });
-    return c1 + c2;
-}
-
 json_object tracker::get_json() const {
     json_object j;
-    j.add("total", count());
+    j.add("minutes", history_length);
+    j.add("total-count", count());
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;

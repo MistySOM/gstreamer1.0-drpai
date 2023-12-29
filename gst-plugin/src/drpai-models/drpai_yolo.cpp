@@ -108,7 +108,9 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
 void DRPAI_Yolo::add_corner_text() {
     DRPAI_Connection::add_corner_text();
     if (det_tracker.active) {
-        corner_text.push_back("Tracked/Hour: " + std::to_string(det_tracker.count(60.0f * 60.0f)));
+        corner_text.push_back(
+                "Tracked/" + std::to_string(static_cast<uint32_t>(det_tracker.history_length)) + "min: " +
+                std::to_string(det_tracker.count()));
     }
 }
 
@@ -126,6 +128,6 @@ json_array DRPAI_Yolo::get_detections_json() const {
 json_object DRPAI_Yolo::get_json() const {
     json_object j = DRPAI_Connection::get_json();
     if(det_tracker.active)
-        j.add("tracked-count", det_tracker.get_json());
+        j.add("track-history", det_tracker.get_json());
     return j;
 }
