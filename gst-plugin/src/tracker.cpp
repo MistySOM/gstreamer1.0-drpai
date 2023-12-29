@@ -99,7 +99,7 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         t->last_detection.bbox = t->last_detection.bbox.average_with(static_cast<float>(t->smoothed-1), 1, d->bbox);
         t->last_detection.prob = d->prob;
         t->seen_last = now;
-        result.emplace_back(t);
+        result.push_back(t);
 
         // Remove each pair from the permutation and the list of detected items, so we don't process them again.
         std_erase_all(permutation, [&](const auto& items) { return items.t == t; });
@@ -116,7 +116,7 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
-        result.emplace_back(&current_items.front());
+        result.push_back(&current_items.front());
     }
     return result;
 }
