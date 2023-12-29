@@ -386,7 +386,7 @@ json_object DRPAI_Connection::get_json() const {
     j.add("drpai-rate", rate.get_smooth_rate(), 1);
     if (!filter_classes.empty())
         j.add("filter-classes", json_array(filter_classes));
-    if (filter_region.area() > 0)
+    if (filter_region.area() < 640*480)
         j.add("filter-region", filter_region.get_json(false));
     j.add("detections", get_detections_json());
     return j;
@@ -472,7 +472,7 @@ void DRPAI_Connection::crop(const Box& crop_region) const {
 }
 
 void DRPAI_Connection::render_filter_region(Image &img) const {
-    if (filter_region.area() > 0)
+    if (filter_region.area() < 640*480)
         img.draw_rect(static_cast<int32_t>(filter_region.getLeft()),
                       static_cast<int32_t>(filter_region.getTop()),
                       static_cast<int32_t>(filter_region.getRight()),
