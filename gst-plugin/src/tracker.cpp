@@ -4,9 +4,11 @@
 
 #include <algorithm>
 #include "tracker.h"
-#define std_erase(vector, pred)     vector.erase(std::remove_if(vector.begin(), vector.end(), pred), vector.end())
-#define std_find_if(vector, pred)   std::find_if(vector.begin(), vector.end(), pred)
-#define std_sort(vector, pred)      std::sort(vector.begin(), vector.end(), pred)
+#define std_remove_if(vector, pred)  std::remove_if(vector.begin(), vector.end(), pred)
+#define std_find_if(vector, pred)    std::find_if(vector.begin(), vector.end(), pred)
+#define std_sort(vector, pred)       std::sort(vector.begin(), vector.end(), pred)
+#define std_erase(vector, pred)      vector.erase(std_remove_if(vector, pred), vector.end())
+#define std_erase_after(vector,pred) vector.erase(std_find_if(vector, pred), vector.end())
 
 inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
@@ -35,7 +37,7 @@ json_object tracked_detection::get_json() const {
  *  @param detections A list of detected items in one frame
  *  @returns A list of items corresponding to detections that were present earlier.
  *           The order of items in the output list is not the same as the input list. */
-std::vector<const tracked_detection*> tracker::track(const std::vector<detection>& detections) {
+std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::vector<detection>& detections) {
     const auto now = std::chrono::system_clock::now();
 
     /* Let's keep pointers to all detected items.
@@ -49,7 +51,7 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
      * Then, we sort the distances. The least distance should be the one that matches correctly. */
     struct track_map {
         const detection* det;
-        tracked_detection* t;
+        std::shared_ptr<tracked_detection> t;
         float distance;
     };
     std::vector<track_map> permutation;
@@ -76,14 +78,13 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         else {
             /* If it hasn't been seen, it doesn't need to be processed for the tracking anymore.
              * So it can be moved to the other list only for counting and historical queries. */
-            historical_items.push_front(*track_item);
-            track_item = current_items.erase(track_item);
+            historical_items.splice(historical_items.begin(), current_items, track_item++);
         }
     }
     // Sort the permutation by distances. Smaller is a better match.
     std_sort(permutation, [](const auto& a, const auto& b) { return a.distance < b.distance; });
 
-    std::vector<const tracked_detection*> result;
+    std::vector<std::shared_ptr<const tracked_detection>> result;
     result.reserve(detections.size());
     while(!permutation.empty()) {
         /* Capture the front of permutation (the least distant ones) and add it to the result.
@@ -107,14 +108,12 @@ std::vector<const tracked_detection*> tracker::track(const std::vector<detection
         std_erase(detections_ptr, [&](const auto item) { return item == d; });
     }
 
-    auto to_delete_item = std_find_if(historical_items, [&](const auto &t) { return get_duration_minutes(now, t->seen_last) > history_length; });
-    for (auto i = to_delete_item; i != historical_items.end(); ++i) delete *i;
-    historical_items.erase(to_delete_item, historical_items.end());
+    std_erase_after(historical_items, [&](const auto &t) { return get_duration_minutes(now, t->seen_last) > history_length; });
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
     for (auto d: detections_ptr) {
-        auto item = new tracked_detection(count() + 1, *d, now);
+        auto item = std::make_shared<tracked_detection>(count() + 1, *d, now);
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
@@ -130,11 +129,4 @@ json_object tracker::get_json() const {
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;
-}
-
-tracker::~tracker() {
-    for (auto& i : current_items)
-        delete i;
-    for (auto& i : historical_items)
-        delete i;
 }
