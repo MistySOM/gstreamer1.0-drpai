@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     auto result_ptr = t.track(detections);
     std::vector<tracked_detection> result;
     result.reserve(result_ptr.size());
-    for (const auto r: result_ptr) result.push_back(*r);
+    for (const auto& r: result_ptr) result.push_back(*r);
 
     if (arg == ARG_DOA || arg == ARG_TIME) {
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
         auto result_later = t.track(detections);
         std::sort(result_later.begin(), result_later.end(),
-                  [](const tracked_detection* a, const tracked_detection* b) { return a->id < b->id; });
+                  [](std::shared_ptr<const tracked_detection>& a, std::shared_ptr<const tracked_detection>& b) { return a->id < b->id; });
 
         for (std::size_t i = 0; i < detections.size(); i++)
             if (arg == ARG_DOA) assert(result_later.at(i)->id == result.at(i).id);

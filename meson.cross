@@ -1,0 +1,20 @@
+[binaries]
+c = ['aarch64-poky-linux-gcc', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.14/sysroots/aarch64-poky-linux']
+cpp = ['aarch64-poky-linux-g++', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.14/sysroots/aarch64-poky-linux']
+ar = ['aarch64-poky-linux-ar']
+nm = ['aarch64-poky-linux-nm']
+strip = ['aarch64-poky-linux-strip']
+pkgconfig = 'pkg-config'
+
+[properties]
+needs_exe_wrapper = true
+c_args = ['-O2', '-pipe', '-g', '-feliminate-unused-debug-types']
+c_link_args = ['-Wl,-O1', '-Wl,--hash-style=gnu', '-Wl,--as-needed', '-fstack-protector-strong', '-Wl,-z,relro,-z,now']
+cpp_args = []
+cpp_link_args = ['-Wl,-O1', '-Wl,--hash-style=gnu', '-Wl,--as-needed', '-fstack-protector-strong', '-Wl,-z,relro,-z,now']
+
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
