@@ -349,7 +349,7 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             obj->drpai_controller->drpai.yolo.det_tracker.doa_threshold = g_value_get_float(value);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            obj->drpai_controller->drpai.det_tracker.history_length = g_value_get_float(value);
+            obj->drpai_controller->drpai.yolo.det_tracker.history_length = g_value_get_float(value);
             break;
         case PROP_FILTER_CLASS: {
             std::stringstream csv_classes(g_value_get_string(value));
@@ -431,7 +431,7 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
             g_value_set_float(value, obj->drpai_controller->drpai.yolo.det_tracker.doa_threshold);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.history_length);
+            g_value_set_float(value, obj->drpai_controller->drpai.yolo.det_tracker.history_length);
             break;
         case PROP_FILTER_CLASS: {
             std::string ss;
