@@ -113,25 +113,28 @@ int main (int argc, char *argv[]) {
     gst_init(&argc, &argv);
 
     GstElement *v4l2src;
-    GstElement *videoconvert;
-    GstElement *autovideosink;
+    GstElement *fakesink;
     GstElement *drpai;
     GstBus *bus;
 
     pipeline = gst_pipeline_new (NULL);
+
     v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
-    videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
+    g_object_set (v4l2src, "device", "/dev/video0", NULL);
+
     drpai = gst_element_factory_make("drpai", "drpai");
-    autovideosink = gst_element_factory_make ("autovideosink", "autovideosink");
-    if (!pipeline || !v4l2src || !videoconvert || !drpai || !autovideosink) {
+    g_object_set (drpai, "model", "yolov3", NULL);
+    g_object_set (drpai, "log-server", "192.168.100.41:8080", NULL);
+
+    fakesink = gst_element_factory_make ("fakesink", "fakesink");
+
+    if (!pipeline || !v4l2src || !drpai || !fakesink) {
         g_error("Failed to create elements");
         return -1;
     }
 
-    g_object_set (v4l2src, "device", "/dev/video0", NULL);
-
-    gst_bin_add_many(GST_BIN(pipeline), v4l2src, videoconvert, drpai, autovideosink, NULL);
-    if (!gst_element_link_many(v4l2src, videoconvert, drpai, autovideosink, NULL)) {
+    gst_bin_add_many(GST_BIN(pipeline), v4l2src, drpai, fakesink, NULL);
+    if (!gst_element_link_many(v4l2src, drpai, fakesink, NULL)) {
         g_error("Failed to link elements");
         return -2;
     }
