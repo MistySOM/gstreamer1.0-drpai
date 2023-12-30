@@ -99,7 +99,7 @@ void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(const char code, const int32_t x, const int32_t y, const int32_t color, const int32_t backcolor) const
+void Image::write_char(const char code, const int32_t x, const int32_t y, const uint32_t color, const uint32_t backcolor) const
 {
     // Pick the pattern related to the ASCII code from the elements of the g_ascii_table array.
     // The array doesn't include the non-printable characters, so we need to shift the code to match the element.
@@ -138,7 +138,7 @@ void Image::write_char(const char code, const int32_t x, const int32_t y, const 
 * Return Value  : -
 ******************************************/
 void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
-                         const int32_t color, const int32_t backcolor, int8_t margin) const
+                         const uint32_t color, const uint32_t backcolor, int8_t margin) const
 {
     const auto str_size = static_cast<int32_t>(pcode.size());
     if (str_size == 0) return;
@@ -187,7 +187,7 @@ void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color)
 *                 color = line color
 * Return Value  : -
 ******************************************/
-void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const int32_t color) const
+void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const uint32_t color) const
 {
     auto dx = static_cast<float>(x1 - x0);
     auto dy = static_cast<float>(y1 - y0);
@@ -253,7 +253,7 @@ void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(const Box& box, const std::string& str) const
+void Image::draw_rect(const Box& box, const std::string& str, const uint32_t front_color, const uint32_t back_color) const
 {
     auto x_min = static_cast<int32_t>(box.x - round(box.w / 2.));
     auto y_min = static_cast<int32_t>(box.y - round(box.h / 2.));
@@ -268,14 +268,16 @@ void Image::draw_rect(const Box& box, const std::string& str) const
     /* Draw the class and probability */
     write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
     /* Draw the bounding box */
-    draw_line(x_min, y_min, x_max, y_min, front_color);
-    draw_line(x_max, y_min, x_max, y_max, front_color);
-    draw_line(x_max, y_max, x_min, y_max, front_color);
-    draw_line(x_min, y_max, x_min, y_min, front_color);
-    draw_line(x_min-1, y_min-1, x_max+1, y_min-1, back_color);
-    draw_line(x_max+1, y_min-1, x_max+1, y_max+1, back_color);
-    draw_line(x_max+1, y_max+1, x_min-1, y_max+1, back_color);
-    draw_line(x_min-1, y_max+1, x_min-1, y_min-1, back_color);
+    draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
+    draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
+}
+
+void Image::draw_rect(const int32_t x_min, const int32_t y_min, const int32_t x_max, const int32_t y_max,
+                      const uint32_t color, const int32_t expand) const {
+    draw_line(x_min - expand, y_min - expand, x_max + expand, y_min - expand, color);
+    draw_line(x_max + expand, y_min - expand, x_max + expand, y_max + expand, color);
+    draw_line(x_max + expand, y_max + expand, x_min - expand, y_max + expand, color);
+    draw_line(x_min - expand, y_max + expand, x_min - expand, y_min - expand, color);
 }
 
 /*****************************************

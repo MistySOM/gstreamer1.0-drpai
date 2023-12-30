@@ -360,7 +360,7 @@ void DRPAI_Connection::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
-        img.draw_rect(detection.bbox, detection.to_string_hr());
+        img.draw_rect(detection.bbox, detection.to_string_hr(), RED_DATA, BLACK_DATA);
     }
 }
 
@@ -372,6 +372,24 @@ void DRPAI_Connection::render_text_on_image(Image &img) {
 
 void DRPAI_Connection::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
+}
+
+json_array DRPAI_Connection::get_detections_json() const {
+    json_array a;
+    for(auto det: last_det)
+        a.add(det.get_json());
+    return a;
+}
+
+json_object DRPAI_Connection::get_json() const {
+    json_object j;
+    j.add("drpai-rate", rate.get_smooth_rate(), 1);
+    if (!filter_classes.empty())
+        j.add("filter-classes", json_array(filter_classes));
+    if (filter_region.area() < 640*480)
+        j.add("filter-region", filter_region.get_json(false));
+    j.add("detections", get_detections_json());
+    return j;
 }
 
 void DRPAI_Connection::run_inference() {
@@ -451,4 +469,13 @@ void DRPAI_Connection::crop(const Box& crop_region) const {
     crop_param.obj = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+}
+
+void DRPAI_Connection::render_filter_region(Image &img) const {
+    if (filter_region.area() < 640*480)
+        img.draw_rect(static_cast<int32_t>(filter_region.getLeft()),
+                      static_cast<int32_t>(filter_region.getTop()),
+                      static_cast<int32_t>(filter_region.getRight()),
+                      static_cast<int32_t>(filter_region.getBottom()),
+                      YELLOW_DATA, 0);
 }

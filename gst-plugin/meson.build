@@ -32,5 +32,6 @@ gstplugindrpai = library('gstdrpai',
   install_dir : join_paths('/usr/lib64', 'gstreamer-1.0'),
 )
 
+subdir('tests')
 subdir('src/dynamic-post-process/yolo')
 subdir('src/dynamic-post-process/deeppose')

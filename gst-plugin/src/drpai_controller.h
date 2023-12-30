@@ -25,12 +25,14 @@ public:
 
     bool multithread = true;
     bool show_fps = false;
+    int socket_fd = 0;
     fps video_rate{};
     DRPAI_DeepPose drpai;
 
     void open_resources();
     void release_resources();
     void process_image(uint8_t* img_data);
+    void set_socket_address(const std::string& address);
 
 private:
     std::unique_ptr<Image> image_mapped_udma = nullptr;

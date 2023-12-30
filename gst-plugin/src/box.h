@@ -28,6 +28,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <string>
+#include "json.h"
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -36,29 +37,30 @@ typedef struct Box
 {
     float x, y, w, h;
 
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ \"x\"=" + std::to_string(x) +
-               ", \"y\"=" + std::to_string(y) +
-               ", \"width\"=" + std::to_string(w) +
-               ", \"height\"=" + std::to_string(h) + " }";
-    }
+    inline void setLeft(const float _x) { x = _x + w/2; }
+    inline void setTop(const float _y) { y = _y + h/2; }
 
-    [[nodiscard]] static float overlap(float x1, float w1, float x2, float w2);
+    [[nodiscard]] inline float getLeft() const { return x - w/2; }
+    [[nodiscard]] inline float getTop() const { return y - h/2; }
+    [[nodiscard]] inline float getRight() const { return x + w/2; }
+    [[nodiscard]] inline float getBottom() const { return y + h/2; }
+    [[nodiscard]] json_object get_json(bool center_origin=true) const;
+
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float doa_with(const Box& b) const;
-    [[nodiscard]] float area() const { return w*h; };
+    [[nodiscard]] float inline area() const { return w*h; };
 
     [[nodiscard]] float operator&(const Box& b) const; // intersection
     [[nodiscard]] float operator|(const Box& b) const; // union
-    [[nodiscard]] float operator%(const Box& b) const { // euclidean distance
+    [[nodiscard]] float inline operator%(const Box& b) const { // euclidean distance
         const auto dx = x - b.x;
         const auto dy = y - b.y;
         return std::sqrt(dx*dx + dy*dy);
     }
-    [[nodiscard]] Box operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
-    [[nodiscard]] Box operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
-    [[nodiscard]] Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
-    [[nodiscard]] Box average_with(const float my_weight, const float other_weight, const Box& other) const {
+    [[nodiscard]] Box inline operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] Box inline operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] Box inline operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
+    [[nodiscard]] Box inline average_with(const float my_weight, const float other_weight, const Box& other) const {
         return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
     }
 } Box;
@@ -79,16 +81,12 @@ typedef struct detection
         else
             return "";
     }
-    [[nodiscard]] std::string to_string_json() const {
-        return "{ " + to_string_json_inline() + " }";
-    }
-    [[nodiscard]] std::string to_string_json_inline() const {
-        if (name)
-            return "\"class\"=" + std::string(name) +
-                   ", \"probability\"=" + std::to_string(prob) +
-                   ", \"box\"=" + bbox.to_string_json();
-        else
-            return "\"box\"=" + bbox.to_string_json();
+    [[nodiscard]] json_object get_json() const {
+        json_object j;
+        j.add("class", name);
+        j.add("probability", prob, 2);
+        j.add("box", bbox.get_json(true));
+        return j;
     }
 } detection;
 

@@ -42,8 +42,13 @@ public:
     fps rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
-    Box filter_region {};
     std::vector<std::string> corner_text {};
+
+    /* Filter section */
+    bool show_filter = false;
+    Box filter_region {};
+    std::vector<std::string> filter_classes {};
+    void render_filter_region(Image& img) const;
 
     /*DRP-AI Input image information*/
     int32_t IN_WIDTH = 0;
@@ -58,6 +63,8 @@ public:
     virtual void render_text_on_image(Image& img);
     virtual void add_corner_text();
     virtual void extract_detections() = 0;
+    [[nodiscard]] virtual json_array get_detections_json() const;
+    [[nodiscard]] virtual json_object get_json() const;
 
 protected:
     int32_t drpai_fd = 0;
