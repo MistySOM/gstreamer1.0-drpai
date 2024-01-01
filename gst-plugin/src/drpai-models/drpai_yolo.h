@@ -12,11 +12,10 @@ class DRPAI_Yolo final: public DRPAI_Connection {
 
 public:
     explicit DRPAI_Yolo(const bool log_detects):
-            log_detects(log_detects),
+            DRPAI_Connection(log_detects),
             det_tracker(true, 2, 2.25, 1)
     {}
 
-    bool log_detects = false;
     tracker det_tracker;
 
     void open_resource(uint32_t data_in_address) override;

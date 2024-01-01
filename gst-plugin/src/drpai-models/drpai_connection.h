@@ -38,6 +38,7 @@ typedef struct
 class DRPAI_Connection {
 
 public:
+    bool log_detects = false;
     fps rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
@@ -74,7 +75,7 @@ protected:
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection() {};
+    explicit DRPAI_Connection(const bool log_detects): log_detects(log_detects) {};
     virtual ~DRPAI_Connection() = default;
 
     void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size) const;
