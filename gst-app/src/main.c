@@ -45,8 +45,9 @@
 
 #include <gst/gst.h>
 
+#define DELAY_VALUE 100000
+
 static GstElement *pipeline;
-static GMainLoop *loop;
 
 static gboolean
 message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
@@ -66,9 +67,7 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
             g_error_free (err);
             g_free (debug);
             g_free (name);
-
-            g_main_loop_quit (loop);
-            break;
+            return FALSE;
         }
         case GST_MESSAGE_WARNING:{
             GError *err = NULL;
@@ -77,7 +76,7 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
             name = gst_object_get_path_string (message->src);
             gst_message_parse_warning (message, &err, &debug);
 
-            g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+            g_printerr ("WARNING: from element %s: %s\n", name, err->message);
             if (debug != NULL)
                 g_printerr ("Additional debug info:\n%s\n", debug);
 
@@ -88,12 +87,8 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
         }
         case GST_MESSAGE_EOS:{
             g_print ("Got EOS\n");
-            g_main_loop_quit (loop);
             gst_element_set_state (pipeline, GST_STATE_NULL);
-            g_main_loop_unref (loop);
-            gst_object_unref (pipeline);
-            exit(0);
-            break;
+            return FALSE;
         }
         default:
             break;
@@ -112,43 +107,74 @@ int main (int argc, char *argv[]) {
     signal(SIGINT, (__sighandler_t) sigintHandler);
     gst_init(&argc, &argv);
 
-    GstElement *v4l2src;
-    GstElement *fakesink;
-    GstElement *drpai;
-    GstBus *bus;
+    pipeline = gst_pipeline_new(NULL);
+    GstElement* v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
+    GstElement* drpai = gst_element_factory_make("drpai", "drpai");
+    GstElement* fpsdisplaysink = gst_element_factory_make ("fpsdisplaysink", "fpsdisplaysink");
+    GstElement* fakesink = gst_element_factory_make ("fakesink", "fakesink");
 
-    pipeline = gst_pipeline_new (NULL);
-
-    v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
-    g_object_set (v4l2src, "device", "/dev/video0", NULL);
-
-    drpai = gst_element_factory_make("drpai", "drpai");
-    g_object_set (drpai, "model", "yolov3", NULL);
-    g_object_set (drpai, "log-server", "192.168.100.41:8080", NULL);
-
-    fakesink = gst_element_factory_make ("fakesink", "fakesink");
-
-    if (!pipeline || !v4l2src || !drpai || !fakesink) {
+    if (!pipeline || !v4l2src || !drpai || !fpsdisplaysink || !fakesink) {
         g_error("Failed to create elements");
         return -1;
     }
 
-    gst_bin_add_many(GST_BIN(pipeline), v4l2src, drpai, fakesink, NULL);
-    if (!gst_element_link_many(v4l2src, drpai, fakesink, NULL)) {
+    g_object_set (v4l2src, "device", "/dev/video0", NULL);
+    g_object_set (drpai,
+                  "model", "yolov3",
+                  "log-server", "192.168.100.41:8080",
+                  NULL);
+    g_object_set ( fpsdisplaysink, "text-overlay", FALSE, "video-sink", fakesink, NULL);
+
+    gst_bin_add_many(GST_BIN(pipeline), v4l2src, drpai, fpsdisplaysink, NULL);
+    if (!gst_element_link_many(v4l2src, drpai, fpsdisplaysink, NULL)) {
         g_error("Failed to link elements");
         return -2;
     }
 
-    loop = g_main_loop_new(NULL, FALSE);
+    if (gst_element_set_state (pipeline,
+                               GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+        g_printerr ("Unable to set the pipeline to the playing state.\n");
+        gst_object_unref (pipeline);
+        return -1;
+    }
 
-    bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
-    gst_bus_add_signal_watch(bus);
-    g_signal_connect(G_OBJECT(bus), "message", G_CALLBACK(message_cb), NULL);
-    gst_object_unref(GST_OBJECT(bus));
-
+    GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-    g_print("Starting loop");
-    g_main_loop_run(loop);
+    guint delay_show_FPS = 0;
+    g_print("Starting loop. Send SIGINT to exit.\n");
+    while(1) {
+        GstMessage* msg = gst_bus_pop (bus);
+        /* Note that because input timeout is GST_CLOCK_TIME_NONE,
+           the gst_bus_timed_pop_filtered() function will block forever until a
+           matching message was posted on the bus (GST_MESSAGE_ERROR or
+           GST_MESSAGE_EOS). */
+        if (msg != NULL) {
+            gchar *debug_info;
+            gboolean r = message_cb(bus, msg, debug_info);
+            gst_message_unref (msg);
+
+            if(r == FALSE)
+                break;
+        }
+
+        /* Display information FPS to console */
+        gchar *fps_msg;
+        g_object_get (G_OBJECT (fpsdisplaysink), "last-message", &fps_msg, NULL);
+        delay_show_FPS++;
+        if (fps_msg != NULL) {
+            if ((delay_show_FPS % DELAY_VALUE) == 0) {
+                g_print ("Frame info: %s\n", fps_msg);
+                delay_show_FPS = 0;
+            }
+        }
+    }
+
+    gst_object_unref (bus);
+    g_print ("Returned, stopping playback...\n");
+    gst_element_set_state (pipeline, GST_STATE_NULL);
+    g_print ("Freeing pipeline...\n");
+    gst_object_unref (GST_OBJECT (pipeline));
+    g_print ("Completed. Goodbye!\n");
     return 0;
 }

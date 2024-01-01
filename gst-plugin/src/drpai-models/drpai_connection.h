@@ -78,7 +78,7 @@ protected:
     explicit DRPAI_Connection(const bool log_detects): log_detects(log_detects) {};
     virtual ~DRPAI_Connection() = default;
 
-    void load_drpai_param_file(const drpai_data_t& proc, const std::string& param_file, uint32_t file_size) const;
+    void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
     void get_result();
     void start();
     void wait() const;
