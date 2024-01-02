@@ -99,7 +99,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t 
 {
     drpai_data_t drpai_data { from, size };
 
-    std::cout << "Loading : " << data << std::endl;
+    std::cout << "Loading : " << data << " " << std::flush;
     std::ifstream file_stream(data, std::ios::binary);
     if (!file_stream.is_open())
         throw std::runtime_error("[ERROR] Failed to open: " + data);
@@ -109,11 +109,17 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t 
         throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
     char drpai_buf[BUF_SIZE];
+    auto start = std::chrono::steady_clock::now();
     while (file_stream.read(drpai_buf, BUF_SIZE))
     {
         errno = 0;
         if ( write(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
             throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+
+        if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start).count() > 0) {
+            std::cout << "." << std::flush;
+            start = std::chrono::steady_clock::now();
+        }
     }
 
     const std::streamsize remaining_size = file_stream.gcount();
@@ -124,6 +130,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t 
         if ( write(drpai_fd, drpai_buf, remaining_size) == -1 )
             throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
     }
+    std::cout << std::endl;
 }
 
 /*****************************************
