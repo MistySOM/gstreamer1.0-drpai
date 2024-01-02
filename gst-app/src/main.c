@@ -120,7 +120,7 @@ int main (int argc, char *argv[]) {
 
     g_object_set (v4l2src, "device", "/dev/video0", NULL);
     g_object_set (drpai,
-                  "model", "yolov3",
+                  "model", "tinyyolov2_cam",
                   "log-server", "192.168.100.41:8080",
                   NULL);
     g_object_set ( fpsdisplaysink, "text-overlay", FALSE, "video-sink", fakesink, NULL);

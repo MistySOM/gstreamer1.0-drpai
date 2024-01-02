@@ -68,13 +68,6 @@ void DRPAI_DeepPose::open_resource(const uint32_t data_in_address) {
     prefix = "deeppose";
     std::cout << "Model : Deep Pose      | " << prefix << std::endl;
     DRPAI_Connection::open_resource(data_in_address);
-
-    /*DRP Param Info Preparation*/
-    const auto drpai_param_file = prefix + "/drp_param_info.txt";
-    std::ifstream param_file(drpai_param_file, std::ifstream::ate);
-    const auto drp_param_info_size = static_cast<uint32_t>(param_file.tellg());
-    /*Load DRPAI Parameter for Cropping later*/
-    load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file, drp_param_info_size);
 }
 
 void DRPAI_DeepPose::release_resource() {
@@ -93,7 +86,30 @@ void DRPAI_DeepPose::run_inference() {
 }
 
 void DRPAI_DeepPose::render_detections_on_image(Image &img) {
-    yolo.render_detections_on_image(img);
+//    yolo.render_detections_on_image(img);
     if (!yolo.last_det.empty())
         DRPAI_Connection::render_detections_on_image(img);
+}
+
+json_array DRPAI_DeepPose::get_detections_json() const {
+    json_array a;
+    if(!yolo.last_det.empty()) {
+        auto j = yolo.last_det.at(0).get_json();
+
+        std::string head_pose_str;
+        switch (last_head_pose) {
+            case Center: head_pose_str = "Center"; break;
+            case Left: head_pose_str = "Left"; break;
+            case Down: head_pose_str = "Down"; break;
+            case Right: head_pose_str = "Right"; break;
+            case Up: head_pose_str = "Up"; break;
+        }
+        if(!head_pose_str.empty())
+            j.add("head-pose", head_pose_str);
+        j.add("yawn", yawn_detected);
+        j.add("blink", blink_detected);
+
+        a.add(j);
+    }
+    return a;
 }

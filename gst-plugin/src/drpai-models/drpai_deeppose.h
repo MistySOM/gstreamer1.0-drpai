@@ -31,6 +31,7 @@ public:
     void extract_detections() override;
     void run_inference() override;
     void render_detections_on_image(Image &img) override;
+    [[nodiscard]] json_array get_detections_json() const override;
 
 private:
     constexpr static uint8_t NUM_OUTPUT_KEYPOINT = 98;
