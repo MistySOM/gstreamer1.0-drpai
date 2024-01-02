@@ -161,6 +161,7 @@ void DRPAI_Controller::release_resources() {
         process_thread->join();
         process_thread.reset();
     }
+
     drpai.release_resource();
     image_mapped_udma.reset();
 }
