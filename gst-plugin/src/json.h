@@ -31,6 +31,7 @@ protected:
             }
         }
     }
+    virtual void add(const bool value) { s += value? "true": "false"; }
     virtual void add(const int value) { s += std::to_string(value); }
     virtual void add(const unsigned int value) { s += std::to_string(value); }
     virtual void add(const unsigned long value) { s += std::to_string(value); }
@@ -43,12 +44,8 @@ protected:
 
 class json_object final: public json_base {
 public:
+    template <typename T> void add(const std::string& key, const T value) { add_key(key); json_base::add(value); }
     void add(const std::string& key, const float value, const int precision=-1) { add_key(key); json_base::add(value, precision); }
-    void add(const std::string& key, const int value) { add_key(key); json_base::add(value); }
-    void add(const std::string& key, const unsigned int value) { add_key(key); json_base::add(value); }
-    void add(const std::string& key, const unsigned long value) { add_key(key); json_base::add(value); }
-    void add(const std::string& key, const std::string& value) { add_key(key); json_base::add(value); }
-    void add(const std::string& key, const json_base& value) { add_key(key); json_base::add(value); }
 
     [[nodiscard]] std::string to_string() const override { return "{" + s + "}"; }
 
@@ -62,12 +59,8 @@ public:
     json_array() = default;
     explicit json_array(const std::vector<std::string>& array) { for(auto& a: array) add(a); }
 
+    template <typename T> void add(const T value) { add_comma(); json_base::add(value); }
     void add(const float value, const int precision) override { add_comma(); json_base::add(value, precision); }
-    void add(const int value) override { add_comma(); json_base::add(value); }
-    void add(const unsigned int value) override { add_comma(); json_base::add(value); }
-    void add(const unsigned long value) override { add_comma(); json_base::add(value); }
-    void add(const std::string& value) override { add_comma(); json_base::add(value); }
-    void add(const json_base& value) override { add_comma(); json_base::add(value); }
 
     [[nodiscard]] std::string to_string() const override { return "[" + s + "]"; }
 };
