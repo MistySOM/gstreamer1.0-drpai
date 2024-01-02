@@ -83,7 +83,7 @@ typedef struct detection
     }
     [[nodiscard]] json_object get_json() const {
         json_object j;
-        j.add("class", name);
+        j.add("class", std::string(name));
         j.add("probability", prob, 2);
         j.add("box", bbox.get_json(true));
         return j;
