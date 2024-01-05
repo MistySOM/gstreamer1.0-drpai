@@ -67,7 +67,7 @@ void Image::map_udmabuf()
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (int32_t i = 0; i < size; i++) {
+        for (uint32_t i = 0; i < size; i++) {
             img_buffer[i] = 0;
         }
     }
@@ -283,11 +283,11 @@ void Image::copy_convert_bgr_to_yuy2() const {
     if(img_buffer == nullptr)
         return;
 
-    for (int y = 0; y < img_h; ++y) {
+    for (uint32_t y = 0; y < img_h; ++y) {
         const auto& bgrRow = &convert_buffer.get()[BGR_NUM_CHANNEL * img_w * y];
         const auto& yuy2Row = &img_buffer[YUV2_NUM_CHANNEL * img_w * y];
 
-        for (int x = 0; x < img_w; x += 2) {
+        for (uint32_t x = 0; x < img_w; x += 2) {
             // Convert two BGR pixels to YUY2 format
             const auto bgrIdx1 = BGR_NUM_CHANNEL * x;
             const auto bgrIdx2 = BGR_NUM_CHANNEL * (x + 1);
