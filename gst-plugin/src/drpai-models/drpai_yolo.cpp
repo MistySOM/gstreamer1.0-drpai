@@ -72,7 +72,7 @@ void DRPAI_Yolo::extract_detections()
             for (const auto& detection: *det_tracker.last_tracked_detection) {
                 /* Print the box details on console */
                 //print_box(detection, n++);
-                std::cout << detection->to_string_hr() + "\t";
+                std::cout << detection->to_string_hr(true) + "\t";
             }
         }
         else {
@@ -103,7 +103,7 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
         for (const auto& tracked: *std::atomic_load(&det_tracker.last_tracked_detection))
         {
             /* Draw the bounding box on the image */
-            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr(), RED_DATA, BLACK_DATA);
+            img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr(show_track_id), RED_DATA, BLACK_DATA);
         }
     else
         DRPAI_Connection::render_detections_on_image(img);

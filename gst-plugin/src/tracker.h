@@ -24,8 +24,10 @@ struct tracked_detection {
     tracked_detection(const uint32_t id, const detection& det, const tracking_time& time):
             id(id), smoothed(1), last_detection(det), seen_first(time), seen_last(time) {}
 
-    [[nodiscard]] std::string to_string_hr() const {
-        return std::to_string(id) + "." + last_detection.to_string_hr();
+    [[nodiscard]] std::string to_string_hr(bool include_id) const {
+        if(include_id)
+            return std::to_string(id) + "." + last_detection.to_string_hr();
+        return last_detection.to_string_hr();
     }
     [[nodiscard]] json_object get_json() const;
 
