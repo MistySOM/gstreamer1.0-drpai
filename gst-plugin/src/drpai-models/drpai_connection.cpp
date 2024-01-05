@@ -268,7 +268,7 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
     read_data_in_list(data_in_list);
     if (filter_region.w == 0)
-        filter_region = {0, 0, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
+        filter_region = {static_cast<float>(IN_WIDTH)/2, static_cast<float>(IN_HEIGHT)/2, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
 
     post_process.dynamic_library_open(prefix);
     if (post_process.post_process_initialize(prefix.c_str(), IN_WIDTH, IN_HEIGHT, drpai_output_buf.size()) != 0)
