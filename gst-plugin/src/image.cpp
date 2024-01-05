@@ -67,7 +67,7 @@ void Image::map_udmabuf()
     * Note: Do not use memset() for this.
     *       Because it does not work as expected. */
     {
-        for (int32_t i = 0; i < size; i++) {
+        for (uint32_t i = 0; i < size; i++) {
             img_buffer[i] = 0;
         }
     }
@@ -143,9 +143,6 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
     const auto str_size = static_cast<int32_t>(pcode.size());
     if (str_size == 0) return;
 
-    x = std::clamp(x, 0, img_w - str_size*font_w - 2);
-    y = std::clamp(y, 0, img_h - font_h - 2);
-
     int32_t right = margin * 2 + str_size * font_w - 1;
     int32_t bottom = margin * 2 + font_h - 1;
     for(; margin>0; margin--, x++, y++, right-=2, bottom-=2) {
@@ -172,6 +169,7 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
 ******************************************/
 void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color) const
 {
+    if(x >= img_w || y >= img_h) return;
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 1] = (color >> 8)  & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 2] = color         & 0x000000FF;
@@ -255,15 +253,10 @@ void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1
 ******************************************/
 void Image::draw_rect(const Box& box, const std::string& str, const uint32_t front_color, const uint32_t back_color) const
 {
-    auto x_min = static_cast<int32_t>(box.x - round(box.w / 2.));
-    auto y_min = static_cast<int32_t>(box.y - round(box.h / 2.));
-    auto x_max = static_cast<int32_t>(box.x + round(box.w / 2.) - 1);
-    auto y_max = static_cast<int32_t>(box.y + round(box.h / 2.) - 1);
-    /* Check the bounding box is in the image range */
-    x_min = std::max(x_min, 1);
-    x_max = std::min(x_max, img_w -2);
-    y_min = std::max(y_min, 1);
-    y_max = std::min(y_max, img_h -2);
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
 
     /* Draw the class and probability */
     write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
@@ -290,11 +283,11 @@ void Image::copy_convert_bgr_to_yuy2() const {
     if(img_buffer == nullptr)
         return;
 
-    for (int y = 0; y < img_h; ++y) {
+    for (uint32_t y = 0; y < img_h; ++y) {
         const auto& bgrRow = &convert_buffer.get()[BGR_NUM_CHANNEL * img_w * y];
         const auto& yuy2Row = &img_buffer[YUV2_NUM_CHANNEL * img_w * y];
 
-        for (int x = 0; x < img_w; x += 2) {
+        for (uint32_t x = 0; x < img_w; x += 2) {
             // Convert two BGR pixels to YUY2 format
             const auto bgrIdx1 = BGR_NUM_CHANNEL * x;
             const auto bgrIdx2 = BGR_NUM_CHANNEL * (x + 1);
@@ -333,4 +326,24 @@ void Image::prepare() {
             convert_from_format = format;
         }
     }
+}
+
+void Image::draw_rect_fill(const Box& box, uint32_t color) const {
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
+
+    for (auto i = x_min; i<x_max; i++)
+        for (auto j = y_min; j<y_max; j++)
+            draw_point(i,j, color);
+}
+
+void Image::draw_rect(const Box &box, uint32_t color) const {
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
+
+    draw_rect(x_min, y_min, x_max, y_max, color, 0);
 }
