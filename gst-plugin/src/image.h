@@ -53,17 +53,18 @@ class Image
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
         void draw_rect(const Box& box, const std::string& str, uint32_t front_color, uint32_t back_color) const;
-        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, uint32_t color, int32_t expand) const;
+        void draw_rect(const Box& box, uint32_t color) const;
+        void draw_rect_fill(const Box& box, uint32_t color) const;
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
                           uint32_t color, uint32_t backcolor, int8_t margin=0) const;
 
     private:
         uint8_t udmabuf_fd = 0;
-        int32_t img_w;
-        int32_t img_h;
-        int32_t img_c;
+        uint32_t img_w;
+        uint32_t img_h;
+        uint32_t img_c;
         IMAGE_FORMAT format;
-        int32_t size;
+        uint32_t size;
         uint8_t* img_buffer = nullptr;
 
         /* converting section */
@@ -78,6 +79,7 @@ class Image
         constexpr static int32_t font_h = 8;
         void draw_point(uint32_t x, uint32_t y, uint32_t color) const;
         void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color) const;
+        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, uint32_t color, int32_t expand) const;
         void write_char(char code, int32_t x, int32_t y, uint32_t color, uint32_t backcolor) const;
 };
 
