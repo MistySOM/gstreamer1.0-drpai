@@ -91,6 +91,7 @@ enum {
     PROP_SMOOTH_DRPAI_RATE,
     PROP_SMOOTH_BBOX_RATE,
 
+    PROP_TRACK_SHOW_ID,
     PROP_TRACK_SECONDS,
     PROP_TRACK_DOA_THRESHOLD,
     PROP_TRACK_HISTORY_LENGTH,
@@ -190,6 +191,10 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
         g_param_spec_uint("smooth_bbox_rate", "Smooth Bounding Box Framerate",
                           "Number of last bounding-box updates to average. (requires tracking)",
                           1, 1000, 1, G_PARAM_READWRITE));
+    g_object_class_install_property(gobject_class, PROP_TRACK_SHOW_ID,
+        g_param_spec_boolean("show_track_id", "Show Track ID",
+                             "Show the track ID on the detection labels.",
+                             FALSE, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_TRACK_SECONDS,
         g_param_spec_float("track_seconds", "Track Seconds",
                            "Number of seconds to wait for a tracked undetected object to forget it.",
@@ -199,9 +204,9 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                            "The threshold of Distance Over Areas (DOA) for tracking bounding-boxes.",
                            0.001, 1000, 2.25, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_TRACK_HISTORY_LENGTH,
-        g_param_spec_float("track_history_length", "Track History Length",
-                           "Minutes to keep the tracking history.",
-                           0, 1440, 60, G_PARAM_READWRITE));
+        g_param_spec_int("track_history_length", "Track History Length",
+                         "Minutes to keep the tracking history.",
+                         0, 1440, 60, G_PARAM_READWRITE));
     g_object_class_install_property(gobject_class, PROP_FILTER_CLASS,
         g_param_spec_string("filter_class", "Filter Class",
                             "A comma-separated list of classes to filter the detection.",
@@ -342,6 +347,9 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
         case PROP_SMOOTH_BBOX_RATE:
             obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate = g_value_get_uint(value);
             break;
+        case PROP_TRACK_SHOW_ID:
+            obj->drpai_controller->drpai.show_track_id = g_value_get_boolean(value);
+            break;
         case PROP_TRACK_SECONDS:
             obj->drpai_controller->drpai.det_tracker.time_threshold = g_value_get_float(value);
             break;
@@ -349,7 +357,7 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             obj->drpai_controller->drpai.det_tracker.doa_threshold = g_value_get_float(value);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            obj->drpai_controller->drpai.det_tracker.history_length = g_value_get_float(value);
+            obj->drpai_controller->drpai.det_tracker.history_length = g_value_get_int(value);
             break;
         case PROP_FILTER_CLASS: {
             std::stringstream csv_classes(g_value_get_string(value));
@@ -424,6 +432,9 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
         case PROP_SMOOTH_BBOX_RATE:
             g_value_set_uint(value, obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate);
             break;
+        case PROP_TRACK_SHOW_ID:
+            g_value_set_boolean(value, obj->drpai_controller->drpai.show_track_id);
+            break;
         case PROP_TRACK_SECONDS:
             g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.time_threshold);
             break;
@@ -431,7 +442,7 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
             g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.doa_threshold);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            g_value_set_float(value, obj->drpai_controller->drpai.det_tracker.history_length);
+            g_value_set_int(value, obj->drpai_controller->drpai.det_tracker.history_length);
             break;
         case PROP_FILTER_CLASS: {
             std::string ss;
