@@ -60,11 +60,11 @@ class Image
 
     private:
         uint8_t udmabuf_fd = 0;
-        int32_t img_w;
-        int32_t img_h;
-        int32_t img_c;
+        uint32_t img_w;
+        uint32_t img_h;
+        uint32_t img_c;
         IMAGE_FORMAT format;
-        int32_t size;
+        uint32_t size;
         uint8_t* img_buffer = nullptr;
 
         /* converting section */
