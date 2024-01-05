@@ -16,6 +16,7 @@ public:
             det_tracker(true, 2, 2.25, 1)
     {}
 
+    bool show_track_id = false;
     tracker det_tracker;
 
     void open_resource(uint32_t data_in_address) override;
