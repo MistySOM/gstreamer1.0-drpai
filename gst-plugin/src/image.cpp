@@ -259,7 +259,9 @@ void Image::draw_rect(const Box& box, const std::string& str, const uint32_t fro
     auto y_max = static_cast<int32_t>(box.getBottom());
 
     /* Draw the class and probability */
-    write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
+    const auto margin = 5;
+    const auto str_height = font_h + 2*margin;
+    write_string(str, x_min + 1, y_min + 1 - str_height, back_color,  front_color, margin);
     /* Draw the bounding box */
     draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
     draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
