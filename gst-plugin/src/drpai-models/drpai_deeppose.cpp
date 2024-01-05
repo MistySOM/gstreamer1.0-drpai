@@ -88,7 +88,8 @@ void DRPAI_DeepPose::run_inference() {
 void DRPAI_DeepPose::render_detections_on_image(Image &img) {
 //    yolo.render_detections_on_image(img);
     if (!yolo.last_det.empty())
-        DRPAI_Connection::render_detections_on_image(img);
+        for (const auto& detection: last_det)
+            img.draw_rect_fill(detection.bbox, 0x008000u);
 }
 
 json_array DRPAI_DeepPose::get_detections_json() const {

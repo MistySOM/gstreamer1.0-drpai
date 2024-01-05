@@ -11,7 +11,7 @@ inline const static std::string ML_DESC_NAME = "deeppose/rf_gaze_dir.xml";
 constexpr uint8_t INF_OUT_SIZE        = 196;
 
 /*Graphic Drawing Settings Related*/
-constexpr uint8_t KEY_POINT_SIZE      = 2;
+constexpr uint8_t KEY_POINT_SIZE      = 4;
 
 /*DeepPose Post Processing & Drawing Related*/
 constexpr int8_t OUTPUT_ADJ_X         = 2;
