@@ -7,6 +7,7 @@
           <mappings>
             <mapping deploy="/usr/lib64/gstreamer-1.0" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" web="" />
             <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/yolo/libpostprocess-yolo.so" />
+            <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/deeppose/libpostprocess-deeppose.so" />
           </mappings>
         </serverdata>
       </paths>

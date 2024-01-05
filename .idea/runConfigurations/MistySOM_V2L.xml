@@ -11,6 +11,7 @@
         <group_name />
         <path>$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so</path>
         <path>$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/yolo/libpostprocess-yolo.so</path>
+        <path>$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/deeppose/libpostprocess-deeppose.so</path>
       </option>
     </method>
   </configuration>
