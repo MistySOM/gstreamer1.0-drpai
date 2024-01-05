@@ -33,11 +33,9 @@ json_object tracked_detection::get_json() const {
     return j;
 }
 
-/** @brief Track detected items based on previous detections
- *  @param detections A list of detected items in one frame
- *  @returns A list of items corresponding to detections that were present earlier.
- *           The order of items in the output list is not the same as the input list. */
-std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::vector<detection>& detections) {
+/** @brief Track detected items based on previous detections. It populates last_tracked_detection.
+ *  @param detections A list of detected items in one frame. */
+void tracker::track(const std::vector<detection>& detections) {
     const auto now = std::chrono::system_clock::now();
 
     /* Let's keep pointers to all detected items.
@@ -84,8 +82,8 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
     // Sort the permutation by distances. Smaller is a better match.
     std_sort(permutation, [](const auto& a, const auto& b) { return a.distance < b.distance; });
 
-    std::vector<std::shared_ptr<const tracked_detection>> result;
-    result.reserve(detections.size());
+    auto result = std::make_shared<tracked_detection_vector>();
+    result->reserve(detections.size());
     while(!permutation.empty()) {
         /* Capture the front of permutation (the least distant ones) and add it to the result.
          * Each time a permutation is captured, each of the pair should be removed from the rest of the permutation */
@@ -100,7 +98,7 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
         t->last_detection.bbox = t->last_detection.bbox.average_with(static_cast<float>(t->smoothed-1), 1, d->bbox);
         t->last_detection.prob = d->prob;
         t->seen_last = now;
-        result.push_back(t);
+        result->push_back(t);
 
         // Remove each pair from the permutation and the list of detected items, so we don't process them again.
         std_erase(permutation, [&](const auto& items) { return items.t == t; });
@@ -117,9 +115,10 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
-        result.push_back(item);
+        result->push_back(item);
     }
-    return result;
+
+    std::atomic_store(&last_tracked_detection, result);
 }
 
 json_object tracker::get_json() const {

@@ -32,6 +32,7 @@ struct tracked_detection {
 private:
     [[nodiscard]] static std::string to_string(const tracking_time& time);
 };
+using tracked_detection_vector = std::vector<std::shared_ptr<const tracked_detection>>;
 
 class tracker {
 
@@ -42,15 +43,17 @@ public:
     uint16_t history_length; // Minutes to keep the tracking history.
     uint16_t bbox_smooth_rate;
 
+    /** @brief A list of items corresponding to detections that were present earlier.
+     *         The order of items in the output list is not the same as the input list. */
+    std::shared_ptr<tracked_detection_vector> last_tracked_detection;
+
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
-    /** @brief Track detected items based on previous detections
-     *  @param detections A list of detected items in one frame
-     *  @returns A list of items corresponding to detections that were present earlier.
-     *           The order of items in the output list is not the same as the input list. */
-    [[nodiscard]] std::vector<std::shared_ptr<const tracked_detection>> track(const std::vector<detection>& detections);
+    /** @brief Track detected items based on previous detections. It populates last_tracked_detection.
+     *  @param detections A list of detected items in one frame. */
+    void track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
     [[nodiscard]] json_object get_json() const;

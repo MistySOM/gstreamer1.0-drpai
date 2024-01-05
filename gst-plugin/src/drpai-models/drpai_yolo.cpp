@@ -63,13 +63,13 @@ void DRPAI_Yolo::extract_detections()
 
         last_det.push_back(det[i]);
     }
-    last_tracked_detection = det_tracker.track(last_det);
+    det_tracker.track(last_det);
 
     /* Print details */
     if(log_detects) {
         if (det_tracker.active) {
             std::cout << "DRP-AI tracked items:  ";
-            for (const auto& detection: last_tracked_detection) {
+            for (const auto& detection: *det_tracker.last_tracked_detection) {
                 /* Print the box details on console */
                 //print_box(detection, n++);
                 std::cout << detection->to_string_hr() + "\t";
@@ -100,7 +100,7 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
     if (det_tracker.active)
-        for (const auto& tracked: last_tracked_detection)
+        for (const auto& tracked: *std::atomic_load(&det_tracker.last_tracked_detection))
         {
             /* Draw the bounding box on the image */
             img.draw_rect(tracked->last_detection.bbox, tracked->to_string_hr(), RED_DATA, BLACK_DATA);
@@ -121,7 +121,7 @@ void DRPAI_Yolo::add_corner_text() {
 json_array DRPAI_Yolo::get_detections_json() const {
     if (det_tracker.active) {
         json_array a;
-        for(auto& det: last_tracked_detection)
+        for(const auto& det: *std::atomic_load(&det_tracker.last_tracked_detection))
             a.add(det->get_json());
         return a;
     }

@@ -33,7 +33,8 @@ int main(int argc, char** argv) {
             detection{Box{200, 100, 20, 20}, 2, 1, "name"},
             detection{Box{100, 200, 20, 20}, 1, 1, "name"},
     };
-    auto result_ptr = t.track(detections);
+    t.track(detections);
+    auto result_ptr = *t.last_tracked_detection;
     std::vector<tracked_detection> result;
     result.reserve(result_ptr.size());
     for (const auto& r: result_ptr) result.push_back(*r);
@@ -47,8 +48,8 @@ int main(int argc, char** argv) {
                 detection{Box{102, 201, 20, 20}, 1, 1, "name"},
                 detection{Box{101, 105, 20, 20}, 1, 1, "name"},
         };
-
-        auto result_later = t.track(detections);
+        t.track(detections);
+        auto result_later = *t.last_tracked_detection;
         std::sort(result_later.begin(), result_later.end(),
                   [](std::shared_ptr<const tracked_detection>& a, std::shared_ptr<const tracked_detection>& b) { return a->id < b->id; });
 
