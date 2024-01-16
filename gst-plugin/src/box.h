@@ -28,7 +28,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <string>
-#include "json.h"
+#include "utils/json.h"
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -60,9 +60,6 @@ typedef struct Box
     [[nodiscard]] Box inline operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
     [[nodiscard]] Box inline operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
     [[nodiscard]] Box inline operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
-    [[nodiscard]] Box inline average_with(const float my_weight, const float other_weight, const Box& other) const {
-        return (operator*(my_weight) + other*other_weight) / (my_weight+other_weight);
-    }
 } Box;
 
 /*****************************************

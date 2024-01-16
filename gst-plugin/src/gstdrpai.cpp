@@ -333,16 +333,16 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
             obj->stop_error = g_value_get_boolean(value);
             break;
         case PROP_MAX_VIDEO_RATE:
-            obj->drpai_controller->video_rate.max_rate = g_value_get_float(value);
+            obj->drpai_controller->video_rate.set_max_rate(g_value_get_float(value));
             break;
         case PROP_MAX_DRPAI_RATE:
-            obj->drpai_controller->drpai.rate.max_rate = g_value_get_float(value);
+            obj->drpai_controller->drpai.rate.set_max_rate(g_value_get_float(value));
             break;
         case PROP_SMOOTH_VIDEO_RATE:
-            obj->drpai_controller->video_rate.smooth_rate = g_value_get_uint(value);
+            obj->drpai_controller->video_rate.set_smooth_rate(g_value_get_uint(value));
             break;
         case PROP_SMOOTH_DRPAI_RATE:
-            obj->drpai_controller->drpai.rate.smooth_rate = g_value_get_uint(value);
+            obj->drpai_controller->drpai.rate.set_smooth_rate(g_value_get_uint(value));
             break;
         case PROP_SMOOTH_BBOX_RATE:
             obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate = g_value_get_uint(value);
@@ -418,16 +418,16 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
             g_value_set_boolean(value, obj->stop_error);
             break;
         case PROP_MAX_VIDEO_RATE:
-            g_value_set_float(value, obj->drpai_controller->video_rate.max_rate);
+            g_value_set_float(value, obj->drpai_controller->video_rate.get_max_rate());
             break;
         case PROP_MAX_DRPAI_RATE:
-            g_value_set_float(value, obj->drpai_controller->drpai.rate.max_rate);
+            g_value_set_float(value, obj->drpai_controller->drpai.rate.get_max_rate());
             break;
         case PROP_SMOOTH_VIDEO_RATE:
-            g_value_set_uint(value, obj->drpai_controller->video_rate.smooth_rate);
+            g_value_set_uint(value, obj->drpai_controller->video_rate.get_max_smooth_rate());
             break;
         case PROP_SMOOTH_DRPAI_RATE:
-            g_value_set_uint(value, obj->drpai_controller->drpai.rate.smooth_rate);
+            g_value_set_uint(value, obj->drpai_controller->drpai.rate.get_max_smooth_rate());
             break;
         case PROP_SMOOTH_BBOX_RATE:
             g_value_set_uint(value, obj->drpai_controller->drpai.det_tracker.bbox_smooth_rate);

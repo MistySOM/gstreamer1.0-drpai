@@ -5,7 +5,7 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 #define GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 
-#include "drpai_connection.h"
+#include "drpai_base.h"
 #include "../tracker.h"
 
 class DRPAI_Yolo final: public DRPAI_Connection {

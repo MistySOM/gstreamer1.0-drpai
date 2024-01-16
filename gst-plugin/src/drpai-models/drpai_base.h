@@ -2,12 +2,12 @@
 // Created by matin on 01/12/23.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
-#define GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
+#ifndef GSTREAMER1_0_DRPAI_DRPAI_BASE_H
+#define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 
 #include <vector>
 #include "src/linux/drpai.h"
-#include "src/fps.h"
+#include "src/rate_controller.h"
 #include "src/box.h"
 #include "src/dynamic-post-process/postprocess.h"
 #include "src/image.h"
@@ -39,7 +39,7 @@ class DRPAI_Connection {
 
 public:
     bool log_detects = false;
-    fps rate {};
+    rate_controller rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
     std::vector<std::string> corner_text {};
@@ -99,4 +99,4 @@ private:
 };
 
 
-#endif //GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
+#endif //GSTREAMER1_0_DRPAI_DRPAI_BASE_H

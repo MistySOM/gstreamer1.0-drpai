@@ -6,6 +6,7 @@
 #define BUILDDIR_TRACKER_H
 
 #include "box.h"
+#include "utils/smoothie.h"
 #include <chrono>
 #include <list>
 #include <vector>
@@ -16,18 +17,24 @@ using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 
 struct tracked_detection {
     const uint32_t id;
-    uint16_t smoothed;
-    detection last_detection;
+    smoothie<Box> smooth_bbox;
+    uint32_t c = 0;
+    float prob = 0;
+    const char* name = nullptr;
     tracking_time seen_first;
     tracking_time seen_last;
 
-    tracked_detection(const uint32_t id, const detection& det, const tracking_time& time):
-            id(id), smoothed(1), last_detection(det), seen_first(time), seen_last(time) {}
+    tracked_detection(const uint32_t id, const detection& det, const tracking_time& time, const uint16_t bbox_smooth_rate):
+            id(id), smooth_bbox(det.bbox, bbox_smooth_rate), c(det.c), prob(det.prob), name(det.name),
+            seen_first(time), seen_last(time) {}
 
     [[nodiscard]] std::string to_string_hr(bool include_id) const {
-        if(include_id)
-            return std::to_string(id) + "." + last_detection.to_string_hr();
-        return last_detection.to_string_hr();
+        std::string r;
+        if (name)
+            r = std::string(name) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
+        if (include_id)
+            r = std::to_string(id) + (name? "." + r: "");
+        return r;
     }
     [[nodiscard]] json_object get_json() const;
 

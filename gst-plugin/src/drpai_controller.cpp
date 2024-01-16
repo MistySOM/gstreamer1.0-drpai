@@ -12,7 +12,7 @@
 
 
 void DRPAI_Controller::open_resources() {
-    if (drpai.rate.max_rate == 0) {
+    if (drpai.rate.get_max_rate() == 0) {
         std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
         return;
     }
@@ -56,7 +56,7 @@ void DRPAI_Controller::open_resources() {
 }
 
 void DRPAI_Controller::process_image(uint8_t* img_data) {
-    if (drpai.rate.max_rate != 0 && thread_state != Processing) {
+    if (drpai.rate.get_max_rate() != 0 && thread_state != Processing) {
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -75,7 +75,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         }
     }
 
-    if(drpai.rate.max_rate != 0 && !multithread)
+    if(drpai.rate.get_max_rate() != 0 && !multithread)
         try {
             thread_state = Ready;
             thread_function_single();
@@ -99,17 +99,6 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         drpai.render_filter_region(img);
     drpai.render_detections_on_image(img);
     drpai.render_text_on_image(img);
-
-    if(socket_fd) {
-        json_object j;
-        j.add("video-rate", video_rate.get_smooth_rate(), 1);
-        j.concatenate(drpai.get_json());
-        const auto str = j.to_string() + "\n";
-        const auto r = write(socket_fd, str.c_str(), str.size());
-        if (r < static_cast<ssize_t>(str.size()))
-            // std::cerr << "[ERROR] Error sending log to the server. " << std::endl;
-            return;
-    }
 }
 
 void DRPAI_Controller::set_socket_address(const std::string& address) {
@@ -133,19 +122,17 @@ void DRPAI_Controller::set_socket_address(const std::string& address) {
     addrinfo* rp;
     for (rp = result; rp != nullptr; rp = rp->ai_next) {
         socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (socket_fd == -1)
-            continue;
-
-        if (connect(socket_fd, rp->ai_addr, rp->ai_addrlen) != -1)
-            break; /* Success */
-
-        close(socket_fd);
+        if (socket_fd > 0)
+            break;
     }
     if (rp == nullptr) { /* No address succeeded */
         std::cerr << "[Warning] Can't connect to " + address << std::endl;
         socket_fd = 0;
+        freeaddrinfo(result);
+        return;
     }
 
+    std::memcpy(&socket_address, rp->ai_addr, rp->ai_addrlen);
     freeaddrinfo(result);
 
     std::cout << "Option: Sending UDP packets to " << address << std::endl;
@@ -198,4 +185,16 @@ void DRPAI_Controller::thread_function_single() {
 
     image_mapped_udma->prepare();
     drpai.run_inference();
+
+    if(socket_fd) {
+        json_object j;
+        j.add("video-rate", video_rate.get_smooth_rate(), 1);
+        j.concatenate(drpai.get_json());
+        const auto str = j.to_string() + "\n";
+        auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
+                        reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
+        if (r < static_cast<ssize_t>(str.size()))
+//            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+            return;
+    }
 }

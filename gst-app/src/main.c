@@ -109,11 +109,12 @@ int main (int argc, char *argv[]) {
 
     pipeline = gst_pipeline_new(NULL);
     GstElement* v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
+    GstElement* videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
     GstElement* drpai = gst_element_factory_make("drpai", "drpai");
     GstElement* fpsdisplaysink = gst_element_factory_make ("fpsdisplaysink", "fpsdisplaysink");
     GstElement* fakesink = gst_element_factory_make ("fakesink", "fakesink");
 
-    if (!pipeline || !v4l2src || !drpai || !fpsdisplaysink || !fakesink) {
+    if (!pipeline || !videoconvert || !v4l2src || !drpai || !fpsdisplaysink || !fakesink) {
         g_error("Failed to create elements");
         return -1;
     }
@@ -121,12 +122,12 @@ int main (int argc, char *argv[]) {
     g_object_set (v4l2src, "device", "/dev/video0", NULL);
     g_object_set (drpai,
                   "model", "yolov3",
-                  "log-server", "192.168.100.41:8080",
+                  "log-server", "mw-it-p51.local:8080",
                   NULL);
     g_object_set ( fpsdisplaysink, "text-overlay", FALSE, "video-sink", fakesink, NULL);
 
-    gst_bin_add_many(GST_BIN(pipeline), v4l2src, drpai, fpsdisplaysink, NULL);
-    if (!gst_element_link_many(v4l2src, drpai, fpsdisplaysink, NULL)) {
+    gst_bin_add_many(GST_BIN(pipeline), v4l2src, videoconvert, drpai, fpsdisplaysink, NULL);
+    if (!gst_element_link_many(v4l2src, videoconvert, drpai, fpsdisplaysink, NULL)) {
         g_error("Failed to link elements");
         return -2;
     }
@@ -159,14 +160,15 @@ int main (int argc, char *argv[]) {
         }
 
         /* Display information FPS to console */
-        gchar *fps_msg;
-        g_object_get (G_OBJECT (fpsdisplaysink), "last-message", &fps_msg, NULL);
         delay_show_FPS++;
-        if (fps_msg != NULL) {
-            if ((delay_show_FPS % DELAY_VALUE) == 0) {
+        if ((delay_show_FPS % DELAY_VALUE) == 0) {
+            gchar *fps_msg;
+            g_object_get (G_OBJECT (fpsdisplaysink), "last-message", &fps_msg, NULL);
+            if (fps_msg != NULL) {
                 g_print ("Frame info: %s\n", fps_msg);
                 delay_show_FPS = 0;
             }
+            g_free (fps_msg);
         }
     }
 
