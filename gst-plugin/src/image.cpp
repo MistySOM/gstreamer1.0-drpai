@@ -63,14 +63,8 @@ void Image::map_udmabuf()
 
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
-    /* Write once to allocate physical memory to u-dma-buf virtual space.
-    * Note: Do not use memset() for this.
-    *       Because it does not work as expected. */
-    {
-        for (uint32_t i = 0; i < size; i++) {
-            img_buffer[i] = 0;
-        }
-    }
+    // Write once to allocate physical memory to u-dma-buf virtual space.
+    std::fill(img_buffer, img_buffer+size, 0);
 }
 
 void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
