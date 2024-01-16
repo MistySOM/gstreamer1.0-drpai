@@ -122,6 +122,7 @@ int main (int argc, char *argv[]) {
     g_object_set (v4l2src, "device", "/dev/video0", NULL);
     g_object_set (drpai,
                   "model", "yolov3",
+                  "smooth-video-rate", 10,
                   "log-server", "mw-it-p51.local:8080",
                   NULL);
     g_object_set ( fpsdisplaysink, "text-overlay", FALSE, "video-sink", fakesink, NULL);

@@ -16,9 +16,9 @@ public:
         explicit elapsed_time():
             last_time(std::chrono::steady_clock::now()) {}
 
-        long get_duration() {
+        float get_duration() {
             const auto now = std::chrono::steady_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_time).count();
+            auto duration = std::chrono::duration<float>(now - last_time).count();
             last_time = now;
             return duration;
         }
