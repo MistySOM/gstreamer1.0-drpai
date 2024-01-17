@@ -34,10 +34,7 @@ int main(int argc, char** argv) {
             detection{Box{100, 200, 20, 20}, 1, 1, "name"},
     };
     t.track(detections);
-    auto result_ptr = *t.last_tracked_detection;
-    std::vector<tracked_detection> result;
-    result.reserve(result_ptr.size());
-    for (const auto& r: result_ptr) result.push_back(*r);
+    auto result = t.last_tracked_detection;
 
     if (arg == ARG_DOA || arg == ARG_TIME) {
 
@@ -49,13 +46,13 @@ int main(int argc, char** argv) {
                 detection{Box{101, 105, 20, 20}, 1, 1, "name"},
         };
         t.track(detections);
-        auto result_later = *t.last_tracked_detection;
+        auto result_later = t.last_tracked_detection;
         std::sort(result_later.begin(), result_later.end(),
                   [](std::shared_ptr<const tracked_detection>& a, std::shared_ptr<const tracked_detection>& b) { return a->id < b->id; });
 
         for (std::size_t i = 0; i < detections.size(); i++)
-            if (arg == ARG_DOA) assert(result_later.at(i)->id == result.at(i).id);
-            else                assert(result_later.at(i)->id != result.at(i).id);
+            if (arg == ARG_DOA) assert(result_later.at(i)->id == result.at(i)->id);
+            else                assert(result_later.at(i)->id != result.at(i)->id);
 
     }
 

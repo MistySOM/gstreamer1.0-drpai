@@ -84,8 +84,8 @@ void tracker::track(const std::vector<detection>& detections) {
     // Sort the permutation by distances. Smaller is a better match.
     std_sort(permutation, [](const auto& a, const auto& b) { return a.distance < b.distance; });
 
-    auto result = std::make_shared<tracked_detection_vector>();
-    result->reserve(detections.size());
+    tracked_detection_vector result;
+    result.reserve(detections.size());
     while(!permutation.empty()) {
         /* Capture the front of permutation (the least distant ones) and add it to the result.
          * Each time a permutation is captured, each of the pair should be removed from the rest of the permutation */
@@ -95,7 +95,7 @@ void tracker::track(const std::vector<detection>& detections) {
         t->smooth_bbox.add(d->bbox);
         t->prob = d->prob;
         t->seen_last = now;
-        result->push_back(t);
+        result.push_back(t);
 
         // Remove each pair from the permutation and the list of detected items, so we don't process them again.
         std_erase(permutation, [&](const auto& items) { return items.t == t; });
@@ -112,10 +112,10 @@ void tracker::track(const std::vector<detection>& detections) {
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
-        result->push_back(item);
+        result.push_back(item);
     }
 
-    std::atomic_store(&last_tracked_detection, result);
+    last_tracked_detection = result;
 }
 
 json_object tracker::get_json() const {
@@ -125,4 +125,11 @@ json_object tracker::get_json() const {
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;
+}
+
+json_array tracker::get_detections_json() const {
+    json_array a;
+    for(const auto& det: last_tracked_detection)
+        a.add(det->get_json());
+    return a;
 }

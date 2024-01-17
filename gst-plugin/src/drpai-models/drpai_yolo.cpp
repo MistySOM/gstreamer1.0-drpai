@@ -52,6 +52,7 @@ void DRPAI_Yolo::extract_detections()
     /* Non-Maximum Suppression filter */
     filter_boxes_nms(det, det_size, TH_NMS);
 
+    std::unique_lock lock (mutex);
     last_det.clear();
     for (uint8_t i = 0; i<det_size; i++) {
         /* Skip the overlapped bounding boxes */
@@ -69,7 +70,7 @@ void DRPAI_Yolo::extract_detections()
     if(log_detects) {
         if (det_tracker.active) {
             std::cout << "DRP-AI tracked items:  ";
-            for (const auto& detection: *det_tracker.last_tracked_detection) {
+            for (const auto& detection: det_tracker.last_tracked_detection) {
                 /* Print the box details on console */
                 //print_box(detection, n++);
                 std::cout << detection->to_string_hr(true) + "\t";
@@ -99,9 +100,8 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
 }
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
-    if (det_tracker.active && det_tracker.last_tracked_detection)
-        for (const auto& tracked: *std::atomic_load(&det_tracker.last_tracked_detection))
-        {
+    if (det_tracker.active)
+        for (const auto& tracked: det_tracker.last_tracked_detection) {
             /* Draw the bounding box on the image */
             img.draw_rect(tracked->smooth_bbox.mix, tracked->to_string_hr(show_track_id), RED_DATA, BLACK_DATA);
         }
@@ -119,12 +119,8 @@ void DRPAI_Yolo::add_corner_text() {
 }
 
 json_array DRPAI_Yolo::get_detections_json() const {
-    if (det_tracker.active && det_tracker.last_tracked_detection) {
-        json_array a;
-        for(const auto& det: *std::atomic_load(&det_tracker.last_tracked_detection))
-            a.add(det->get_json());
-        return a;
-    }
+    if (det_tracker.active)
+        return det_tracker.get_detections_json();
     else
         return DRPAI_Connection::get_detections_json();
 }

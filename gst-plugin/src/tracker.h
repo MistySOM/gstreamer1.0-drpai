@@ -54,7 +54,7 @@ public:
 
     /** @brief A list of items corresponding to detections that were present earlier.
      *         The order of items in the output list is not the same as the input list. */
-    std::shared_ptr<tracked_detection_vector> last_tracked_detection;
+    tracked_detection_vector last_tracked_detection;
 
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
         active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
@@ -65,6 +65,7 @@ public:
     void track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
+    [[nodiscard]] json_array get_detections_json() const;
     [[nodiscard]] json_object get_json() const;
 
 private:

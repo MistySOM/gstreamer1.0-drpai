@@ -6,6 +6,7 @@
 #define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 
 #include <vector>
+#include <mutex>
 #include "src/linux/drpai.h"
 #include "src/rate_controller.h"
 #include "src/box.h"
@@ -71,6 +72,7 @@ protected:
     st_addr_t drpai_address {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     std::vector<float> drpai_output_buf {};
+    std::mutex mutex;
     PostProcess post_process;
 
     constexpr static float TH_NMS = 0.5f;
