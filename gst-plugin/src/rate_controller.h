@@ -8,6 +8,7 @@
 #include "utils/elapsed_time.h"
 #include "utils/smoothie.h"
 #include "utils/rate_sleeper.h"
+#include <atomic>
 
 class rate_controller {
 

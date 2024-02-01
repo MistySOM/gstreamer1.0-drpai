@@ -5,8 +5,6 @@
 #ifndef GSTREAMER1_0_DRPAI_SMOOTHIE_H
 #define GSTREAMER1_0_DRPAI_SMOOTHIE_H
 
-#include <atomic>
-
 template <typename T>
 class smoothie {
 
