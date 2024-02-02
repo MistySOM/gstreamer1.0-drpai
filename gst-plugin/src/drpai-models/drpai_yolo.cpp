@@ -90,7 +90,7 @@ void DRPAI_Yolo::extract_detections()
 
 void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
-    DRPAI_Connection::open_resource(data_in_address);
+    DRPAI_Base::open_resource(data_in_address);
     if (det_tracker.active)
         std::cout << "Option : Detection Tracking is Active!" << std::endl;
     if (!filter_classes.empty())
@@ -106,11 +106,11 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
             img.draw_rect(tracked->smooth_bbox.mix, tracked->to_string_hr(show_track_id), RED_DATA, BLACK_DATA);
         }
     else
-        DRPAI_Connection::render_detections_on_image(img);
+        DRPAI_Base::render_detections_on_image(img);
 }
 
 void DRPAI_Yolo::add_corner_text() {
-    DRPAI_Connection::add_corner_text();
+    DRPAI_Base::add_corner_text();
     if (det_tracker.active) {
         corner_text.push_back(
                 "Tracked/" + std::to_string(static_cast<uint32_t>(det_tracker.history_length)) + "min: " +
@@ -122,11 +122,11 @@ json_array DRPAI_Yolo::get_detections_json() const {
     if (det_tracker.active)
         return det_tracker.get_detections_json();
     else
-        return DRPAI_Connection::get_detections_json();
+        return DRPAI_Base::get_detections_json();
 }
 
 json_object DRPAI_Yolo::get_json() const {
-    json_object j = DRPAI_Connection::get_json();
+    json_object j = DRPAI_Base::get_json();
     if(det_tracker.active)
         j.add("track-history", det_tracker.get_json());
     return j;

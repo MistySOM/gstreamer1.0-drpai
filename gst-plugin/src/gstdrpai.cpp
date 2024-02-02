@@ -60,11 +60,11 @@
 #  include <config.h>
 #endif
 
+#include "gstdrpai.h"
+#include "drpai_controller.h"
 #include <gst/gst.h>
 #include <iostream>
 #include <sstream>
-#include "gstdrpai.h"
-#include "drpai_controller.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
 #define GST_CAT_DEFAULT gst_drpai_debug

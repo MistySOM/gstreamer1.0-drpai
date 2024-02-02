@@ -25,8 +25,8 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include <memory>
 #include "box.h"
+#include <memory>
 
 constexpr uint32_t BLACK_DATA = 0x000000u;
 constexpr uint32_t RED_DATA   = 0x0000FFu;

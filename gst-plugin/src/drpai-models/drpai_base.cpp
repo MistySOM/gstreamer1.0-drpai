@@ -17,7 +17,7 @@
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::read_addrmap_txt(const std::string& addr_file)
+void DRPAI_Base::read_addrmap_txt(const std::string& addr_file)
 {
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
@@ -95,7 +95,7 @@ void DRPAI_Connection::read_addrmap_txt(const std::string& addr_file)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t from, const uint32_t size) const
+void DRPAI_Base::load_data_to_mem(const std::string& data, const uint32_t from, const uint32_t size) const
 {
     drpai_data_t drpai_data { from, size };
 
@@ -140,7 +140,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t 
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_data() const
+void DRPAI_Base::load_drpai_data() const
 {
     const std::string drpai_file_path[5] =
     {
@@ -194,7 +194,7 @@ void DRPAI_Connection::load_drpai_data() const
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::get_result()
+void DRPAI_Base::get_result()
 {
     drpai_data_t drpai_data {
         static_cast<uint32_t>(drpai_address.data_out_addr),
@@ -225,13 +225,13 @@ void DRPAI_Connection::get_result()
     }
 }
 
-void DRPAI_Connection::start() {
+void DRPAI_Base::start() {
     errno = 0;
     if (const int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]); 0 != ret)
         throw std::runtime_error("[ERROR] Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::wait() const {
+void DRPAI_Base::wait() const {
     fd_set rfds;
     drpai_status_t drpai_status;
 
@@ -259,7 +259,7 @@ void DRPAI_Connection::wait() const {
     }
 }
 
-void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
+void DRPAI_Base::open_resource(const uint32_t data_in_address) {
     const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
     read_addrmap_txt(drpai_address_file);
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
@@ -304,7 +304,7 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file);
 }
 
-void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
+void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
     std::cout << "Loading : " << data_in_list << std::flush;
     std::ifstream infile(data_in_list);
 
@@ -348,7 +348,7 @@ void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
     std::cout << std::endl;
 }
 
-void DRPAI_Connection::release_resource() {
+void DRPAI_Base::release_resource() {
     if (post_process.post_process_release != nullptr)
         post_process.post_process_release();
     post_process.dynamic_library_close();
@@ -358,7 +358,7 @@ void DRPAI_Connection::release_resource() {
         throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::render_detections_on_image(Image &img) {
+void DRPAI_Base::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
@@ -366,24 +366,24 @@ void DRPAI_Connection::render_detections_on_image(Image &img) {
     }
 }
 
-void DRPAI_Connection::render_text_on_image(Image &img) {
+void DRPAI_Base::render_text_on_image(Image &img) {
     for(std::size_t i=0; i<corner_text.size(); i++) {
         img.write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
     }
 }
 
-void DRPAI_Connection::add_corner_text() {
+void DRPAI_Base::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
-json_array DRPAI_Connection::get_detections_json() const {
+json_array DRPAI_Base::get_detections_json() const {
     json_array a;
     for(auto det: last_det)
         a.add(det.get_json());
     return a;
 }
 
-json_object DRPAI_Connection::get_json() const {
+json_object DRPAI_Base::get_json() const {
     json_object j;
     j.add("drpai-rate", rate.get_smooth_rate(), 1);
     if (!filter_classes.empty())
@@ -394,7 +394,7 @@ json_object DRPAI_Connection::get_json() const {
     return j;
 }
 
-void DRPAI_Connection::run_inference() {
+void DRPAI_Base::run_inference() {
     if(drpai_fd) {
         rate.inform_frame();
 
@@ -430,7 +430,7 @@ void DRPAI_Connection::run_inference() {
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const
+void DRPAI_Base::load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const
 {
     std::cout << "Loading : " << param_file << std::endl;
     std::ifstream file_stream(param_file, std::ios::ate | std::ios::binary);
@@ -459,7 +459,7 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& _proc, const st
     }
 }
 
-void DRPAI_Connection::crop(const Box& crop_region) const {
+void DRPAI_Base::crop(const Box& crop_region) const {
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
     crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, IN_WIDTH);
@@ -471,7 +471,7 @@ void DRPAI_Connection::crop(const Box& crop_region) const {
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::render_filter_region(Image &img) const {
+void DRPAI_Base::render_filter_region(Image &img) const {
     if (filter_region.area() < 640*480)
         img.draw_rect(filter_region, YELLOW_DATA);
 }

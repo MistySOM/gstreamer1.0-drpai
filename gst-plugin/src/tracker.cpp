@@ -2,8 +2,8 @@
 // Created by matin on 21/10/23.
 //
 
-#include <algorithm>
 #include "tracker.h"
+#include <algorithm>
 #define std_remove_if(vector, pred)  std::remove_if(vector.begin(), vector.end(), pred)
 #define std_find_if(vector, pred)    std::find_if(vector.begin(), vector.end(), pred)
 #define std_sort(vector, pred)       std::sort(vector.begin(), vector.end(), pred)

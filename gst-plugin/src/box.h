@@ -25,10 +25,8 @@
 #ifndef BOX_H
 #define BOX_H
 
-#include <cinttypes>
-#include <cmath>
-#include <string>
 #include "utils/json.h"
+#include <math.h>
 
 /*****************************************
 * Box : Bounding box coordinates and its size

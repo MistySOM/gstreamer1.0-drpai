@@ -5,13 +5,13 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 #define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 
-#include <vector>
-#include <mutex>
 #include "src/linux/drpai.h"
 #include "src/rate_controller.h"
 #include "src/box.h"
 #include "src/dynamic-post-process/postprocess.h"
 #include "src/image.h"
+#include <vector>
+#include <mutex>
 
 /* For DRP-AI Address List */
 typedef struct
@@ -36,7 +36,7 @@ typedef struct
     unsigned long weight_size;
 } st_addr_t;
 
-class DRPAI_Connection {
+class DRPAI_Base {
 
 public:
     bool log_detects = false;
@@ -77,8 +77,8 @@ protected:
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection(const bool log_detects): log_detects(log_detects) {};
-    virtual ~DRPAI_Connection() = default;
+    explicit DRPAI_Base(const bool log_detects): log_detects(log_detects) {};
+    virtual ~DRPAI_Base() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
     void get_result();

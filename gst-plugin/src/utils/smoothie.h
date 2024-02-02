@@ -5,6 +5,9 @@
 #ifndef GSTREAMER1_0_DRPAI_SMOOTHIE_H
 #define GSTREAMER1_0_DRPAI_SMOOTHIE_H
 
+#include <inttypes.h>
+#include <math.h>
+
 template <typename T>
 class smoothie {
 

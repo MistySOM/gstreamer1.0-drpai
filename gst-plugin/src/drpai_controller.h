@@ -5,17 +5,17 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 #define GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <netdb.h>
-
 /*DRPAI Driver Header*/
 #include "linux/drpai.h"
 /*Definition of Macros & other variables*/
 #include "image.h"
 #include "rate_controller.h"
 #include "src/drpai-models/drpai_yolo.h"
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <netdb.h>
 
 class DRPAI_Controller {
 

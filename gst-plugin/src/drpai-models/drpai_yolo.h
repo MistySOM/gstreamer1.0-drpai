@@ -8,11 +8,11 @@
 #include "drpai_base.h"
 #include "../tracker.h"
 
-class DRPAI_Yolo final: public DRPAI_Connection {
+class DRPAI_Yolo final: public DRPAI_Base {
 
 public:
     explicit DRPAI_Yolo(const bool log_detects):
-            DRPAI_Connection(log_detects),
+            DRPAI_Base(log_detects),
             det_tracker(true, 2, 2.25, 1)
     {}
 
