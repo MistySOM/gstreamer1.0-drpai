@@ -5,14 +5,14 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 #define GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 
-#include "drpai_connection.h"
+#include "drpai_base.h"
 #include "../tracker.h"
 
-class DRPAI_Yolo final: public DRPAI_Connection {
+class DRPAI_Yolo final: public DRPAI_Base {
 
 public:
     explicit DRPAI_Yolo(const bool log_detects):
-            DRPAI_Connection(log_detects),
+            DRPAI_Base(log_detects),
             det_tracker(true, 2, 2.25, 1)
     {}
 
@@ -30,7 +30,6 @@ public:
 
 private:
     uint32_t detection_buffer_size = 10;
-    std::vector<std::shared_ptr<const tracked_detection>> last_tracked_detection {};
 };
 
 

@@ -2,14 +2,14 @@
 // Created by matin on 15/06/23.
 //
 
+#include "yolo.h"
+#include "../postprocess.h"
 #include <string>
 #include <fstream>
 #include <vector>
 #include <iostream>
 #include <cmath>
 #include <cfloat>
-#include "yolo.h"
-#include "../postprocess.h"
 
 static std::vector<std::string> labels {};
 static std::vector<float> anchors {};

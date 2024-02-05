@@ -2,15 +2,16 @@
 // Created by matin on 01/12/23.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
-#define GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
+#ifndef GSTREAMER1_0_DRPAI_DRPAI_BASE_H
+#define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 
-#include <vector>
 #include "src/linux/drpai.h"
-#include "src/fps.h"
+#include "src/rate_controller.h"
 #include "src/box.h"
 #include "src/dynamic-post-process/postprocess.h"
 #include "src/image.h"
+#include <vector>
+#include <mutex>
 
 /* For DRP-AI Address List */
 typedef struct
@@ -35,11 +36,11 @@ typedef struct
     unsigned long weight_size;
 } st_addr_t;
 
-class DRPAI_Connection {
+class DRPAI_Base {
 
 public:
     bool log_detects = false;
-    fps rate {};
+    rate_controller rate {};
     std::string prefix {};
     std::vector<detection> last_det {};
     std::vector<std::string> corner_text {};
@@ -71,12 +72,13 @@ protected:
     st_addr_t drpai_address {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
     std::vector<float> drpai_output_buf {};
+    std::mutex mutex;
     PostProcess post_process;
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Connection(const bool log_detects): log_detects(log_detects) {};
-    virtual ~DRPAI_Connection() = default;
+    explicit DRPAI_Base(const bool log_detects): log_detects(log_detects) {};
+    virtual ~DRPAI_Base() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
     void get_result();
@@ -99,4 +101,4 @@ private:
 };
 
 
-#endif //GSTREAMER1_0_DRPAI_DRPAI_CONNECTION_H
+#endif //GSTREAMER1_0_DRPAI_DRPAI_BASE_H

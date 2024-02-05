@@ -12,7 +12,7 @@ configure_file(output : 'config.h', configuration : cdata)
 plugin_sources = [
   'src/gstdrpai.cpp',
   'src/drpai_controller.cpp',
-  'src/drpai-models/drpai_connection.cpp',
+  'src/drpai-models/drpai_base.cpp',
   'src/drpai-models/drpai_yolo.cpp',
   'src/image.cpp',
   'src/box.cpp',

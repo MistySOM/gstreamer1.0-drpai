@@ -5,16 +5,17 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 #define GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
 /*DRPAI Driver Header*/
 #include "linux/drpai.h"
 /*Definition of Macros & other variables*/
 #include "image.h"
-#include "fps.h"
+#include "rate_controller.h"
 #include "src/drpai-models/drpai_yolo.h"
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <netdb.h>
 
 class DRPAI_Controller {
 
@@ -26,7 +27,7 @@ public:
     bool multithread = true;
     bool show_fps = false;
     int socket_fd = 0;
-    fps video_rate{};
+    rate_controller video_rate{};
     DRPAI_Yolo drpai;
 
     void open_resources();
@@ -36,6 +37,7 @@ public:
 
 private:
     std::unique_ptr<Image> image_mapped_udma = nullptr;
+    sockaddr_storage socket_address;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };

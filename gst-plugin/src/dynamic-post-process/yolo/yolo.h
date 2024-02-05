@@ -5,6 +5,8 @@
 #ifndef GSTREAMER1_0_DRPAI_YOLO_H
 #define GSTREAMER1_0_DRPAI_YOLO_H
 
+#include <inttypes.h>
+
 constexpr float   TH_PROB         = 0.5f;
 constexpr int32_t MODEL_IN_W      = 416;
 constexpr int32_t MODEL_IN_H      = 416;
