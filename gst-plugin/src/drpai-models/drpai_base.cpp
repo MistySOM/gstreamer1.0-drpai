@@ -267,8 +267,6 @@ void DRPAI_Base::open_resource(const uint32_t data_in_address) {
     /*Load pixel format from data_in_list file*/
     const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
     read_data_in_list(data_in_list);
-    if (filter_region.w == 0)
-        filter_region = {static_cast<float>(IN_WIDTH)/2, static_cast<float>(IN_HEIGHT)/2, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
 
     post_process.dynamic_library_open(prefix);
     if (post_process.post_process_initialize(prefix.c_str(), IN_WIDTH, IN_HEIGHT, drpai_output_buf.size()) != 0)
@@ -386,10 +384,6 @@ json_array DRPAI_Base::get_detections_json() const {
 json_object DRPAI_Base::get_json() const {
     json_object j;
     j.add("drpai-rate", rate.get_smooth_rate(), 1);
-    if (!filter_classes.empty())
-        j.add("filter-classes", json_array(filter_classes));
-    if (filter_region.area() < 640*480)
-        j.add("filter-region", filter_region.get_json(false));
     j.add("detections", get_detections_json());
     return j;
 }
@@ -469,9 +463,4 @@ void DRPAI_Base::crop(const Box& crop_region) const {
     crop_param.obj = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-}
-
-void DRPAI_Base::render_filter_region(Image &img) const {
-    if (filter_region.area() < 640*480)
-        img.draw_rect(filter_region, YELLOW_DATA);
 }

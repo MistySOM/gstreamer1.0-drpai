@@ -19,8 +19,14 @@ public:
     bool show_track_id = false;
     tracker det_tracker;
 
+    /* Filter section */
+    bool show_filter = false;
+    Box filter_region {};
+    std::vector<std::string> filter_classes {};
+
     void open_resource(uint32_t data_in_address) override;
     void extract_detections() override;
+    void render_filter_region(Image& img) const;
     void render_detections_on_image(Image &img) override;
     void add_corner_text() override;
     [[nodiscard]] json_array get_detections_json() const override;
