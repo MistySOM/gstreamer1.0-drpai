@@ -7,5 +7,4 @@ yolov = library('postprocess-yolo',
     cpp_args: ['-DPOST_PROCESS_LIBRARY'],
     dependencies: [],
     install : true,
-    install_dir : '/usr/lib64',
 )

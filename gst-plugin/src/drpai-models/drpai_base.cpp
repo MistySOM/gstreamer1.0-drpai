@@ -374,6 +374,124 @@ void DRPAI_Base::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const std::string& value) {
+    switch (prop) {
+        case PROP_MODEL:
+            prefix = value;
+            break;
+        case PROP_FILTER_CLASS: {
+            std::stringstream csv_classes(value);
+            filter_classes.clear();
+            while (csv_classes.good()) {
+                std::string item;
+                std::getline(csv_classes, item, ',');
+                if(!item.empty())
+                    filter_classes.push_back(item);
+            }
+            break;
+        }
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const bool value) {
+    switch (prop) {
+        case PROP_LOG_DETECTS:
+            log_detects = value;
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const float value) {
+    switch (prop) {
+        case PROP_MAX_DRPAI_RATE:
+            rate.set_max_rate(value);
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const uint value) {
+    switch (prop) {
+        case PROP_SMOOTH_DRPAI_RATE:
+            rate.set_smooth_rate(value);
+            break;
+        case PROP_FILTER_LEFT:
+            filter_region.setLeft(static_cast<float>(value));
+            break;
+        case PROP_FILTER_TOP:
+            filter_region.setTop(static_cast<float>(value));
+            break;
+        case PROP_FILTER_WIDTH:
+            filter_region.w = static_cast<float>(value);
+            filter_region.setLeft(filter_region.x);
+            break;
+        case PROP_FILTER_HEIGHT:
+            filter_region.h = static_cast<float>(value);
+            filter_region.setTop(filter_region.y);
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+std::string DRPAI_Base::get_property_string(GstDRPAI_Properties prop) const {
+    switch (prop) {
+        case PROP_MODEL:
+            return prefix;
+        case PROP_FILTER_CLASS: {
+            std::string ss;
+            for (const auto &s: filter_classes) {
+                if (!ss.empty())
+                    ss += ",";
+                ss += s;
+            }
+            return ss;
+        }
+        default:
+            throw std::exception();
+    }
+}
+
+bool DRPAI_Base::get_property_bool(GstDRPAI_Properties prop) const {
+    switch (prop) {
+        case PROP_LOG_DETECTS:
+            return log_detects;
+        default:
+            throw std::exception();
+    }
+}
+
+float DRPAI_Base::get_property_float(GstDRPAI_Properties prop) const {
+    switch (prop) {
+        case PROP_MAX_DRPAI_RATE:
+            return rate.get_max_rate();
+        default:
+            throw std::exception();
+    }
+}
+
+uint DRPAI_Base::get_property_uint(GstDRPAI_Properties prop) const {
+    switch (prop) {
+        case PROP_SMOOTH_DRPAI_RATE:
+            return rate.get_smooth_rate();
+        case PROP_FILTER_LEFT:
+            return static_cast<uint>(filter_region.getLeft());
+        case PROP_FILTER_TOP:
+            return static_cast<uint>(filter_region.getTop());
+        case PROP_FILTER_WIDTH:
+            return static_cast<uint>(filter_region.w);
+        case PROP_FILTER_HEIGHT:
+            return static_cast<uint>(filter_region.h);
+        default:
+            throw std::exception();
+    }
+}
+
 json_array DRPAI_Base::get_detections_json() const {
     json_array a;
     for(auto det: last_det)

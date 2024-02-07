@@ -11,15 +11,6 @@
 #include <cmath>
 #include <cfloat>
 
-static std::vector<std::string> labels {};
-static std::vector<float> anchors {};
-static std::vector<uint32_t> num_grids {};
-static uint32_t num_bb = 0;
-static uint32_t IN_WIDTH = 0;
-static uint32_t IN_HEIGHT = 0;
-static BEST_CLASS_PREDICTION_ALGORITHM best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_NONE;
-static ANCHOR_DIVIDE_SIZE anchor_divide_size = ANCHOR_DIVIDE_SIZE_NONE;
-
 /*****************************************
 * Function Name     : load_label_file
 * Description       : Load label list text file and return the label list that contains the label.
@@ -213,78 +204,6 @@ int8_t post_process_release() {
     anchors.clear();
     num_grids.clear();
     return 0;
-}
-
-/*****************************************
-* Function Name : yolo_index
-* Description   : Get the index of the bounding box attributes based on the input offset.
-* Arguments     : n = output layer number.
-*                 offs = offset to access the bounding box attributesd.
-*                 channel = channel to access each bounding box attribute.
-* Return value  : index to access the bounding box attribute.
-******************************************/
-inline uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
-{
-    return offs + channel * num_grid * num_grid;
-}
-
-/*****************************************
-* Function Name : yolo_offset
-* Description   : Get the offset nuber to access the bounding box attributes
-*                 To get the actual value of bounding box attributes, use yolo_index() after this function.
-* Arguments     : n = output layer number [0~2].
-*                 b = Number to indicate which bounding box in the region [0~2]
-*                 y = Number to indicate which region [0~13]
-*                 x = Number to indicate which region [0~13]
-* Return value  : offset to access the bounding box attributes.
-******************************************/
-uint32_t yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x)
-{
-    const uint8_t& num = num_grids[n];
-    uint32_t prev_layer_num = 0;
-
-    for (int32_t i = 0 ; i < n; i++)
-    {
-        prev_layer_num += num_bb *(labels.size() + 5)* num_grids[i] * num_grids[i];
-    }
-    return prev_layer_num + b *(labels.size()+ 5)* num * num + y * num + x;
-}
-
-/*****************************************
-* Function Name : sigmoid
-* Description   : Helper function for YOLO Post Processing
-* Arguments     : x = input argument for the calculation
-* Return value  : sigmoid result of input x
-******************************************/
-inline float sigmoid(const float x)
-{
-    return 1.0f/(1.0f + expf(-x));
-}
-inline void sigmoid(std::vector<float>& val) {
-    for (auto& v: val)
-        v = sigmoid(v);
-}
-
-/*****************************************
-* Function Name : softmax
-* Description   : Helper function for YOLO Post Processing
-* Arguments     : val[] = array to be computed softmax
-* Return value  : -
-******************************************/
-void softmax(std::vector<float>& val)
-{
-    float max_num = -FLT_MAX;
-    for (const auto& v: val)
-        max_num = fmaxf(max_num, v);
-
-    float sum = 0;
-    for (auto& v: val)
-    {
-        v = expf(v - max_num);
-        sum += v;
-    }
-    for (auto& v: val)
-        v /= sum;
 }
 
 /*****************************************

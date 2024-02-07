@@ -3,21 +3,21 @@
 //
 
 #include "drpai_controller.h"
+#include "drpai-models/drpai_yolo.h"
 #include <memory>
 #include <iostream>
 #include <netdb.h>
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
 
 
 void DRPAI_Controller::open_resources() {
-    if (drpai.rate.get_max_rate() == 0) {
+    if (drpai->rate.get_max_rate() == 0) {
         std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
         return;
     }
-    if (drpai.prefix.empty())
-        throw std::invalid_argument("[ERROR] The model parameter needs to be set.");
 
     std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
 
@@ -47,16 +47,16 @@ void DRPAI_Controller::open_resources() {
     /**********************************************************************/
 
     /* Read DRP-AI Object files address and size */
-    drpai.open_resource(udmabuf_address);
+    drpai->open_resource(udmabuf_address);
 
-    image_mapped_udma = std::make_unique<Image>(drpai.IN_WIDTH, drpai.IN_HEIGHT, drpai.IN_CHANNEL, drpai.IN_FORMAT, nullptr);
+    image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
     image_mapped_udma->map_udmabuf();
 
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
 void DRPAI_Controller::process_image(uint8_t* img_data) {
-    if (drpai.rate.get_max_rate() != 0 && thread_state != Processing) {
+    if (drpai->rate.get_max_rate() != 0 && thread_state != Processing) {
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -75,7 +75,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         }
     }
 
-    if(drpai.rate.get_max_rate() != 0 && !multithread)
+    if(drpai->rate.get_max_rate() != 0 && !multithread)
         try {
             thread_state = Ready;
             thread_function_single();
@@ -86,19 +86,27 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
             throw;
         }
 
-    Image img (drpai.IN_WIDTH, drpai.IN_HEIGHT, 3, BGR_DATA, img_data);
+    Image img (drpai->IN_WIDTH, drpai->IN_HEIGHT, 3, BGR_DATA, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
-    drpai.corner_text.clear();
-    if(show_fps) {
-        drpai.corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
-        drpai.add_corner_text();
+    drpai->corner_text.clear();
+    if (show_time) {
+        const auto now = std::chrono::system_clock::now();
+        const auto now_t = std::chrono::system_clock::to_time_t(now);
+        const auto now_l = std::localtime(&now_t);
+        char now_str[25];
+        snprintf( now_str, 25, "Current Time: %02d:%02d:%02d", now_l->tm_hour, now_l->tm_min, now_l->tm_sec);
+        drpai->corner_text.emplace_back(now_str);
     }
-    if (drpai.show_filter)
-        drpai.render_filter_region(img);
-    drpai.render_detections_on_image(img);
-    drpai.render_text_on_image(img);
+    if (show_fps) {
+        drpai->corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
+        drpai->add_corner_text();
+    }
+    if (show_filter)
+        drpai->render_filter_region(img);
+    drpai->render_detections_on_image(img);
+    drpai->render_text_on_image(img);
 }
 
 void DRPAI_Controller::set_socket_address(const std::string& address) {
@@ -149,8 +157,9 @@ void DRPAI_Controller::release_resources() {
         process_thread.reset();
     }
 
-    drpai.release_resource();
+    drpai->release_resource();
     image_mapped_udma.reset();
+    dlclose(dynamic_library_handle);
 }
 
 void DRPAI_Controller::thread_function_loop() {
@@ -184,12 +193,12 @@ void DRPAI_Controller::thread_function_single() {
     }
 
     image_mapped_udma->prepare();
-    drpai.run_inference();
+    drpai->run_inference();
 
     if(socket_fd) {
         json_object j;
         j.add("video-rate", video_rate.get_smooth_rate(), 1);
-        j.concatenate(drpai.get_json());
+        j.concatenate(drpai->get_json());
         const auto str = j.to_string() + "\n";
         auto r = sendto(socket_fd, str.c_str(), str.size(), MSG_DONTWAIT,
                         reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
@@ -197,4 +206,21 @@ void DRPAI_Controller::thread_function_single() {
 //            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
             return;
     }
+}
+
+void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
+    char *error;
+    std::string model_library_path = "libgstdrpai-yolo.so";
+    std::cout << "Loading : " << model_library_path << std::endl;
+
+    dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
+    if (!dynamic_library_handle)
+        throw std::runtime_error("[ERROR] Failed to open library " + std::string(dlerror()));
+
+    dlerror();    /* Clear any existing error */
+    const auto create_DRPAI_instance_dl = reinterpret_cast<create_DRPAI_instance_def>(dlsym(dynamic_library_handle, "create_DRPAI_instance"));
+    if ((error = dlerror()) != nullptr)
+        throw std::runtime_error("[ERROR] Failed to locate function in " + model_library_path + ": error=" + error);
+
+    drpai = (*create_DRPAI_instance_dl)(modelPrefix.c_str());
 }
