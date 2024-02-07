@@ -155,6 +155,7 @@ void DRPAI_Controller::release_resources() {
 
 void DRPAI_Controller::thread_function_loop() {
     try {
+        pthread_setname_np(pthread_self(), "drpai_thread");
         while (true) {
             thread_function_single();
         }
