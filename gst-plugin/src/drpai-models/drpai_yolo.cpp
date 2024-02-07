@@ -95,7 +95,9 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
         std::cout << "Option : Detection Tracking is Active!" << std::endl;
     if (!filter_classes.empty())
         std::cout << "Option : Filtering classes to " << json_array(filter_classes).to_string() << std::endl;
-    if (filter_region.area() < 640*480)
+    if (filter_region.w == 0)
+        filter_region = {static_cast<float>(IN_WIDTH)/2, static_cast<float>(IN_HEIGHT)/2, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
+    else if (filter_region.area() < static_cast<float>(IN_WIDTH*IN_HEIGHT))
         std::cout << "Option : Filtering region of interest to " << filter_region.get_json(false).to_string() << std::endl;
 }
 
@@ -127,7 +129,16 @@ json_array DRPAI_Yolo::get_detections_json() const {
 
 json_object DRPAI_Yolo::get_json() const {
     json_object j = DRPAI_Base::get_json();
+    if (!filter_classes.empty())
+        j.add("filter-classes", json_array(filter_classes));
+    if (filter_region.area() < 640*480)
+        j.add("filter-region", filter_region.get_json(false));
     if(det_tracker.active)
         j.add("track-history", det_tracker.get_json());
     return j;
+}
+
+void DRPAI_Yolo::render_filter_region(Image &img) const {
+    if (filter_region.area() < 640*480)
+        img.draw_rect(filter_region, YELLOW_DATA);
 }

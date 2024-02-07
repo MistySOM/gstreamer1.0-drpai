@@ -45,12 +45,6 @@ public:
     std::vector<detection> last_det {};
     std::vector<std::string> corner_text {};
 
-    /* Filter section */
-    bool show_filter = false;
-    Box filter_region {};
-    std::vector<std::string> filter_classes {};
-    void render_filter_region(Image& img) const;
-
     /*DRP-AI Input image information*/
     int32_t IN_WIDTH = 0;
     int32_t IN_HEIGHT = 0;
