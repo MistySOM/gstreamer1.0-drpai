@@ -27,8 +27,8 @@ FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
 RDEPENDS_${PN} += "${PN}-yolo"
 
 # install models
-SRC_URI += "https://remote.mistywest.com/download/mh11/models.tar"
-SRC_URI[sha256sum] = "3edf56ddfe3cbc4030dfd384b233b0b0cca383f27b8dbaebb2bcedeea249e18a"
+SRC_URI += "https://remote.mistywest.com/download/mh11/models.tar.zst"
+SRC_URI[sha256sum] = "077b40e370389afafee72a1ba6cdee1b6f086f4dfedc66506cba7f8006d41f4b"
 do_install_append() {
     install -d ${D}${ROOT_HOME}
     cp -r ${WORKDIR}/models ${D}${ROOT_HOME}
