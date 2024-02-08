@@ -211,21 +211,21 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
 
     /*Load Label from label_list file*/
     const std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "\tLoading : " << label_list << std::flush;
+    std::cout << "Loading : " << label_list << std::flush;
     load_label_file(label_list);
-    std::cout << "\t\tFound classes: " << labels.size() << std::endl;
+    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
 
     /*Load anchors from anchors file*/
     const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
-    std::cout << "\tLoading : " << anchors_list << std::flush;
+    std::cout << "Loading : " << anchors_list << std::flush;
     load_anchors_file(anchors_list);
-    std::cout << "\t\tFound anchors: " << anchors.size() << std::endl;
+    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
 
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "\tLoading : " << data_out_list << std::flush;
+    std::cout << "Loading : " << data_out_list << std::flush;
     load_num_grids(data_out_list);
-    std::cout << "\tFound num grids: " << num_grids.size();
+    std::cout << "\t\tFound num grids: " << num_grids.size();
 
     uint32_t sum_grids = 0;
     for (const auto& n: num_grids)

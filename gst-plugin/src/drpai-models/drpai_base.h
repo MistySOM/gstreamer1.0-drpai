@@ -70,8 +70,8 @@ public:
 
 protected:
     bool log_detects = false;
-    const std::string prefix {};
-    std::string params_file_name {};
+    const std::string prefix;
+    const std::string params_file_name;
 
     int32_t drpai_fd = 0;
     st_addr_t drpai_address {};
@@ -81,7 +81,8 @@ protected:
 
     constexpr static float TH_NMS = 0.5f;
 
-    explicit DRPAI_Base(const std::string& prefix): prefix(prefix) {}
+    explicit DRPAI_Base(const std::string& prefix):
+        prefix(prefix), params_file_name(prefix + "/" + prefix + "_post_process_params.txt") {}
     virtual ~DRPAI_Base() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
