@@ -16,7 +16,6 @@ plugin_sources = [
   'src/image.cpp',
   'src/box.cpp',
   'src/tracker.cpp',
-  'src/dynamic-post-process/postprocess.cpp'
  ]
 
 gstplugindrpai = library('gstdrpai',
@@ -30,4 +29,3 @@ gstplugindrpai = library('gstdrpai',
 
 subdir('tests')
 subdir('src/drpai-models')
-subdir('src/dynamic-post-process/yolo')

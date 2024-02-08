@@ -119,7 +119,6 @@ void filter_boxes_nms(std::vector<detection>& det, const float th_nms)
             const Box& b = det[j].bbox;
             if (const float b_intersection = a & b; (a.iou_with(b)>th_nms) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
-                det.erase()
                 if (det[i].prob > det[j].prob)
                 {
                     det[j].prob= 0;

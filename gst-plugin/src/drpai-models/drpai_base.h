@@ -8,11 +8,12 @@
 #include "../linux/drpai.h"
 #include "../rate_controller.h"
 #include "../box.h"
-#include "../dynamic-post-process/postprocess.h"
 #include "../image.h"
 #include "../properties.h"
+#include <gst/gst.h>
 #include <vector>
 #include <mutex>
+#include <map>
 
 /* For DRP-AI Address List */
 typedef struct
@@ -56,29 +57,21 @@ public:
 
     virtual void render_detections_on_image(Image& img);
     virtual void render_text_on_image(Image& img);
-    void render_filter_region(Image& img) const;
 
     virtual void add_corner_text();
     virtual void extract_detections() = 0;
     [[nodiscard]] virtual json_array get_detections_json() const;
     [[nodiscard]] virtual json_object get_json() const;
 
-    virtual void set_property(GstDRPAI_Properties prop, const std::string& value);
-    virtual void set_property(GstDRPAI_Properties prop, const bool value);
-    virtual void set_property(GstDRPAI_Properties prop, const float value);
-    virtual void set_property(GstDRPAI_Properties prop, const uint value);
-    [[nodiscard]] virtual std::string get_property_string(GstDRPAI_Properties prop) const;
-    [[nodiscard]] virtual bool get_property_bool(GstDRPAI_Properties prop) const;
-    [[nodiscard]] virtual float get_property_float(GstDRPAI_Properties prop) const;
-    [[nodiscard]] virtual uint get_property_uint(GstDRPAI_Properties prop) const;
+    virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
+    virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;
+    static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
+    [[nodiscard]] static std::string get_param(const std::string& params_file_name, const std::string& param);
 
 protected:
     bool log_detects = false;
-    std::string prefix {};
-
-    /* Filter section */
-    Box filter_region {};
-    std::vector<std::string> filter_classes {};
+    const std::string prefix {};
+    std::string params_file_name {};
 
     int32_t drpai_fd = 0;
     st_addr_t drpai_address {};
@@ -96,6 +89,7 @@ protected:
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
+    [[nodiscard]] inline std::string get_param(const std::string& param) { return get_param(params_file_name, param); }
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;

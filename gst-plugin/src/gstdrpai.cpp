@@ -115,98 +115,14 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
 
     gstelement_class->change_state = gst_drpai_change_state;
 
-    g_object_class_install_property(gobject_class, PROP_MULTITHREAD,
-        g_param_spec_boolean("multithread", "MultiThread",
-                             "Use a separate thread for object detection.",
-                             TRUE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_MODEL,
-        g_param_spec_string("model", "Model",
-                             "The name of the pretrained model and the directory prefix.",
-                             nullptr, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACKING,
-        g_param_spec_boolean("tracking", "Tracking",
-                            "Track detected objects based on their previous locations. Each detected object gets an ID that persists across multiple detections based on other tracking properties.",
-                            TRUE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_LOG_DETECTS,
-        g_param_spec_boolean("log_detects", "Log Detects",
-                             "Print detected objects in standard output.",
-                             FALSE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_LOG_SERVER,
-        g_param_spec_string("log_server", "Log Server",
-                             "Send UDP messages in JSON about detected objects to the mentioned host:port.",
-                             nullptr, G_PARAM_WRITABLE));
-    g_object_class_install_property(gobject_class, PROP_SHOW_FPS,
-        g_param_spec_boolean("show_fps", "Show Frame Rates",
-                             "Render frame rates of video and DRPAI at the corner of the video.",
-                             FALSE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_SHOW_TIME,
-        g_param_spec_boolean("show_time", "Show Current Time",
-                             "Render current time at the corner of the video.",
-                             FALSE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_STOP_ERROR,
-        g_param_spec_boolean("stop_error", "Stop On Errors",
-                             "Stop the gstreamer if kernel modules fail to open.",
-                             TRUE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_MAX_VIDEO_RATE,
-        g_param_spec_float("max_video_rate", "Max Video Framerate",
-                           "Force maximum video frame rate using thread sleeps.",
-                           0.001f, 120.f, 120.f, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_MAX_DRPAI_RATE,
-        g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
-                           "Force maximum DRPAI frame rate using thread sleeps.",
-                           0.0f, 120.f, 120.f, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_SMOOTH_VIDEO_RATE,
-        g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
-                          "Number of last video frame rates to average for a more smooth value.",
-                          1, 1000, 1, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_SMOOTH_DRPAI_RATE,
-        g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
-                          "Number of last DRPAI frame rates to average for a more smooth value.",
-                          1, 1000, 1, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_SMOOTH_BBOX_RATE,
-        g_param_spec_uint("smooth_bbox_rate", "Smooth Bounding Box Framerate",
-                          "Number of last bounding-box updates to average. (requires tracking)",
-                          1, 1000, 1, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACK_SHOW_ID,
-        g_param_spec_boolean("show_track_id", "Show Track ID",
-                             "Show the track ID on the detection labels.",
-                             FALSE, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACK_SECONDS,
-        g_param_spec_float("track_seconds", "Track Seconds",
-                           "Number of seconds to wait for a tracked undetected object to forget it.",
-                           0.001, 100, 2, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACK_DOA_THRESHOLD,
-        g_param_spec_float("track_doa_thresh", "Track DOA Threshold",
-                           "The threshold of Distance Over Areas (DOA) for tracking bounding-boxes.",
-                           0.001, 1000, 2.25, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_TRACK_HISTORY_LENGTH,
-        g_param_spec_int("track_history_length", "Track History Length",
-                         "Minutes to keep the tracking history.",
-                         0, 1440, 60, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_CLASS,
-        g_param_spec_string("filter_class", "Filter Class",
-                            "A comma-separated list of classes to filter the detection.",
-                            nullptr, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_LEFT,
-        g_param_spec_uint("filter_left", "Filter Left",
-                          "The left edge of the region of interest to filter the detection.",
-                          0, CAP_WIDTH-1, 0, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_TOP,
-        g_param_spec_uint("filter_top", "Filter Top",
-                          "The top edge of the region of interest to filter the detection.",
-                          0, CAP_HEIGHT-1, 0, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_WIDTH,
-        g_param_spec_uint("filter_width", "Filter Width",
-                          "The width of the region of interest to filter the detection.",
-                          1, CAP_WIDTH, CAP_WIDTH, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_HEIGHT,
-        g_param_spec_uint("filter_height", "Filter Height",
-                          "The height of the region of interest to filter the detection.",
-                          1, CAP_HEIGHT, CAP_HEIGHT, G_PARAM_READWRITE));
-    g_object_class_install_property(gobject_class, PROP_FILTER_SHOW,
-        g_param_spec_boolean("filter_show", "Filter Show",
-                             "Show a yellow box where the filter is applied.",
-                             FALSE, G_PARAM_READWRITE));
+    std::map<GstDRPAI_Properties, _GParamSpec*> params;
+    params.emplace(PROP_STOP_ERROR, g_param_spec_boolean("stop_error", "Stop On Errors",
+                                                      "Stop the gstreamer if kernel modules fail to open.",
+                                                      TRUE, G_PARAM_READWRITE));
+    DRPAI_Controller::install_properties(params);
+
+    for (auto& [prop_id, spec]: params)
+        g_object_class_install_property(gobject_class, prop_id, spec);
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
@@ -288,54 +204,16 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
 
     try {
         switch (prop_id) {
-            case PROP_MULTITHREAD:
-                obj->drpai_controller->multithread = g_value_get_boolean(value);
-                break;
-            case PROP_LOG_SERVER:
-                obj->drpai_controller->set_socket_address(g_value_get_string(value));
-                break;
-            case PROP_SHOW_FPS:
-                obj->drpai_controller->show_fps = g_value_get_boolean(value);
-                break;
-            case PROP_SHOW_TIME:
-                obj->drpai_controller->show_time = g_value_get_boolean(value);
-                break;
             case PROP_STOP_ERROR:
                 obj->stop_error = g_value_get_boolean(value);
                 break;
-            case PROP_MAX_VIDEO_RATE:
-                obj->drpai_controller->video_rate.set_max_rate(g_value_get_float(value));
-                break;
-            case PROP_SMOOTH_VIDEO_RATE:
-                obj->drpai_controller->video_rate.set_smooth_rate(g_value_get_uint(value));
-                break;
-            case PROP_FILTER_SHOW:
-                obj->drpai_controller->show_filter = g_value_get_boolean(value);
-                break;
-            case PROP_MODEL:
-                obj->drpai_controller->open_drpai_model(g_value_get_string(value));
-                break;
-            case PROP_FILTER_CLASS:
-                obj->drpai_controller->drpai->set_property(static_cast<GstDRPAI_Properties>(prop_id), g_value_get_string(value));
-                break;
-            case PROP_LOG_DETECTS:
-            case PROP_TRACKING:
-            case PROP_TRACK_SHOW_ID:
-                obj->drpai_controller->drpai->set_property(static_cast<GstDRPAI_Properties>(prop_id), static_cast<bool>(g_value_get_boolean(value)));
-                break;
-            case PROP_MAX_DRPAI_RATE:
-            case PROP_TRACK_SECONDS:
-            case PROP_TRACK_DOA_THRESHOLD:
-                obj->drpai_controller->drpai->set_property(static_cast<GstDRPAI_Properties>(prop_id), g_value_get_float(value));
-                break;
-            case PROP_SMOOTH_DRPAI_RATE:
-            case PROP_FILTER_LEFT:
-            case PROP_FILTER_TOP:
-            case PROP_FILTER_WIDTH:
-            case PROP_FILTER_HEIGHT:
-                obj->drpai_controller->drpai->set_property(static_cast<GstDRPAI_Properties>(prop_id), g_value_get_uint(value));
+            default:
+                obj->drpai_controller->set_property(static_cast<GstDRPAI_Properties>(prop_id), value);
                 break;
         }
+    } catch (std::runtime_error& e) {
+        std::cerr << std::endl << e.what() << std::endl << std::endl;
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     } catch (std::exception&) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
@@ -348,47 +226,11 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
 
     try {
         switch (prop_id) {
-            case PROP_MULTITHREAD:
-                g_value_set_boolean(value, obj->drpai_controller->multithread);
-                break;
-            case PROP_SHOW_FPS:
-                g_value_set_boolean(value, obj->drpai_controller->show_fps);
-                break;
-            case PROP_SHOW_TIME:
-                g_value_set_boolean(value, obj->drpai_controller->show_time);
-                break;
             case PROP_STOP_ERROR:
                 g_value_set_boolean(value, obj->stop_error);
                 break;
-            case PROP_MAX_VIDEO_RATE:
-                g_value_set_float(value, obj->drpai_controller->video_rate.get_max_rate());
-                break;
-            case PROP_SMOOTH_VIDEO_RATE:
-                g_value_set_uint(value, obj->drpai_controller->video_rate.get_max_smooth_rate());
-                break;
-            case PROP_FILTER_SHOW:
-                g_value_set_boolean(value, obj->drpai_controller->show_filter);
-                break;
-            case PROP_MODEL:
-            case PROP_FILTER_CLASS:
-                g_value_set_string(value, obj->drpai_controller->drpai->get_property_string(static_cast<GstDRPAI_Properties>(prop_id)).c_str());
-                break;
-            case PROP_LOG_DETECTS:
-            case PROP_TRACKING:
-            case PROP_TRACK_SHOW_ID:
-                g_value_set_boolean(value, obj->drpai_controller->drpai->get_property_bool(static_cast<GstDRPAI_Properties>(prop_id)));
-                break;
-            case PROP_MAX_DRPAI_RATE:
-            case PROP_TRACK_SECONDS:
-            case PROP_TRACK_DOA_THRESHOLD:
-                g_value_set_float(value, obj->drpai_controller->drpai->get_property_float(static_cast<GstDRPAI_Properties>(prop_id)));
-                break;
-            case PROP_SMOOTH_DRPAI_RATE:
-            case PROP_FILTER_LEFT:
-            case PROP_FILTER_TOP:
-            case PROP_FILTER_WIDTH:
-            case PROP_FILTER_HEIGHT:
-                g_value_set_uint(value, obj->drpai_controller->drpai->get_property_uint(static_cast<GstDRPAI_Properties>(prop_id)));
+            default:
+                obj->drpai_controller->get_property(static_cast<GstDRPAI_Properties>(prop_id), value);
                 break;
         }
     } catch (std::exception&) {

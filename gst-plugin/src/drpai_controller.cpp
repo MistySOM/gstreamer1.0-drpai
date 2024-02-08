@@ -103,8 +103,6 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
         drpai->corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
         drpai->add_corner_text();
     }
-    if (show_filter)
-        drpai->render_filter_region(img);
     drpai->render_detections_on_image(img);
     drpai->render_text_on_image(img);
 }
@@ -211,9 +209,10 @@ void DRPAI_Controller::thread_function_single() {
 
 void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
     char *error;
-    std::string model_library_path = "libgstdrpai-yolo.so";
-    std::cout << "Loading : " << model_library_path << std::endl;
+    std::string params_file_name = modelPrefix + "/" + modelPrefix + "_post_process_params.txt";
+    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]");
 
+    std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
     if (!dynamic_library_handle)
         throw std::runtime_error("[ERROR] Failed to open library " + std::string(dlerror()));
@@ -224,4 +223,81 @@ void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
         throw std::runtime_error("[ERROR] Failed to locate function in " + model_library_path + ": error=" + error);
 
     drpai = (*create_DRPAI_instance_dl)(modelPrefix.c_str());
+}
+
+void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *value) {
+    switch (prop) {
+        case PROP_MULTITHREAD:
+            multithread = g_value_get_boolean(value);
+            break;
+        case PROP_LOG_SERVER:
+            set_socket_address(g_value_get_string(value));
+            break;
+        case PROP_SHOW_FPS:
+            show_fps = g_value_get_boolean(value);
+            break;
+        case PROP_SHOW_TIME:
+            show_time = g_value_get_boolean(value);
+            break;
+        case PROP_MAX_VIDEO_RATE:
+            video_rate.set_max_rate(g_value_get_float(value));
+            break;
+        case PROP_SMOOTH_VIDEO_RATE:
+            video_rate.set_smooth_rate(g_value_get_uint(value));
+            break;
+        case PROP_MODEL:
+            open_drpai_model(g_value_get_string(value));
+            break;
+        default:
+            drpai->set_property(prop, value);
+            break;
+    }
+}
+
+void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) const {
+    switch (prop) {
+        case PROP_MULTITHREAD:
+            g_value_set_boolean(value, multithread);
+            break;
+        case PROP_SHOW_FPS:
+            g_value_set_boolean(value, show_fps);
+            break;
+        case PROP_SHOW_TIME:
+            g_value_set_boolean(value, show_time);
+            break;
+        case PROP_MAX_VIDEO_RATE:
+            g_value_set_float(value, video_rate.get_max_rate());
+            break;
+        case PROP_SMOOTH_VIDEO_RATE:
+            g_value_set_uint(value, video_rate.get_max_smooth_rate());
+            break;
+        default:
+            drpai->get_property(prop, value);
+            break;
+    }
+}
+
+void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params) {
+    params.emplace(PROP_MODEL, g_param_spec_string("model", "Model",
+                                                "The name of the pretrained model and the directory prefix.",
+                                                nullptr, G_PARAM_READWRITE));
+    params.emplace(PROP_MULTITHREAD, g_param_spec_boolean("multithread", "MultiThread",
+                                                       "Use a separate thread for object detection.",
+                                                       TRUE, G_PARAM_READWRITE));
+    params.emplace(PROP_SHOW_FPS, g_param_spec_boolean("show_fps", "Show Frame Rates",
+                                                    "Render frame rates of video and DRPAI at the corner of the video.",
+                                                    FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_SHOW_TIME, g_param_spec_boolean("show_time", "Show Current Time",
+                                                     "Render current time at the corner of the video.",
+                                                     FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_MAX_VIDEO_RATE, g_param_spec_float("max_video_rate", "Max Video Framerate",
+                                                        "Force maximum video frame rate using thread sleeps.",
+                                                        0.001f, 120.f, 120.f, G_PARAM_READWRITE));
+    params.emplace(PROP_SMOOTH_VIDEO_RATE, g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
+                                                          "Number of last video frame rates to average for a more smooth value.",
+                                                          1, 1000, 1, G_PARAM_READWRITE));
+    params.emplace(PROP_LOG_SERVER, g_param_spec_string("log_server", "Log Server",
+                                                     "Send UDP messages in JSON about detected objects to the mentioned host:port.",
+                                                     nullptr, G_PARAM_WRITABLE));
+    DRPAI_Base::install_properties(params);
 }

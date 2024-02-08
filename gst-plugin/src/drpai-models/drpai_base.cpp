@@ -3,12 +3,15 @@
 //
 
 #include "drpai_base.h"
+#include "drpai_yolo.h"
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <algorithm>
 
 /*****************************************
 * Function Name : read_addrmap_txt
@@ -268,10 +271,6 @@ void DRPAI_Base::open_resource(const uint32_t data_in_address) {
     const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
     read_data_in_list(data_in_list);
 
-    post_process.dynamic_library_open(prefix);
-    if (post_process.post_process_initialize(prefix.c_str(), IN_WIDTH, IN_HEIGHT, drpai_output_buf.size()) != 0)
-        throw std::runtime_error("[ERROR] Failed to run post_process_initialize.");
-
     /* Open DRP-AI Driver */
     errno = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
@@ -300,6 +299,41 @@ void DRPAI_Base::open_resource(const uint32_t data_in_address) {
     const auto drpai_param_file = prefix + "/drp_param_info.txt";
     /*Load DRPAI Parameter for Cropping later*/
     load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file);
+}
+
+/*****************************************
+* Function Name     : get_param
+* Description       : Load post process params list text file and find the param variable.
+* Arguments         : params_file_name = filename of params list. must be in txt format
+*                     param = name of the parameter. must be in [name] format without any spaces
+*                     value = the return value of the parameter. if not found, it will be empty string.
+* Return value      : 0 if succeeded
+*                     not 0 if error occurred
+******************************************/
+std::string DRPAI_Base::get_param(const std::string& params_file_name, const std::string& param)
+{
+    std::ifstream infile(params_file_name);
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to open param in file: " + params_file_name);
+
+    bool found = false;
+    std::string line;
+    while (getline(infile,line))
+    {
+        line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);;
+        if (line.empty())
+            continue;
+        if (found) {
+            infile.close();
+            return line;
+        }
+        if (line == param)
+            found = true;
+    }
+    infile.close();
+    throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);;
 }
 
 void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
@@ -347,10 +381,6 @@ void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
 }
 
 void DRPAI_Base::release_resource() {
-    if (post_process.post_process_release != nullptr)
-        post_process.post_process_release();
-    post_process.dynamic_library_close();
-
     errno = 0;
     if (drpai_fd > 0 && close(drpai_fd) != 0)
         throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
@@ -372,124 +402,6 @@ void DRPAI_Base::render_text_on_image(Image &img) {
 
 void DRPAI_Base::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
-}
-
-void DRPAI_Base::set_property(GstDRPAI_Properties prop, const std::string& value) {
-    switch (prop) {
-        case PROP_MODEL:
-            prefix = value;
-            break;
-        case PROP_FILTER_CLASS: {
-            std::stringstream csv_classes(value);
-            filter_classes.clear();
-            while (csv_classes.good()) {
-                std::string item;
-                std::getline(csv_classes, item, ',');
-                if(!item.empty())
-                    filter_classes.push_back(item);
-            }
-            break;
-        }
-        default:
-            throw std::exception();
-    }
-}
-
-void DRPAI_Base::set_property(GstDRPAI_Properties prop, const bool value) {
-    switch (prop) {
-        case PROP_LOG_DETECTS:
-            log_detects = value;
-            break;
-        default:
-            throw std::exception();
-    }
-}
-
-void DRPAI_Base::set_property(GstDRPAI_Properties prop, const float value) {
-    switch (prop) {
-        case PROP_MAX_DRPAI_RATE:
-            rate.set_max_rate(value);
-            break;
-        default:
-            throw std::exception();
-    }
-}
-
-void DRPAI_Base::set_property(GstDRPAI_Properties prop, const uint value) {
-    switch (prop) {
-        case PROP_SMOOTH_DRPAI_RATE:
-            rate.set_smooth_rate(value);
-            break;
-        case PROP_FILTER_LEFT:
-            filter_region.setLeft(static_cast<float>(value));
-            break;
-        case PROP_FILTER_TOP:
-            filter_region.setTop(static_cast<float>(value));
-            break;
-        case PROP_FILTER_WIDTH:
-            filter_region.w = static_cast<float>(value);
-            filter_region.setLeft(filter_region.x);
-            break;
-        case PROP_FILTER_HEIGHT:
-            filter_region.h = static_cast<float>(value);
-            filter_region.setTop(filter_region.y);
-            break;
-        default:
-            throw std::exception();
-    }
-}
-
-std::string DRPAI_Base::get_property_string(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_MODEL:
-            return prefix;
-        case PROP_FILTER_CLASS: {
-            std::string ss;
-            for (const auto &s: filter_classes) {
-                if (!ss.empty())
-                    ss += ",";
-                ss += s;
-            }
-            return ss;
-        }
-        default:
-            throw std::exception();
-    }
-}
-
-bool DRPAI_Base::get_property_bool(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_LOG_DETECTS:
-            return log_detects;
-        default:
-            throw std::exception();
-    }
-}
-
-float DRPAI_Base::get_property_float(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_MAX_DRPAI_RATE:
-            return rate.get_max_rate();
-        default:
-            throw std::exception();
-    }
-}
-
-uint DRPAI_Base::get_property_uint(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_SMOOTH_DRPAI_RATE:
-            return rate.get_smooth_rate();
-        case PROP_FILTER_LEFT:
-            return static_cast<uint>(filter_region.getLeft());
-        case PROP_FILTER_TOP:
-            return static_cast<uint>(filter_region.getTop());
-        case PROP_FILTER_WIDTH:
-            return static_cast<uint>(filter_region.w);
-        case PROP_FILTER_HEIGHT:
-            return static_cast<uint>(filter_region.h);
-        default:
-            throw std::exception();
-    }
 }
 
 json_array DRPAI_Base::get_detections_json() const {
@@ -581,4 +493,52 @@ void DRPAI_Base::crop(const Box& crop_region) const {
     crop_param.obj = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param))
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+}
+
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const GValue *value) {
+    switch (prop) {
+        case PROP_MAX_DRPAI_RATE:
+            rate.set_max_rate(g_value_get_float(value));
+            break;
+        case PROP_LOG_DETECTS:
+            log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            rate.set_smooth_rate(g_value_get_uint(value));
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::get_property(GstDRPAI_Properties prop, GValue *value) const {
+    switch (prop) {
+        case PROP_MODEL:
+            g_value_set_string(value, prefix.c_str());
+            break;
+        case PROP_LOG_DETECTS:
+            g_value_set_boolean(value, log_detects);
+            break;
+        case PROP_MAX_DRPAI_RATE:
+            g_value_set_float(value, rate.get_max_rate());
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            g_value_set_float(value, rate.get_smooth_rate());
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *> &params) {
+    params.emplace( PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
+                                                       "Print detected objects in standard output.",
+                                                       FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_MAX_DRPAI_RATE, g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
+                                                        "Force maximum DRPAI frame rate using thread sleeps.",
+                                                        0.0f, 120.f, 120.f, G_PARAM_READWRITE));
+    params.emplace(PROP_SMOOTH_DRPAI_RATE, g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
+                                                          "Number of last DRPAI frame rates to average for a more smooth value.",
+                                                          1, 1000, 1, G_PARAM_READWRITE));
+    DRPAI_Yolo::install_properties(params);
 }

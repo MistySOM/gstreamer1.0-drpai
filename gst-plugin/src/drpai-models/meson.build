@@ -7,6 +7,6 @@ gstdrpai_dep = declare_dependency(link_with : gstplugindrpai,
 
 yolov = library('gstdrpai-yolo',
     yolov_sources,
-    dependencies: [gstdrpai_dep],
+    dependencies: [gstdrpai_dep, gst_dep],
     install : true,
 )

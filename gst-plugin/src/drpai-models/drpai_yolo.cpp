@@ -5,6 +5,7 @@
 #include "drpai_yolo.h"
 #include "../box.h"
 #include <iostream>
+#include <fstream>
 
 inline bool in(const std::string& search, const std::vector<std::string>& array) {
     return std::any_of(array.begin(), array.end(), [&](const std::string& i) {
@@ -39,7 +40,7 @@ void DRPAI_Yolo::print_box(detection d, int32_t i)
 *                 x = Number to indicate which region [0~13]
 * Return value  : offset to access the bounding box attributes.
 ******************************************/
-uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x)
+uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x) const
 {
     const uint8_t& num = num_grids[n];
     uint32_t prev_layer_num = 0;
@@ -57,7 +58,7 @@ uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32
 * Arguments     : val[] = array to be computed softmax
 * Return value  : -
 ******************************************/
-void DRPAI_Yolo::softmax(std::vector<float>& val) const
+void DRPAI_Yolo::softmax(std::vector<float>& val)
 {
     float max_num = -std::numeric_limits<float>::max();
     for (const auto& v: val)
@@ -83,6 +84,8 @@ void DRPAI_Yolo::softmax(std::vector<float>& val) const
 ******************************************/
 void DRPAI_Yolo::extract_detections()
 {
+    std::unique_lock lock (mutex);
+
     last_det.clear();
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
@@ -160,21 +163,21 @@ void DRPAI_Yolo::extract_detections()
     }
 
     /* Non-Maximum Suppression filter */
-    filter_boxes_nms(det, det_size, TH_NMS);
+    filter_boxes_nms(last_det, TH_NMS);
 
-    std::unique_lock lock (mutex);
-    last_det.clear();
-    for (uint8_t i = 0; i<det_size; i++) {
+    for (auto& det: last_det) {
         /* Skip the overlapped bounding boxes */
-        if (det[i].prob == 0) continue;
+        if (det.prob == 0) continue;
 
         /* Skip the bounding boxes outside of region of interest */
-        if (!(filter_classes.empty() || in(det[i].name, filter_classes))) continue;
-        if ((filter_region & det[i].bbox) == 0) continue;
-
-        last_det.push_back(det[i]);
+        if (!(filter_classes.empty() || in(det.name, filter_classes)))
+            det.prob = 0;
+        if ((filter_region & det.bbox) == 0)
+            det.prob = 0;
     }
-    det_tracker.track(last_det);
+    std_erase(last_det, [&](const auto& items) { return items.prob == 0; });
+    if(det_tracker.active)
+        det_tracker.track(last_det);
 
     /* Print details */
     if(log_detects) {
@@ -201,6 +204,51 @@ void DRPAI_Yolo::extract_detections()
 void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Base::open_resource(data_in_address);
+
+    labels.clear();
+    anchors.clear();
+    num_grids.clear();
+
+    /*Load Label from label_list file*/
+    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
+    std::cout << "\tLoading : " << label_list << std::flush;
+    load_label_file(label_list);
+    std::cout << "\t\tFound classes: " << labels.size() << std::endl;
+
+    /*Load anchors from anchors file*/
+    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
+    std::cout << "\tLoading : " << anchors_list << std::flush;
+    load_anchors_file(anchors_list);
+    std::cout << "\t\tFound anchors: " << anchors.size() << std::endl;
+
+    /*Load grids from data_out_list file*/
+    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
+    std::cout << "\tLoading : " << data_out_list << std::flush;
+    load_num_grids(data_out_list);
+    std::cout << "\tFound num grids: " << num_grids.size();
+
+    uint32_t sum_grids = 0;
+    for (const auto& n: num_grids)
+        sum_grids += n*n;
+    num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
+    std::cout << " & num BB: " << num_bb << std::endl;
+
+    std::string value = get_param("[best_class_prediction_algorithm]");
+    if (value == "sigmoid")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
+    else if (value == "softmax")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
+    else
+        throw std::runtime_error("[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " + value);
+
+    value = get_param("[anchor_divide_size]");
+    if (value == "model_in")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
+    else if (value == "num_grid")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
+    else
+        throw std::runtime_error("[ERROR] Failed to load value for param [anchor_divide_size]: " + value);
+
     if (det_tracker.active)
         std::cout << "Option : Detection Tracking is Active!" << std::endl;
     if (!filter_classes.empty())
@@ -211,7 +259,87 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
         std::cout << "Option : Filtering region of interest to " << filter_region.get_json(false).to_string() << std::endl;
 }
 
+/*****************************************
+* Function Name     : load_label_file
+* Description       : Load label list text file and return the label list that contains the label.
+* Arguments         : label_file_name = filename of label list. must be in txt format
+* Return value      : 0 if succeeded
+*                     not 0 if error occurred
+******************************************/
+void DRPAI_Yolo::load_label_file(const std::string& label_file_name)
+{
+    std::ifstream infile(label_file_name);
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to open label file: " + label_file_name);
+
+    std::string line;
+    while (getline(infile,line))
+    {
+        if (line.empty())
+            continue;
+        labels.push_back(line);
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to read label file: " + label_file_name);
+    }
+    infile.close();
+}
+
+/*****************************************
+* Function Name     : load_anchor_file
+* Description       : Load anchor list text file and return the anchor list.
+* Arguments         : anchor_file_name = filename of anchor list. must be in txt format
+* Return value      : 0 if succeeded
+*                     not 0 if error occurred
+******************************************/
+void DRPAI_Yolo::load_anchors_file(const std::string& anchors_file_name)
+{
+    std::ifstream infile(anchors_file_name);
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to open anchors file: " + anchors_file_name);
+
+    std::string line;
+    while (getline(infile,line))
+    {
+        if (line.empty())
+            continue;
+        anchors.push_back(std::stof(line));
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to read anchors file: " + anchors_file_name);
+    }
+    infile.close();
+}
+
+/*****************************************
+* Function Name     : load_num_grids
+* Description       : Load number of grids list text file and return the num_grids vector.
+* Arguments         : data_out_list_file_name = filename of anchor data_out_list must be in txt format
+* Return value      : 0 if succeeded
+*                     not 0 if error occurred
+******************************************/
+void DRPAI_Yolo::load_num_grids(const std::string& data_out_list_file_name)
+{
+    std::ifstream infile(data_out_list_file_name);
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to open data out file: " + data_out_list_file_name);
+
+    const std::string find = "Width";
+    std::string line;
+    while (getline(infile,line))
+    {
+        if (line.find(find) != std::string::npos) {
+            const auto pos = line.find(':') + 2;
+            num_grids.push_back(std::stoi(line.substr(pos)));
+        }
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to read data out file: " + data_out_list_file_name);
+    }
+    infile.close();
+}
+
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
+    if (show_filter)
+        render_filter_region(img);
+
     if (det_tracker.active)
         for (const auto& tracked: det_tracker.last_tracked_detection) {
             /* Draw the bounding box on the image */
@@ -230,81 +358,6 @@ void DRPAI_Yolo::add_corner_text() {
     }
 }
 
-void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const bool value) {
-    switch (prop) {
-        case PROP_TRACKING:
-            det_tracker.active = value;
-            break;
-        case PROP_TRACK_SHOW_ID:
-            show_track_id = value;
-            break;
-        default:
-            DRPAI_Base::set_property(prop, value);
-            break;
-    }
-}
-
-void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const uint value) {
-    switch (prop) {
-        case PROP_SMOOTH_BBOX_RATE:
-            det_tracker.bbox_smooth_rate = value;
-            break;
-        case PROP_TRACK_HISTORY_LENGTH:
-            det_tracker.history_length = value;
-            break;
-        default:
-            DRPAI_Base::set_property(prop, value);
-            break;
-    }
-}
-
-void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const float value) {
-    switch (prop) {
-        case PROP_TRACK_SECONDS:
-            det_tracker.time_threshold = value;
-            break;
-        case PROP_TRACK_DOA_THRESHOLD:
-            det_tracker.doa_threshold = value;
-            break;
-        default:
-            DRPAI_Base::set_property(prop, value);
-            break;
-    }
-}
-
-bool DRPAI_Yolo::get_property_bool(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_TRACKING:
-            return det_tracker.active;
-        case PROP_TRACK_SHOW_ID:
-            return show_track_id;
-        default:
-            return DRPAI_Base::get_property_bool(prop);
-    }
-}
-
-uint DRPAI_Yolo::get_property_uint(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_SMOOTH_BBOX_RATE:
-            return det_tracker.bbox_smooth_rate;
-        case PROP_TRACK_HISTORY_LENGTH:
-            return det_tracker.history_length;
-        default:
-            return DRPAI_Base::get_property_uint(prop);
-    }
-}
-
-float DRPAI_Yolo::get_property_float(GstDRPAI_Properties prop) const {
-    switch (prop) {
-        case PROP_TRACK_SECONDS:
-            return det_tracker.time_threshold;
-        case PROP_TRACK_DOA_THRESHOLD:
-            return det_tracker.doa_threshold;
-        default:
-            return DRPAI_Base::get_property_float(prop);
-    }
-}
-
 json_array DRPAI_Yolo::get_detections_json() const {
     if (det_tracker.active)
         return det_tracker.get_detections_json();
@@ -316,7 +369,7 @@ json_object DRPAI_Yolo::get_json() const {
     json_object j = DRPAI_Base::get_json();
     if (!filter_classes.empty())
         j.add("filter-classes", json_array(filter_classes));
-    if (filter_region.area() < 640*480)
+    if (filter_region.area() < static_cast<float>(IN_WIDTH * IN_HEIGHT))
         j.add("filter-region", filter_region.get_json(false));
     if(det_tracker.active)
         j.add("track-history", det_tracker.get_json());
@@ -324,8 +377,120 @@ json_object DRPAI_Yolo::get_json() const {
 }
 
 void DRPAI_Yolo::render_filter_region(Image &img) const {
-    if (filter_region.area() < 640*480)
+    if (filter_region.area() < static_cast<float>(IN_WIDTH * IN_HEIGHT))
         img.draw_rect(filter_region, YELLOW_DATA);
+}
+
+void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const GValue *value) {
+    switch (prop) {
+        case PROP_TRACKING:
+            det_tracker.active = g_value_get_boolean(value);
+            break;
+        case PROP_TRACK_SHOW_ID:
+            show_track_id = g_value_get_boolean(value);
+            break;
+        case PROP_SMOOTH_BBOX_RATE:
+            det_tracker.bbox_smooth_rate = g_value_get_uint(value);
+            break;
+        case PROP_TRACK_HISTORY_LENGTH:
+            det_tracker.history_length = g_value_get_uint(value);
+            break;
+        case PROP_TRACK_SECONDS:
+            det_tracker.time_threshold = g_value_get_float(value);
+            break;
+        case PROP_TRACK_DOA_THRESHOLD:
+            det_tracker.doa_threshold = g_value_get_float(value);
+            break;
+        case PROP_FILTER_SHOW:
+            show_filter = g_value_get_boolean(value);
+            break;
+        case PROP_FILTER_CLASS: {
+            std::stringstream csv_classes(g_value_get_string(value));
+            filter_classes.clear();
+            while (csv_classes.good()) {
+                std::string item;
+                std::getline(csv_classes, item, ',');
+                if(!item.empty())
+                    filter_classes.push_back(item);
+            }
+            break;
+        }
+        case PROP_FILTER_LEFT:
+            filter_region.setLeft(static_cast<float>(g_value_get_uint(value)));
+            break;
+        case PROP_FILTER_TOP:
+            filter_region.setTop(static_cast<float>(g_value_get_uint(value)));
+            break;
+        case PROP_FILTER_WIDTH:
+            filter_region.w = static_cast<float>(g_value_get_uint(value));
+            filter_region.setLeft(filter_region.x);
+            break;
+        case PROP_FILTER_HEIGHT:
+            filter_region.h = static_cast<float>(g_value_get_uint(value));
+            filter_region.setTop(filter_region.y);
+            break;
+        default:
+            DRPAI_Base::set_property(prop, value);
+            break;
+    }
+}
+
+void DRPAI_Yolo::get_property(GstDRPAI_Properties prop, GValue *value) const {
+    switch (prop) {
+        case PROP_TRACKING:
+            g_value_set_boolean(value, det_tracker.active);
+            break;
+        case PROP_TRACK_SHOW_ID:
+            g_value_set_boolean(value, show_track_id);
+            break;
+        case PROP_SMOOTH_BBOX_RATE:
+            g_value_set_uint(value, det_tracker.bbox_smooth_rate);
+            break;
+        case PROP_TRACK_HISTORY_LENGTH:
+            g_value_set_uint(value, det_tracker.history_length);
+            break;
+        case PROP_TRACK_SECONDS:
+            g_value_set_float(value, det_tracker.time_threshold);
+            break;
+        case PROP_TRACK_DOA_THRESHOLD:
+            g_value_set_float(value, det_tracker.doa_threshold);
+            break;
+        case PROP_FILTER_SHOW:
+            g_value_set_boolean(value, show_filter);
+            break;
+        case PROP_FILTER_CLASS: {
+            std::string ss;
+            for (const auto &s: filter_classes) {
+                if (!ss.empty())
+                    ss += ",";
+                ss += s;
+            }
+            g_value_set_string(value, prefix.c_str());
+            break;
+        }
+        case PROP_FILTER_LEFT:
+            g_value_set_uint(value, static_cast<uint>(filter_region.getLeft()));
+            break;
+        case PROP_FILTER_TOP:
+            g_value_set_uint(value, static_cast<uint>(filter_region.getTop()));
+            break;
+        case PROP_FILTER_WIDTH:
+            g_value_set_uint(value, static_cast<uint>(filter_region.w));
+            break;
+        case PROP_FILTER_HEIGHT:
+            g_value_set_uint(value, static_cast<uint>(filter_region.h));
+            break;
+        default:
+            DRPAI_Base::get_property(prop, value);
+            break;
+    }
+}
+
+void DRPAI_Yolo::release_resource() {
+    DRPAI_Base::release_resource();
+    labels.clear();
+    anchors.clear();
+    num_grids.clear();
 }
 
 DRPAI_Base* create_DRPAI_instance(const char* prefix) {
