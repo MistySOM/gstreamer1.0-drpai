@@ -88,6 +88,6 @@ typedef struct detection
 /*****************************************
 * Functions
 ******************************************/
-void filter_boxes_nms(detection det[], uint8_t size, float th_nms);
+void filter_boxes_nms(std::vector<detection>& det, float th_nms);
 
 #endif

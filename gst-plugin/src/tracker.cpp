@@ -3,12 +3,6 @@
 //
 
 #include "tracker.h"
-#include <algorithm>
-#define std_remove_if(vector, pred)  std::remove_if(vector.begin(), vector.end(), pred)
-#define std_find_if(vector, pred)    std::find_if(vector.begin(), vector.end(), pred)
-#define std_sort(vector, pred)       std::sort(vector.begin(), vector.end(), pred)
-#define std_erase(vector, pred)      vector.erase(std_remove_if(vector, pred), vector.end())
-#define std_erase_after(vector,pred) vector.erase(std_find_if(vector, pred), vector.end())
 
 inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();

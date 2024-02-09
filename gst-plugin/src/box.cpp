@@ -101,12 +101,12 @@ json_object Box::get_json(bool center_origin) const {
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void filter_boxes_nms(detection det[], const uint8_t size, const float th_nms)
+void filter_boxes_nms(std::vector<detection>& det, const float th_nms)
 {
-    for (uint8_t i = 0; i < size; i++)
+    for (std::size_t i = 0; i < det.size(); i++)
     {
         const Box& a = det[i].bbox;
-        for (uint8_t j = 0; j < size; j++)
+        for (std::size_t j = 0; j < det.size(); j++)
         {
             if (i == j)
             {
