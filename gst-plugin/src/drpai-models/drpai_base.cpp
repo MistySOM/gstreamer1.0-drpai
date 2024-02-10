@@ -2,13 +2,16 @@
 // Created by matin on 01/12/23.
 //
 
-#include "drpai_connection.h"
+#include "drpai_base.h"
+#include "drpai_yolo.h"
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <algorithm>
 
 /*****************************************
 * Function Name : read_addrmap_txt
@@ -17,7 +20,7 @@
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::read_addrmap_txt(const std::string& addr_file)
+void DRPAI_Base::read_addrmap_txt(const std::string& addr_file)
 {
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
@@ -95,7 +98,7 @@ void DRPAI_Connection::read_addrmap_txt(const std::string& addr_file)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t from, const uint32_t size) const
+void DRPAI_Base::load_data_to_mem(const std::string& data, const uint32_t from, const uint32_t size) const
 {
     drpai_data_t drpai_data { from, size };
 
@@ -140,7 +143,7 @@ void DRPAI_Connection::load_data_to_mem(const std::string& data, const uint32_t 
 * Return value  : 0 if succeeded
 *               : not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_data() const
+void DRPAI_Base::load_drpai_data() const
 {
     const std::string drpai_file_path[5] =
     {
@@ -194,7 +197,7 @@ void DRPAI_Connection::load_drpai_data() const
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::get_result()
+void DRPAI_Base::get_result()
 {
     drpai_data_t drpai_data {
         static_cast<uint32_t>(drpai_address.data_out_addr),
@@ -225,13 +228,13 @@ void DRPAI_Connection::get_result()
     }
 }
 
-void DRPAI_Connection::start() {
+void DRPAI_Base::start() {
     errno = 0;
     if (const int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]); 0 != ret)
         throw std::runtime_error("[ERROR] Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::wait() const {
+void DRPAI_Base::wait() const {
     fd_set rfds;
     drpai_status_t drpai_status;
 
@@ -259,7 +262,7 @@ void DRPAI_Connection::wait() const {
     }
 }
 
-void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
+void DRPAI_Base::open_resource(const uint32_t data_in_address) {
     const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
     read_addrmap_txt(drpai_address_file);
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
@@ -267,12 +270,6 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     /*Load pixel format from data_in_list file*/
     const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
     read_data_in_list(data_in_list);
-    if (filter_region.w == 0)
-        filter_region = {static_cast<float>(IN_WIDTH)/2, static_cast<float>(IN_HEIGHT)/2, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
-
-    post_process.dynamic_library_open(prefix);
-    if (post_process.post_process_initialize(prefix.c_str(), IN_WIDTH, IN_HEIGHT, drpai_output_buf.size()) != 0)
-        throw std::runtime_error("[ERROR] Failed to run post_process_initialize.");
 
     /* Open DRP-AI Driver */
     errno = 0;
@@ -304,7 +301,42 @@ void DRPAI_Connection::open_resource(const uint32_t data_in_address) {
     load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file);
 }
 
-void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
+/*****************************************
+* Function Name     : get_param
+* Description       : Load post process params list text file and find the param variable.
+* Arguments         : params_file_name = filename of params list. must be in txt format
+*                     param = name of the parameter. must be in [name] format without any spaces
+*                     value = the return value of the parameter. if not found, it will be empty string.
+* Return value      : 0 if succeeded
+*                     not 0 if error occurred
+******************************************/
+std::string DRPAI_Base::get_param(const std::string& params_file_name, const std::string& param)
+{
+    std::ifstream infile(params_file_name);
+    if (!infile.is_open())
+        throw std::runtime_error("[ERROR] Failed to open param in file: " + params_file_name);
+
+    bool found = false;
+    std::string line;
+    while (getline(infile,line))
+    {
+        line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
+        if (infile.fail())
+            throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);;
+        if (line.empty())
+            continue;
+        if (found) {
+            infile.close();
+            return line;
+        }
+        if (line == param)
+            found = true;
+    }
+    infile.close();
+    throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);;
+}
+
+void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
     std::cout << "Loading : " << data_in_list << std::flush;
     std::ifstream infile(data_in_list);
 
@@ -348,17 +380,13 @@ void DRPAI_Connection::read_data_in_list(const std::string &data_in_list) {
     std::cout << std::endl;
 }
 
-void DRPAI_Connection::release_resource() {
-    if (post_process.post_process_release != nullptr)
-        post_process.post_process_release();
-    post_process.dynamic_library_close();
-
+void DRPAI_Base::release_resource() {
     errno = 0;
     if (drpai_fd > 0 && close(drpai_fd) != 0)
         throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::render_detections_on_image(Image &img) {
+void DRPAI_Base::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
@@ -366,35 +394,31 @@ void DRPAI_Connection::render_detections_on_image(Image &img) {
     }
 }
 
-void DRPAI_Connection::render_text_on_image(Image &img) {
+void DRPAI_Base::render_text_on_image(Image &img) {
     for(std::size_t i=0; i<corner_text.size(); i++) {
         img.write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
     }
 }
 
-void DRPAI_Connection::add_corner_text() {
+void DRPAI_Base::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
-json_array DRPAI_Connection::get_detections_json() const {
+json_array DRPAI_Base::get_detections_json() const {
     json_array a;
     for(auto det: last_det)
         a.add(det.get_json());
     return a;
 }
 
-json_object DRPAI_Connection::get_json() const {
+json_object DRPAI_Base::get_json() const {
     json_object j;
     j.add("drpai-rate", rate.get_smooth_rate(), 1);
-    if (!filter_classes.empty())
-        j.add("filter-classes", json_array(filter_classes));
-    if (filter_region.area() < 640*480)
-        j.add("filter-region", filter_region.get_json(false));
     j.add("detections", get_detections_json());
     return j;
 }
 
-void DRPAI_Connection::run_inference() {
+void DRPAI_Base::run_inference() {
     if(drpai_fd) {
         rate.inform_frame();
 
@@ -430,7 +454,7 @@ void DRPAI_Connection::run_inference() {
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const
+void DRPAI_Base::load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const
 {
     std::cout << "Loading : " << param_file << std::endl;
     std::ifstream file_stream(param_file, std::ios::ate | std::ios::binary);
@@ -459,7 +483,7 @@ void DRPAI_Connection::load_drpai_param_file(const drpai_data_t& _proc, const st
     }
 }
 
-void DRPAI_Connection::crop(const Box& crop_region) const {
+void DRPAI_Base::crop(const Box& crop_region) const {
     /*Change DeepPose Crop Parameters*/
     drpai_crop_t crop_param;
     crop_param.img_owidth = std::clamp(static_cast<int>(crop_region.w), 1, IN_WIDTH);
@@ -471,7 +495,50 @@ void DRPAI_Connection::crop(const Box& crop_region) const {
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
-void DRPAI_Connection::render_filter_region(Image &img) const {
-    if (filter_region.area() < 640*480)
-        img.draw_rect(filter_region, YELLOW_DATA);
+void DRPAI_Base::set_property(GstDRPAI_Properties prop, const GValue *value) {
+    switch (prop) {
+        case PROP_MAX_DRPAI_RATE:
+            rate.set_max_rate(g_value_get_float(value));
+            break;
+        case PROP_LOG_DETECTS:
+            log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            rate.set_smooth_rate(g_value_get_uint(value));
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::get_property(GstDRPAI_Properties prop, GValue *value) const {
+    switch (prop) {
+        case PROP_MODEL:
+            g_value_set_string(value, prefix.c_str());
+            break;
+        case PROP_LOG_DETECTS:
+            g_value_set_boolean(value, log_detects);
+            break;
+        case PROP_MAX_DRPAI_RATE:
+            g_value_set_float(value, rate.get_max_rate());
+            break;
+        case PROP_SMOOTH_DRPAI_RATE:
+            g_value_set_float(value, rate.get_smooth_rate());
+            break;
+        default:
+            throw std::exception();
+    }
+}
+
+void DRPAI_Base::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *> &params) {
+    params.emplace( PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
+                                                       "Print detected objects in standard output.",
+                                                       FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_MAX_DRPAI_RATE, g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
+                                                        "Force maximum DRPAI frame rate using thread sleeps.",
+                                                        0.0f, 120.f, 120.f, G_PARAM_READWRITE));
+    params.emplace(PROP_SMOOTH_DRPAI_RATE, g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
+                                                          "Number of last DRPAI frame rates to average for a more smooth value.",
+                                                          1, 1000, 1, G_PARAM_READWRITE));
+    DRPAI_Yolo::install_properties(params);
 }

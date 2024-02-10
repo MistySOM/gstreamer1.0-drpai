@@ -25,14 +25,14 @@
 /*****************************************
 * Includes
 ******************************************/
+#include "image.h"
+#include "ascii.h"
+#include "box.h"
 #include <algorithm>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
-#include "image.h"
-#include "ascii.h"
-#include "box.h"
 
 Image::~Image()
 {
@@ -63,14 +63,8 @@ void Image::map_udmabuf()
 
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
-    /* Write once to allocate physical memory to u-dma-buf virtual space.
-    * Note: Do not use memset() for this.
-    *       Because it does not work as expected. */
-    {
-        for (uint32_t i = 0; i < size; i++) {
-            img_buffer[i] = 0;
-        }
-    }
+    // Write once to allocate physical memory to u-dma-buf virtual space.
+    std::fill(img_buffer, img_buffer+size, 0);
 }
 
 void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
@@ -259,7 +253,9 @@ void Image::draw_rect(const Box& box, const std::string& str, const uint32_t fro
     auto y_max = static_cast<int32_t>(box.getBottom());
 
     /* Draw the class and probability */
-    write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
+    const auto margin = 5;
+    const auto str_height = font_h + 2*margin;
+    write_string(str, x_min + 1, y_min + 1 - str_height, back_color,  front_color, margin);
     /* Draw the bounding box */
     draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
     draw_rect(x_min, y_min, x_max, y_max, back_color, 1);

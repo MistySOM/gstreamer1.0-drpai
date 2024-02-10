@@ -2,13 +2,7 @@
 // Created by matin on 21/10/23.
 //
 
-#include <algorithm>
 #include "tracker.h"
-#define std_remove_if(vector, pred)  std::remove_if(vector.begin(), vector.end(), pred)
-#define std_find_if(vector, pred)    std::find_if(vector.begin(), vector.end(), pred)
-#define std_sort(vector, pred)       std::sort(vector.begin(), vector.end(), pred)
-#define std_erase(vector, pred)      vector.erase(std_remove_if(vector, pred), vector.end())
-#define std_erase_after(vector,pred) vector.erase(std_find_if(vector, pred), vector.end())
 
 inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
@@ -29,15 +23,15 @@ json_object tracked_detection::get_json() const {
     j.add("id", id);
     j.add("seen-first", to_string(seen_first));
     j.add("seen-last", to_string(seen_last));
-    j.concatenate(last_detection.get_json());
+    j.add("class", std::string(name));
+    j.add("probability", prob, 2);
+    j.add("box", smooth_bbox.mix.get_json(true));
     return j;
 }
 
-/** @brief Track detected items based on previous detections
- *  @param detections A list of detected items in one frame
- *  @returns A list of items corresponding to detections that were present earlier.
- *           The order of items in the output list is not the same as the input list. */
-std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::vector<detection>& detections) {
+/** @brief Track detected items based on previous detections. It populates last_tracked_detection.
+ *  @param detections A list of detected items in one frame. */
+void tracker::track(const std::vector<detection>& detections) {
     const auto now = std::chrono::system_clock::now();
 
     /* Let's keep pointers to all detected items.
@@ -63,10 +57,10 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
             for(auto& det_item: detections_ptr) {
 
                 // Check if both items in previously tracked and newly detected are in the same class
-                if ((*track_item)->last_detection.c == det_item->c) {
+                if ((*track_item)->c == det_item->c) {
                     /* Check if both items in previously tracked and newly detected are located nearby.
                      *This is calculated using the DOA (Distance Over Areas) algorithm. */
-                    if (const auto distance = (*track_item)->last_detection.bbox.doa_with(det_item->bbox); distance < doa_threshold) {
+                    if (const auto distance = (*track_item)->smooth_bbox.mix.doa_with(det_item->bbox); distance < doa_threshold) {
                         // Add to the permutation
                         permutation.push_back(track_map{det_item, *track_item, distance});
                     }
@@ -84,7 +78,7 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
     // Sort the permutation by distances. Smaller is a better match.
     std_sort(permutation, [](const auto& a, const auto& b) { return a.distance < b.distance; });
 
-    std::vector<std::shared_ptr<const tracked_detection>> result;
+    tracked_detection_vector result;
     result.reserve(detections.size());
     while(!permutation.empty()) {
         /* Capture the front of permutation (the least distant ones) and add it to the result.
@@ -92,13 +86,8 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
         const auto [d, t, distance] = permutation.front();
 
         // Let's update the tracked information with the newly detected item.
-
-        ++t->smoothed;
-        if (t->smoothed > bbox_smooth_rate)
-            t->smoothed = bbox_smooth_rate;
-        // To make the bounding boxes move smoothly, we can average out their boxes
-        t->last_detection.bbox = t->last_detection.bbox.average_with(static_cast<float>(t->smoothed-1), 1, d->bbox);
-        t->last_detection.prob = d->prob;
+        t->smooth_bbox.add(d->bbox);
+        t->prob = d->prob;
         t->seen_last = now;
         result.push_back(t);
 
@@ -113,13 +102,14 @@ std::vector<std::shared_ptr<const tracked_detection>> tracker::track(const std::
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
     for (auto d: detections_ptr) {
-        auto item = std::make_shared<tracked_detection>(count() + 1, *d, now);
+        auto item = std::make_shared<tracked_detection>(count() + 1, *d, now, bbox_smooth_rate);
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
         result.push_back(item);
     }
-    return result;
+
+    last_tracked_detection = result;
 }
 
 json_object tracker::get_json() const {
@@ -129,4 +119,11 @@ json_object tracker::get_json() const {
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;
+}
+
+json_array tracker::get_detections_json() const {
+    json_array a;
+    for(const auto& det: last_tracked_detection)
+        a.add(det->get_json());
+    return a;
 }
