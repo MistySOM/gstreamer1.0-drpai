@@ -196,6 +196,7 @@ void DRPAI_Controller::thread_function_single() {
 
     if(socket_fd) {
         json_object j;
+        j.add("timestamp", elapsed_time::to_string(std::chrono::system_clock::now()));
         j.add("video-rate", video_rate.get_smooth_rate(), 1);
         j.concatenate(drpai->get_json());
         const auto str = j.to_string() + "\n";
