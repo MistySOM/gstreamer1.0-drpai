@@ -20,10 +20,8 @@ FILES_${PN}-dbg = "${libdir}/gstreamer-1.0/.debug/libgstdrpai.so"
 RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
 
 # yolo library
-PACKAGES += "${PN}-yolo"
+PACKAGES += "${PN}-yolo ${PN}-yolo-dbg"
 FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
-FILES_${PN}-yolo-dev = "${libdir}/libgstdrpai-yolo.la"
-FILES_${PN}-yolo-staticdev = "${libdir}/libgstdrpai-yolo.a"
 FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
 RDEPENDS_${PN} += "${PN}-yolo"
 RDEPENDS_${PN}_yolo += "${PN}"
