@@ -27,8 +27,9 @@ RDEPENDS_${PN} += "${PN}-yolo"
 RDEPENDS_${PN}_yolo += "${PN}"
 
 # deeppose library
-PACKAGES += "${PN}-deeppose"
+PACKAGES += "${PN}-deeppose ${PN}-deeppose-dbg"
 FILES_${PN}-deeppose = "${libdir}/libgstdrpai-deeppose.so"
+FILES_${PN}-deeppose-dbg = "${libdir}/.debug/libgstdrpai-deeppose.so"
 RDEPENDS_${PN} += "${PN}-deeppose"
 RDEPENDS_${PN}_deeppose += "${PN} ${PN}-yolo"
 
