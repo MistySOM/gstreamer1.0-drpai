@@ -15,7 +15,8 @@ class DRPAI_DeepPose final: public DRPAI_Base {
 
 public:
     explicit DRPAI_DeepPose(const std::string& prefix):
-            DRPAI_Base(prefix)
+            DRPAI_Base(prefix),
+            ML_DESC_NAME(prefix + "/rf_gaze_dir.xml")
     {}
 
     Box crop_region {};
@@ -35,6 +36,7 @@ private:
     /*ML model inferencing*/
     cv::Ptr<cv::ml::RTrees> tree = nullptr;
     cv::Ptr<cv::ml::RTrees> dtree = nullptr;
+    const std::string ML_DESC_NAME;
 
     constexpr static uint8_t NUM_OUTPUT_KEYPOINT = 98;
 
@@ -44,8 +46,6 @@ private:
     /*DeepPose Post Processing & Drawing Related*/
     constexpr static int8_t OUTPUT_ADJ_X         = 2;
     constexpr static int8_t OUTPUT_ADJ_Y         = 0;
-
-    inline const static std::string ML_DESC_NAME = "deeppose/rf_gaze_dir.xml";
 
     /*DeepPose Related*/
     constexpr static uint8_t INF_OUT_SIZE        = 196;

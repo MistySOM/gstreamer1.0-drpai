@@ -13,23 +13,16 @@ DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai opencv"
 S = "${WORKDIR}/git"
 PV = "1.0"
 
-FILES_${PN} = "${libdir}/gstreamer-1.0/libgstdrpai.so"
-FILES_${PN}-dev = "${libdir}/gstreamer-1.0/libgstdrpai.la"
-FILES_${PN}-staticdev = "${libdir}/gstreamer-1.0/libgstdrpai.a"
-FILES_${PN}-dbg = "${libdir}/gstreamer-1.0/.debug/libgstdrpai.so"
+FILES = "${libdir}/gstreamer-1.0/libgstdrpai.so"
 RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
 
 # yolo library
-PACKAGES += "${PN}-yolo ${PN}-yolo-dbg"
-FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
-FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
+FILES:yolo = "${libdir}/libgstdrpai-yolo.so"
 RDEPENDS_${PN} += "${PN}-yolo"
 RDEPENDS_${PN}_yolo += "${PN}"
 
 # deeppose library
-PACKAGES += "${PN}-deeppose ${PN}-deeppose-dbg"
-FILES_${PN}-deeppose = "${libdir}/libgstdrpai-deeppose.so"
-FILES_${PN}-deeppose-dbg = "${libdir}/.debug/libgstdrpai-deeppose.so"
+FILES:deeppose = "${libdir}/libgstdrpai-deeppose.so"
 RDEPENDS_${PN} += "${PN}-deeppose"
 RDEPENDS_${PN}_deeppose += "${PN} ${PN}-yolo"
 
