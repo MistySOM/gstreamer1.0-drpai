@@ -3,6 +3,7 @@
 //
 
 #include "tracker.h"
+#include "utils/elapsed_time.h"
 
 inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
@@ -11,18 +12,11 @@ inline long get_duration_minutes(const tracking_time &a, const tracking_time &b)
     return std::chrono::duration_cast<std::chrono::minutes>(a - b).count();
 }
 
-std::string tracked_detection::to_string(const tracking_time& time) {
-    const std::time_t t = std::chrono::system_clock::to_time_t(time);
-    std::string ts = std::ctime(&t);
-    ts.resize(ts.size()-1);
-    return ts;
-}
-
 json_object tracked_detection::get_json() const {
     json_object j;
     j.add("id", id);
-    j.add("seen-first", to_string(seen_first));
-    j.add("seen-last", to_string(seen_last));
+    j.add("seen-first", elapsed_time::to_string(seen_first));
+    j.add("seen-last", elapsed_time::to_string(seen_last));
     j.add("class", std::string(name));
     j.add("probability", prob, 2);
     j.add("box", smooth_bbox.mix.get_json(true));

@@ -1,14 +1,19 @@
 Here is a sample of JSON output when nothing is detected:
 
+```json
     {
+        "timestamp": "2024-02-12T16:03:45.484Z",
         "video-rate": 33.3, 
         "drpai-rate": 2.5, 
         "detections": []
     }
+```
 
 Here is a sample of JSON output when the filters are **on**:
 
+```json
     {
+        "timestamp": "2024-02-12T16:03:45.484Z",
         "video-rate": 25.0, 
         "drpai-rate": 5.4, 
         "filter-classes": [
@@ -22,10 +27,13 @@ Here is a sample of JSON output when the filters are **on**:
         }, 
         "detections": []
     }
+```
 
 Here is a sample of JSON output of Yolo models when the tracking is **off**:
 
+```json
     {
+        "timestamp": "2024-02-12T16:03:45.484Z",
         "video-rate": 32.3, 
         "drpai-rate": 2.5, 
         "detections": [
@@ -51,17 +59,20 @@ Here is a sample of JSON output of Yolo models when the tracking is **off**:
             }
         ]
     }
+```
 
 Here is a sample of JSON output of Yolo models when the tracking is **on**:
 
+```json
     {
+        "timestamp": "2024-02-12T16:03:45.484Z",
         "video-rate": 32.3, 
         "drpai-rate": 2.5, 
         "detections": [
             {
                 "id": 2, 
-                "seen_first": "Fri Dec 22 23:20:56 2023", 
-                "seen_last": "Fri Dec 22 23:21:46 2023", 
+                "seen_first": "2023-12-22T23:20:56.484Z", 
+                "seen_last": "2023-12-22T23:21:46.484Z", 
                 "class": "person", 
                 "probability": 0.91, 
                 "box": {
@@ -73,8 +84,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
             },
             {
                 "id": 5, 
-                "seen_first": "Fri Dec 22 23:25:53 2023", 
-                "seen_last": "Fri Dec 22 23:26:07 2023", 
+                "seen_first": "2023-12-22T23:25:53.484Z", 
+                "seen_last": "2023-12-22T23:26:07.484Z", 
                 "class": "wine glass", 
                 "probability": 0.52, 
                 "box": {
@@ -93,3 +104,4 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
             "chair": 1
         }
     }
+```
