@@ -1,12 +1,7 @@
-yolov_sources = [
-    'drpai_yolo.cpp'
-]
+gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : '..')
 
-gstdrpai_dep = declare_dependency(link_with : gstplugindrpai,
-                            include_directories : '..')
-
-yolov = library('gstdrpai-yolo',
-    yolov_sources,
+library('gstdrpai-yolo',
+    'drpai_yolo.cpp',
     dependencies: [gstdrpai_dep, gst_dep],
     install : true,
 )

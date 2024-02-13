@@ -14,17 +14,15 @@ S = "${WORKDIR}/git"
 PV = "1.0"
 
 FILES_${PN} = "${libdir}/gstreamer-1.0/libgstdrpai.so"
-FILES_${PN}-dev = "${libdir}/gstreamer-1.0/libgstdrpai.la"
-FILES_${PN}-staticdev = "${libdir}/gstreamer-1.0/libgstdrpai.a"
-FILES_${PN}-dbg = " \
-    ${libdir}/gstreamer-1.0/.debug \
-    ${prefix}/src"
+FILES_${PN}-dbg = "${libdir}/gstreamer-1.0/.debug/libgstdrpai.so"
 RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
 
 # yolo library
 PACKAGES += "${PN}-yolo"
 FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
+FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
 RDEPENDS_${PN} += "${PN}-yolo"
+RDEPENDS_${PN}_yolo += "${PN}"
 
 # install models
 SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"

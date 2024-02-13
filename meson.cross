@@ -4,10 +4,12 @@ cpp = ['aarch64-poky-linux-g++', '-mcpu=cortex-a55', '-fstack-protector-strong',
 ar = ['aarch64-poky-linux-ar']
 nm = ['aarch64-poky-linux-nm']
 strip = ['aarch64-poky-linux-strip']
-pkgconfig = 'pkg-config'
+pkg-config = 'pkg-config'
 
 [properties]
 needs_exe_wrapper = true
+
+[built-in options]
 c_args = ['-O2', '-pipe', '-g', '-feliminate-unused-debug-types']
 c_link_args = ['-Wl,-O1', '-Wl,--hash-style=gnu', '-Wl,--as-needed', '-fstack-protector-strong', '-Wl,-z,relro,-z,now']
 cpp_args = []
