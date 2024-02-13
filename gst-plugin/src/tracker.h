@@ -44,9 +44,6 @@ struct tracked_detection {
         return r;
     }
     [[nodiscard]] json_object get_json() const;
-
-private:
-    [[nodiscard]] static std::string to_string(const tracking_time& time);
 };
 using tracked_detection_vector = std::vector<std::shared_ptr<const tracked_detection>>;
 

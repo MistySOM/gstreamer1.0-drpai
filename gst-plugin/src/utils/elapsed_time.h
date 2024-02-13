@@ -6,6 +6,8 @@
 #define GSTREAMER1_0_DRPAI_ELAPSED_TIME_H
 
 #include <chrono>
+#include <sstream>
+#include <iomanip>
 
 class elapsed_time {
 
@@ -21,6 +23,16 @@ public:
             auto duration = std::chrono::duration<float>(now - last_time).count();
             last_time = now;
             return duration;
+        }
+
+        static std::string to_string(const std::chrono::time_point<std::chrono::system_clock>& time) {
+            std::ostringstream oss;
+            auto t = std::chrono::system_clock::to_time_t(time);
+            oss << std::put_time(std::localtime(&t), "%FT%T");
+
+            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
+            oss << '.' << std::setfill('0') << std::setw(3) << milliseconds.count() << "Z";
+            return oss.str();
         }
 };
 
