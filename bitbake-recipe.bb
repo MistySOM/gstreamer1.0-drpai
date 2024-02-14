@@ -15,7 +15,7 @@ PV = "1.0"
 
 PACKAGES = "${PN} ${PN}-dbg"
 FILES_${PN} = "${libdir}"
-FILES_${PN}-dbg = "${libdir}"
+FILES_${PN}-dbg = "${libdir}/.debug/"
 RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
 
 # install models
