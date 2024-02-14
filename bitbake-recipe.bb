@@ -13,18 +13,10 @@ DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai"
 S = "${WORKDIR}/git"
 PV = "1.0"
 
-FILES_${PN} = "${libdir}/gstreamer-1.0/libgstdrpai.so"
-FILES_${PN}-dev = "${libdir}/gstreamer-1.0/libgstdrpai.la"
-FILES_${PN}-staticdev = "${libdir}/gstreamer-1.0/libgstdrpai.a"
-FILES_${PN}-dbg = "${libdir}/gstreamer-1.0/.debug/libgstdrpai.so"
+PACKAGES = "${PN} ${PN}-dbg"
+FILES_${PN} = "${libdir}"
+FILES_${PN}-dbg = "${libdir}"
 RDEPENDS_${PN} = "gstreamer1.0 gstreamer1.0-plugins-base kernel-module-udmabuf"
-
-# yolo library
-PACKAGES += "${PN}-yolo ${PN}-yolo-dbg"
-FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
-FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
-RDEPENDS_${PN} += "${PN}-yolo"
-RDEPENDS_${PN}_yolo += "${PN}"
 
 # install models
 SRC_URI += "https://remote.mistywest.com/download/mh11/models.zip"
@@ -38,9 +30,9 @@ FILES_${PN}-models-yolov3 = "${ROOT_HOME}/models/yolov3"
 FILES_${PN}-models-tinyyolov3 = "${ROOT_HOME}/models/tinyyolov3"
 FILES_${PN}-models-yolov2 = "${ROOT_HOME}/models/yolov2"
 FILES_${PN}-models-tinyyolov2 = "${ROOT_HOME}/models/tinyyolov2"
-DEPENDS_${PN}-models = "${PN}-models-yolov3 ${PN}-models-tinyyolov3 ${PN}-models-yolov2 ${PN}-models-tinyyolov2"
+RDEPENDS_${PN}-models = "${PN}-models-yolov3 ${PN}-models-tinyyolov3 ${PN}-models-yolov2 ${PN}-models-tinyyolov2"
 # deeppose
 PACKAGES += "${PN}-models-tinyyolov2-face ${PN}-models-deeppose"
 FILES_${PN}-models-deeppose = "${ROOT_HOME}/models/deeppose"
 FILES_${PN}-models-tinyyolov2-face = "${ROOT_HOME}/models/tinyyolov2_face"
-DEPENDS_${PN}-models += "${PN}-models-deeppose ${PN}-models-tinyyolov2-face"
+RDEPENDS_${PN}-models += "${PN}-models-deeppose ${PN}-models-tinyyolov2-face"
