@@ -6,7 +6,7 @@ SRCREV = "${AUTOREV}"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 MESON_BUILDTYPE = "release"
 
-inherit meson insane
+inherit meson
 
 DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai opencv"
 
