@@ -105,9 +105,9 @@ private:
     void render_filter_region(Image& img) const;
 
     [[nodiscard]] uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x) const;
-    [[nodiscard]] static inline uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
+    [[nodiscard]] constexpr static uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
     { return offs + channel * num_grid * num_grid; }
-    [[nodiscard]] static inline float sigmoid(const float x) { return 1.0f/(1.0f + expf(-x)); }
+    [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + expf(-x)); }
     static inline void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
     static void softmax(std::vector<float>& val) ;
 };

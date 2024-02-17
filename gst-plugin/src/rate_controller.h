@@ -21,13 +21,13 @@ public:
         sleeper.sleep_to_max_rate(last_frame_duration);
     }
 
-    inline void set_max_rate(float rate) { sleeper.max = 1.0f / rate;}
-    inline void set_smooth_rate(uint32_t rate) { smooth_durations.max = rate; }
+    constexpr void set_max_rate(float rate) { sleeper.max = 1.0f / rate;}
+    constexpr void set_smooth_rate(uint32_t rate) { smooth_durations.max = rate; }
 
-    [[nodiscard]] inline float get_max_rate() const { return 1.0f / sleeper.max; }
-    [[nodiscard]] inline float get_last_rate() const { return 1.0f / last_frame_duration; }
-    [[nodiscard]] inline float get_smooth_rate() const { return 1.0f / smooth_durations.mix; }
-    [[nodiscard]] inline uint32_t get_max_smooth_rate() const { return smooth_durations.max; }
+    [[nodiscard]] constexpr float get_max_rate() const { return 1.0f / sleeper.max; }
+    [[nodiscard]] float get_last_rate() const { return 1.0f / last_frame_duration; }
+    [[nodiscard]] float get_smooth_rate() const { return 1.0f / smooth_durations.mix; }
+    [[nodiscard]] constexpr uint32_t get_max_smooth_rate() const { return smooth_durations.max; }
 
 private:
     std::atomic<float> last_frame_duration = 0;
