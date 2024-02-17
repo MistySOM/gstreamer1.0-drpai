@@ -46,8 +46,8 @@ class Image
             convert_from_format(format) {};
         ~Image();
 
-        [[nodiscard]] uint8_t at(const int32_t a) const { return img_buffer[a]; }
-        void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
+        [[nodiscard]] constexpr uint8_t at(const int32_t a) const { return img_buffer[a]; }
+        constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
         void copy(const uint8_t* data, IMAGE_FORMAT format);
@@ -77,7 +77,7 @@ class Image
         /* drawing section */
         constexpr static int32_t font_w = 6;
         constexpr static int32_t font_h = 8;
-        void draw_point(uint32_t x, uint32_t y, uint32_t color) const;
+        constexpr void draw_point(uint32_t x, uint32_t y, uint32_t color) const;
         void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color) const;
         void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, uint32_t color, int32_t expand) const;
         void write_char(char code, int32_t x, int32_t y, uint32_t color, uint32_t backcolor) const;

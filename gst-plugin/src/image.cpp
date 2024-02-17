@@ -161,7 +161,7 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
 *                 color = point color
 * Return Value  : -
 ******************************************/
-void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color) const
+constexpr void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color) const
 {
     if(x >= img_w || y >= img_h) return;
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;

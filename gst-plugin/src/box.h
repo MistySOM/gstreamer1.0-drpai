@@ -35,29 +35,29 @@ typedef struct Box
 {
     float x, y, w, h;
 
-    inline void setLeft(const float _x) { x = _x + w/2; }
-    inline void setTop(const float _y) { y = _y + h/2; }
+    constexpr void setLeft(const float _x) { x = _x + w/2; }
+    constexpr void setTop(const float _y) { y = _y + h/2; }
 
-    [[nodiscard]] inline float getLeft() const { return x - w/2; }
-    [[nodiscard]] inline float getTop() const { return y - h/2; }
-    [[nodiscard]] inline float getRight() const { return x + w/2; }
-    [[nodiscard]] inline float getBottom() const { return y + h/2; }
+    [[nodiscard]] constexpr float getLeft() const { return x - w/2; }
+    [[nodiscard]] constexpr float getTop() const { return y - h/2; }
+    [[nodiscard]] constexpr float getRight() const { return x + w/2; }
+    [[nodiscard]] constexpr float getBottom() const { return y + h/2; }
     [[nodiscard]] json_object get_json(bool center_origin=true) const;
 
     [[nodiscard]] float iou_with(const Box& b) const;
     [[nodiscard]] float doa_with(const Box& b) const;
-    [[nodiscard]] float inline area() const { return w*h; };
+    [[nodiscard]] constexpr float area() const { return w*h; };
 
     [[nodiscard]] float operator&(const Box& b) const; // intersection
     [[nodiscard]] float operator|(const Box& b) const; // union
-    [[nodiscard]] float inline operator%(const Box& b) const { // euclidean distance
+    [[nodiscard]] constexpr float operator%(const Box& b) const { // euclidean distance
         const auto dx = x - b.x;
         const auto dy = y - b.y;
         return std::sqrt(dx*dx + dy*dy);
     }
-    [[nodiscard]] Box inline operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
-    [[nodiscard]] Box inline operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
-    [[nodiscard]] Box inline operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
+    [[nodiscard]] constexpr Box operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
+    [[nodiscard]] constexpr Box operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
+    [[nodiscard]] constexpr Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
 } Box;
 
 /*****************************************
