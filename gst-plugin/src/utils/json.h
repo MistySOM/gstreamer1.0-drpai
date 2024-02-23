@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 class json_base {
 
@@ -51,7 +52,9 @@ public:
 
 private:
     using json_base::add;
-    void add_key(const std::string& key) { add_comma(); s += format_string(key) + ": "; }
+    void add_key(const std::string& key) { add_comma(); s += format_string(format_key(key)) + ": "; }
+    [[nodiscard]] std::string static format_key(const std::string& str)
+    { auto k = str; std::replace(k.begin(), k.end(), ' ', '_'); return k; }
 };
 
 class json_array final: public json_base {
