@@ -82,8 +82,8 @@ float Box::doa_with(const Box& b) const
 json_object Box::get_json(bool center_origin) const {
     json_object j;
     if (center_origin) {
-        j.add("centerX", x, 0);
-        j.add("centerY", y, 0);
+        j.add("center_x", x, 0);
+        j.add("center_y", y, 0);
     } else {
         j.add("left", getLeft(), 0);
         j.add("top", getTop(), 0);

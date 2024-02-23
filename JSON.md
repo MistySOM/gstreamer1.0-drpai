@@ -3,8 +3,8 @@ Here is a sample of JSON output when nothing is detected:
 ```json
     {
         "timestamp": "2024-02-12T16:03:45.484Z",
-        "video-rate": 33.3, 
-        "drpai-rate": 2.5, 
+        "video_rate": 33.3, 
+        "drpai_rate": 2.5, 
         "detections": []
     }
 ```
@@ -14,12 +14,12 @@ Here is a sample of JSON output when the filters are **on**:
 ```json
     {
         "timestamp": "2024-02-12T16:03:45.484Z",
-        "video-rate": 25.0, 
-        "drpai-rate": 5.4, 
-        "filter-classes": [
+        "video_rate": 25.0, 
+        "drpai_rate": 5.4, 
+        "filter_classes": [
             "bottle"
         ], 
-        "filter-region": {
+        "filter_region": {
             "left": 450, 
             "top": 350, 
             "width": 100, 
@@ -34,15 +34,15 @@ Here is a sample of JSON output of Yolo models when the tracking is **off**:
 ```json
     {
         "timestamp": "2024-02-12T16:03:45.484Z",
-        "video-rate": 32.3, 
-        "drpai-rate": 2.5, 
+        "video_rate": 32.3, 
+        "drpai_rate": 2.5, 
         "detections": [
             { 
                 "class": "person", 
                 "probability": 0.91, 
                 "box": {
-                    "centerX": 425, 
-                    "centerY": 325, 
+                    "center_x": 425, 
+                    "center_y": 325, 
                     "width": 297, 
                     "height": 282
                 }
@@ -51,8 +51,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **off**:
                 "class": "wine glass", 
                 "probability": 0.52, 
                 "box": {
-                    "centerX": 87, 
-                    "centerY": 133, 
+                    "center_x": 87, 
+                    "center_y": 133, 
                     "width": 122, 
                     "height": 172
                 }
@@ -66,8 +66,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
 ```json
     {
         "timestamp": "2024-02-12T16:03:45.484Z",
-        "video-rate": 32.3, 
-        "drpai-rate": 2.5, 
+        "video_rate": 32.3, 
+        "drpai_rate": 2.5, 
         "detections": [
             {
                 "id": 2, 
@@ -76,8 +76,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
                 "class": "person", 
                 "probability": 0.91, 
                 "box": {
-                    "centerX": 425, 
-                    "centerY": 325, 
+                    "center_x": 425, 
+                    "center_y": 325, 
                     "width": 297, 
                     "height": 282
                 }
@@ -89,16 +89,16 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
                 "class": "wine glass", 
                 "probability": 0.52, 
                 "box": {
-                    "centerX": 87, 
-                    "centerY": 133, 
+                    "center_x": 87, 
+                    "center_y": 133, 
                     "width": 122, 
                     "height": 172
                 }
             }
         ],
-        "track-history": {
+        "track_history": {
             "minutes": 60,
-            "total-count": 6,
+            "total_count": 6,
             "person": 2,
             "wine glass": 3,
             "chair": 1
