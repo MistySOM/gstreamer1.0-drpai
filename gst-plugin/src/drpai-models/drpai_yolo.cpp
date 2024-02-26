@@ -368,11 +368,11 @@ json_array DRPAI_Yolo::get_detections_json() const {
 json_object DRPAI_Yolo::get_json() const {
     json_object j = DRPAI_Base::get_json();
     if (!filter_classes.empty())
-        j.add("filter-classes", json_array(filter_classes));
+        j.add("filter_classes", json_array(filter_classes));
     if (filter_region.area() < static_cast<float>(IN_WIDTH * IN_HEIGHT))
-        j.add("filter-region", filter_region.get_json(false));
+        j.add("filter_region", filter_region.get_json(false));
     if(det_tracker.active)
-        j.add("track-history", det_tracker.get_json());
+        j.add("track_history", det_tracker.get_json());
     return j;
 }
 

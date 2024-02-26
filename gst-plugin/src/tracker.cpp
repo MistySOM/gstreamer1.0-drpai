@@ -109,7 +109,7 @@ void tracker::track(const std::vector<detection>& detections) {
 json_object tracker::get_json() const {
     json_object j;
     j.add("minutes", history_length);
-    j.add("total-count", count());
+    j.add("total_count", count());
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));
     return j;
