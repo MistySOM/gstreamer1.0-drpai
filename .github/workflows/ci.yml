@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Install Dependencies
       run: sudo apt update && sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev libunwind-dev
@@ -38,25 +38,23 @@ jobs:
     runs-on: DC02
     
     steps:    
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: MistySOM/rzv2l
         path: rzv2l
         ref: master
         submodules: true
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: gstreamer1.0-drpai
 
     - name: Replace the RZV2L gstreamer1.0-drpai with the current one.
       run: |
         mv gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/files
-        mv -f rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/files/bitbake-recipes/* rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai 
-        sed -i -e 's|git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master|file://.|g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
-        sed -i -e 's|git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master|file://.|g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai-yolo.bb
-        echo "S = \"\${WORKDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
-        echo "S = \"\${WORKDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai-yolo.bb
+        mv -f rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/files/bitbake-recipes/* rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
+        sed -i -e 's|git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master|file://.|g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.inc
+        echo "S = \"\${WORKDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.inc
 
     - name: Change the build to only gstreamer1.0-drpai
       run: |
