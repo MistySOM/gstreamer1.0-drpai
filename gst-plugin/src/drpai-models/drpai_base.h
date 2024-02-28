@@ -12,6 +12,7 @@
 #include "../properties.h"
 #include <gst/gst.h>
 #include <vector>
+#include <array>
 #include <mutex>
 #include <map>
 

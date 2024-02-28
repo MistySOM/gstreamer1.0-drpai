@@ -5,10 +5,11 @@ SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master"
 SRCREV = "${AUTOREV}"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 MESON_BUILDTYPE = "release"
+MESON_TARGET = "gstdrpai"
 
 inherit meson
 
-DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base drpai"
+DEPENDS = "gstreamer1.0 gstreamer1.0-plugins-base dl drpai"
 
 S = "${WORKDIR}/git"
 PV = "1.0"

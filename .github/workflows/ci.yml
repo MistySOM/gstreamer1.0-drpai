@@ -51,16 +51,17 @@ jobs:
 
     - name: Replace the RZV2L gstreamer1.0-drpai with the current one.
       run: |
-        rm -rf rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai
-        cp -r gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/
-        sed -i -e 's/git:\/\/github.com\/MistySOM\/gstreamer1.0-drpai.git;branch=master/file:\/\/\${THISDIR}/g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
-        echo "S = \"\${WORKDIR}/\${THISDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb
-        mv rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/bitbake-recipe.bb rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
+        mv gstreamer1.0-drpai rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/files
+        mv -f rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/files/bitbake-recipes/* rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai 
+        sed -i -e 's|git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master|file://.|g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
+        sed -i -e 's|git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master|file://.|g' rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai-yolo.bb
+        echo "S = \"\${WORKDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai.bb
+        echo "S = \"\${WORKDIR}\"" >> rzv2l/Build/meta-mistysom/recipes-drpai/gstreamer1.0-drpai/gstreamer1.0-drpai-yolo.bb
 
     - name: Change the build to only gstreamer1.0-drpai
       run: |
-        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai/g' rzv2l/Build/exec.sh
-        sed -i -e 's/\/tmp\/deploy\/images\//\/tmp\/deploy\/rpm\/aarch64\/gstreamer1.0-drpai*/g' rzv2l/Build/exec.sh
+        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai gstreamer1.0-drpai-yolo/g' rzv2l/Build/exec.sh
+        sed -i -e 's|/tmp/deploy/images/|/tmp/deploy/rpm/aarch64/gstreamer1.0-drpai*|g' rzv2l/Build/exec.sh
 
     - name: Build the Docker image
       run: cd rzv2l/Build && ./build.sh;
@@ -70,9 +71,6 @@ jobs:
 
     - name: List files that are generated
       run: ls -lah rzv2l/Build/output/
-
-    - name: Remove model packages
-      run: rm rzv2l/Build/output/gstreamer1.0-drpai-models-*.rpm
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
