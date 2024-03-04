@@ -26,7 +26,8 @@
 #define BOX_H
 
 #include "utils/json.h"
-#include <math.h>
+#include <cstdint>
+#include <cmath>
 
 /*****************************************
 * Box : Bounding box coordinates and its size

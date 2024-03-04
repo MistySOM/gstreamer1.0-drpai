@@ -65,7 +65,6 @@
 #include "drpai_controller.h"
 #include <gst/gst.h>
 #include <iostream>
-#include <sstream>
 
 GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
 #define GST_CAT_DEFAULT gst_drpai_debug

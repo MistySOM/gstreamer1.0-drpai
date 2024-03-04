@@ -3,7 +3,6 @@
 //
 
 #include "drpai_yolo.h"
-#include "../box.h"
 #include <iostream>
 #include <fstream>
 

@@ -322,7 +322,7 @@ std::string DRPAI_Base::get_param(const std::string& params_file_name, const std
     {
         line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
         if (infile.fail())
-            throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);;
+            throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);
         if (line.empty())
             continue;
         if (found) {
@@ -333,7 +333,7 @@ std::string DRPAI_Base::get_param(const std::string& params_file_name, const std
             found = true;
     }
     infile.close();
-    throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);;
+    throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);
 }
 
 void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
