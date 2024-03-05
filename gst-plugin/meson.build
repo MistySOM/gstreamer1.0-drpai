@@ -9,6 +9,8 @@ cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
 cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
 configure_file(output : 'config.h', configuration : cdata)
 
+incdir = include_directories('src')
+
 plugin_sources = [
   'src/gstdrpai.cpp',
   'src/drpai_controller.cpp',
@@ -24,6 +26,7 @@ gstplugindrpai = library('gstdrpai',
   cpp_args: plugin_c_args,
   dependencies : [gst_dep, thread_dep, dl_dep],
   install : true,
+  include_directories: incdir,
   install_dir : join_paths(get_option('libdir'), 'gstreamer-1.0'),
 )
 

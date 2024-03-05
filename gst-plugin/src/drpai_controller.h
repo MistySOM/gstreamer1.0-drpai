@@ -5,8 +5,6 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 #define GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 
-/*DRPAI Driver Header*/
-#include "linux/drpai.h"
 /*Definition of Macros & other variables*/
 #include "image.h"
 #include "rate_controller.h"
