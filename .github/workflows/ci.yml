@@ -58,7 +58,7 @@ jobs:
 
     - name: Change the build to only gstreamer1.0-drpai
       run: |
-        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai gstreamer1.0-drpai-yolo/g' rzv2l/Build/exec.sh
+        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai gstreamer1.0-drpai-yolo gstreamer1.0-drpai-deeppose/g' rzv2l/Build/exec.sh
         sed -i -e 's|/tmp/deploy/images/|/tmp/deploy/rpm/aarch64/gstreamer1.0-drpai*|g' rzv2l/Build/exec.sh
 
     - name: Build the Docker image
