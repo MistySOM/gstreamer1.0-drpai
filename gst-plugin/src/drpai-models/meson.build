@@ -7,7 +7,7 @@ library('gstdrpai-yolo',
     install : true,
 )
 
-opencv_dep = dependency('opencv4')
+opencv_dep = dependency('opencv4', required: false)
 library('gstdrpai-deeppose',
     'drpai_deeppose.cpp',
     dependencies: [gstdrpai_dep, gst_dep, opencv_dep],
