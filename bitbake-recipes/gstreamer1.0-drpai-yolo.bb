@@ -7,7 +7,3 @@ DEPENDS = "gstreamer1.0 drpai"
 RDEPENDS_${PN} = "gstreamer1.0-drpai"
 FILES_${PN} = "${libdir}/libgstdrpai-yolo.so"
 FILES_${PN}-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
-
-do_install_append() {
-    rm -rf ${D}${libdir}/gstreamer-1.0
-}
