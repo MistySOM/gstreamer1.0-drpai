@@ -392,7 +392,7 @@ void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const GValue *value) {
             det_tracker.bbox_smooth_rate = g_value_get_uint(value);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            det_tracker.history_length = g_value_get_uint(value);
+            det_tracker.history_length = g_value_get_uint(value)*60;
             break;
         case PROP_TRACK_SECONDS:
             det_tracker.time_threshold = g_value_get_float(value);
@@ -446,7 +446,7 @@ void DRPAI_Yolo::get_property(GstDRPAI_Properties prop, GValue *value) const {
             g_value_set_uint(value, det_tracker.bbox_smooth_rate);
             break;
         case PROP_TRACK_HISTORY_LENGTH:
-            g_value_set_uint(value, det_tracker.history_length);
+            g_value_set_uint(value, det_tracker.history_length/60);
             break;
         case PROP_TRACK_SECONDS:
             g_value_set_float(value, det_tracker.time_threshold);
