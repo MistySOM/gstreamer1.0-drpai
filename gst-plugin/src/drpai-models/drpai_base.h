@@ -80,10 +80,7 @@ protected:
     std::vector<float> drpai_output_buf {};
     std::mutex mutex;
 
-    constexpr static float TH_NMS = 0.5f;
-
-    explicit DRPAI_Base(const std::string& prefix):
-        prefix(prefix), params_file_name(prefix + "/" + prefix + "_post_process_params.txt") {}
+    explicit DRPAI_Base(const std::string& class_name, const std::string &prefix);
     virtual ~DRPAI_Base() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;

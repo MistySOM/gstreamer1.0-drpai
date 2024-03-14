@@ -5,12 +5,7 @@
 #include "drpai_yolo.h"
 #include <iostream>
 #include <fstream>
-
-inline bool in(const std::string& search, const std::vector<std::string>& array) {
-    return std::any_of(array.begin(), array.end(), [&](const std::string& i) {
-        return i == search;
-    });
-}
+#include <sstream>
 
 /*****************************************
 * Function Name : print_box
@@ -161,20 +156,9 @@ void DRPAI_Yolo::extract_detections()
         }
     }
 
-    /* Non-Maximum Suppression filter */
-    filter_boxes_nms(last_det, TH_NMS);
-
-    for (auto& det: last_det) {
-        /* Skip the overlapped bounding boxes */
-        if (det.prob == 0) continue;
-
-        /* Skip the bounding boxes outside of region of interest */
-        if (!(filter_classes.empty() || in(det.name, filter_classes)))
-            det.prob = 0;
-        if ((filter_region & det.bbox) == 0)
-            det.prob = 0;
-    }
+    filterer.apply(last_det);
     std_erase(last_det, [&](const auto& items) { return items.prob == 0; });
+
     if(det_tracker.active)
         det_tracker.track(last_det);
 
@@ -201,61 +185,9 @@ void DRPAI_Yolo::extract_detections()
 }
 
 void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
-    std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Base::open_resource(data_in_address);
-
-    labels.clear();
-    anchors.clear();
-    num_grids.clear();
-
-    /*Load Label from label_list file*/
-    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "Loading : " << label_list << std::flush;
-    load_label_file(label_list);
-    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
-
-    /*Load anchors from anchors file*/
-    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
-    std::cout << "Loading : " << anchors_list << std::flush;
-    load_anchors_file(anchors_list);
-    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
-
-    /*Load grids from data_out_list file*/
-    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "Loading : " << data_out_list << std::flush;
-    load_num_grids(data_out_list);
-    std::cout << "\t\tFound num grids: " << num_grids.size();
-
-    uint32_t sum_grids = 0;
-    for (const auto& n: num_grids)
-        sum_grids += n*n;
-    num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
-    std::cout << " & num BB: " << num_bb << std::endl;
-
-    std::string value = get_param("[best_class_prediction_algorithm]");
-    if (value == "sigmoid")
-        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
-    else if (value == "softmax")
-        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
-    else
-        throw std::runtime_error("[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " + value);
-
-    value = get_param("[anchor_divide_size]");
-    if (value == "model_in")
-        anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
-    else if (value == "num_grid")
-        anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
-    else
-        throw std::runtime_error("[ERROR] Failed to load value for param [anchor_divide_size]: " + value);
-
-    if (det_tracker.active)
-        std::cout << "Option : Detection Tracking is Active!" << std::endl;
-    if (!filter_classes.empty())
-        std::cout << "Option : Filtering classes to " << json_array(filter_classes).to_string() << std::endl;
-    if (filter_region.w == 0)
-        filter_region = {static_cast<float>(IN_WIDTH)/2, static_cast<float>(IN_HEIGHT)/2, static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT)};
-    else if (filter_region.area() < static_cast<float>(IN_WIDTH*IN_HEIGHT))
-        std::cout << "Option : Filtering region of interest to " << filter_region.get_json(false).to_string() << std::endl;
+    if (filterer.is_filter_region_active())
+        std::cout << "Option : Filtering region of interest to " << filterer.get_filter_region_json().to_string() << std::endl;
 }
 
 /*****************************************
@@ -337,8 +269,7 @@ void DRPAI_Yolo::load_num_grids(const std::string& data_out_list_file_name)
 
 void DRPAI_Yolo::render_detections_on_image(Image &img) {
     if (show_filter)
-        render_filter_region(img);
-
+        filterer.render_filter_region(img);
     if (det_tracker.active)
         for (const auto& tracked: det_tracker.last_tracked_detection) {
             /* Draw the bounding box on the image */
@@ -366,24 +297,19 @@ json_array DRPAI_Yolo::get_detections_json() const {
 
 json_object DRPAI_Yolo::get_json() const {
     json_object j = DRPAI_Base::get_json();
-    if (!filter_classes.empty())
-        j.add("filter_classes", json_array(filter_classes));
-    if (filter_region.area() < static_cast<float>(IN_WIDTH * IN_HEIGHT))
-        j.add("filter_region", filter_region.get_json(false));
+    if (filterer.is_active())
+        j.add("filter", filterer.get_json());
     if(det_tracker.active)
         j.add("track_history", det_tracker.get_json());
     return j;
-}
-
-void DRPAI_Yolo::render_filter_region(Image &img) const {
-    if (filter_region.area() < static_cast<float>(IN_WIDTH * IN_HEIGHT))
-        img.draw_rect(filter_region, YELLOW_DATA);
 }
 
 void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const GValue *value) {
     switch (prop) {
         case PROP_TRACKING:
             det_tracker.active = g_value_get_boolean(value);
+            if (det_tracker.active)
+                std::cout << "Option : Detection Tracking is Active!" << std::endl;
             break;
         case PROP_TRACK_SHOW_ID:
             show_track_id = g_value_get_boolean(value);
@@ -403,30 +329,20 @@ void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const GValue *value) {
         case PROP_FILTER_SHOW:
             show_filter = g_value_get_boolean(value);
             break;
-        case PROP_FILTER_CLASS: {
-            std::stringstream csv_classes(g_value_get_string(value));
-            filter_classes.clear();
-            while (csv_classes.good()) {
-                std::string item;
-                std::getline(csv_classes, item, ',');
-                if(!item.empty())
-                    filter_classes.push_back(item);
-            }
+        case PROP_FILTER_CLASS:
+            filterer.set_filter_classes(g_value_get_string(value));
             break;
-        }
         case PROP_FILTER_LEFT:
-            filter_region.setLeft(static_cast<float>(g_value_get_uint(value)));
+            filterer.set_filter_region_left(static_cast<float>(g_value_get_uint(value)));
             break;
         case PROP_FILTER_TOP:
-            filter_region.setTop(static_cast<float>(g_value_get_uint(value)));
+            filterer.set_filter_region_top(static_cast<float>(g_value_get_uint(value)));
             break;
         case PROP_FILTER_WIDTH:
-            filter_region.w = static_cast<float>(g_value_get_uint(value));
-            filter_region.setLeft(filter_region.x);
+            filterer.set_filter_region_width(static_cast<float>(g_value_get_uint(value)));
             break;
         case PROP_FILTER_HEIGHT:
-            filter_region.h = static_cast<float>(g_value_get_uint(value));
-            filter_region.setTop(filter_region.y);
+            filterer.set_filter_region_height(static_cast<float>(g_value_get_uint(value)));
             break;
         default:
             DRPAI_Base::set_property(prop, value);
@@ -457,27 +373,20 @@ void DRPAI_Yolo::get_property(GstDRPAI_Properties prop, GValue *value) const {
         case PROP_FILTER_SHOW:
             g_value_set_boolean(value, show_filter);
             break;
-        case PROP_FILTER_CLASS: {
-            std::string ss;
-            for (const auto &s: filter_classes) {
-                if (!ss.empty())
-                    ss += ",";
-                ss += s;
-            }
-            g_value_set_string(value, prefix.c_str());
+        case PROP_FILTER_CLASS:
+            g_value_set_string(value,filterer.get_filter_classes_string().c_str());
             break;
-        }
         case PROP_FILTER_LEFT:
-            g_value_set_uint(value, static_cast<uint>(filter_region.getLeft()));
+            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_left()));
             break;
         case PROP_FILTER_TOP:
-            g_value_set_uint(value, static_cast<uint>(filter_region.getTop()));
+            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_top()));
             break;
         case PROP_FILTER_WIDTH:
-            g_value_set_uint(value, static_cast<uint>(filter_region.w));
+            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_width()));
             break;
         case PROP_FILTER_HEIGHT:
-            g_value_set_uint(value, static_cast<uint>(filter_region.h));
+            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_height()));
             break;
         default:
             DRPAI_Base::get_property(prop, value);
@@ -485,11 +394,50 @@ void DRPAI_Yolo::get_property(GstDRPAI_Properties prop, GValue *value) const {
     }
 }
 
-void DRPAI_Yolo::release_resource() {
-    DRPAI_Base::release_resource();
-    labels.clear();
-    anchors.clear();
-    num_grids.clear();
+DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
+        DRPAI_Base("Darknet YOLO", prefix),
+        det_tracker(true, 2, 2.25, 1),
+        filterer(static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT), labels)
+{
+    /*Load Label from label_list file*/
+    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
+    std::cout << "Loading : " << label_list << std::flush;
+    load_label_file(label_list);
+    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
+
+    /*Load anchors from anchors file*/
+    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
+    std::cout << "Loading : " << anchors_list << std::flush;
+    load_anchors_file(anchors_list);
+    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+
+    /*Load grids from data_out_list file*/
+    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
+    std::cout << "Loading : " << data_out_list << std::flush;
+    load_num_grids(data_out_list);
+    std::cout << "\t\tFound num grids: " << num_grids.size();
+
+    uint32_t sum_grids = 0;
+    for (const auto& n: num_grids)
+        sum_grids += n*n;
+    num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
+    std::cout << " & num BB: " << num_bb << std::endl;
+
+    std::string value = get_param("[best_class_prediction_algorithm]");
+    if (value == "sigmoid")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
+    else if (value == "softmax")
+        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
+    else
+        throw std::runtime_error("[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " + value);
+
+    value = get_param("[anchor_divide_size]");
+    if (value == "model_in")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
+    else if (value == "num_grid")
+        anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
+    else
+        throw std::runtime_error("[ERROR] Failed to load value for param [anchor_divide_size]: " + value);
 }
 
 DRPAI_Base* create_DRPAI_instance(const char* prefix) {

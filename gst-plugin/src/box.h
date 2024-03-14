@@ -64,10 +64,11 @@ typedef struct Box
 /*****************************************
 * detection : Detected result
 ******************************************/
+using classID = uint32_t;
 typedef struct detection
 {
     Box bbox {};
-    uint32_t c = 0;
+    classID c = 0;
     float prob = 0;
     const char* name = nullptr;
 
@@ -85,10 +86,5 @@ typedef struct detection
         return j;
     }
 } detection;
-
-/*****************************************
-* Functions
-******************************************/
-void filter_boxes_nms(std::vector<detection>& det, float th_nms);
 
 #endif

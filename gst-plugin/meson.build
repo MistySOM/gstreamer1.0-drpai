@@ -16,8 +16,7 @@ plugin_sources = [
   'src/drpai_controller.cpp',
   'src/drpai-models/drpai_base.cpp',
   'src/image.cpp',
-  'src/box.cpp',
-  'src/tracker.cpp',
+  'src/box.cpp'
  ]
 
 gstplugindrpai = library('gstdrpai',
@@ -30,5 +29,5 @@ gstplugindrpai = library('gstdrpai',
   install_dir : join_paths(get_option('libdir'), 'gstreamer-1.0'),
 )
 
+subdir('src/drpai-models/drpai-yolo')
 subdir('tests')
-subdir('src/drpai-models')

@@ -2,11 +2,13 @@
 // Created by matin on 25/12/23.
 //
 
-#include "../src/tracker.h"
+#include "../src/drpai-models/drpai-yolo/tracker.h"
+#include "../src/box.h"
 #include <thread>
 #include <chrono>
 #include <cassert>
 #include <algorithm>
+#include <string>
 
 enum ARG {
     ARG_NONE,

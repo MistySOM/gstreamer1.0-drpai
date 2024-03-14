@@ -3,7 +3,7 @@
 //
 
 #include "drpai_base.h"
-#include "drpai_yolo.h"
+#include "src/drpai-models/drpai-yolo/drpai_yolo.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -541,4 +541,10 @@ void DRPAI_Base::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *>
                                                           "Number of last DRPAI frame rates to average for a more smooth value.",
                                                           1, 1000, 1, G_PARAM_READWRITE));
     DRPAI_Yolo::install_properties(params);
+}
+
+DRPAI_Base::DRPAI_Base(const std::string& class_name, const std::string &prefix) :
+        prefix(prefix), params_file_name(prefix + "/" + prefix + "_post_process_params.txt")
+{
+    std::cout << "Model : " << class_name << "\t| " << prefix << std::endl;
 }

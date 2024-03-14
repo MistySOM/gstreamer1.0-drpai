@@ -3,7 +3,7 @@
 //
 
 #include "drpai_controller.h"
-#include "drpai-models/drpai_yolo.h"
+#include "src/drpai-models/drpai-yolo/drpai_yolo.h"
 #include <memory>
 #include <iostream>
 #include <netdb.h>
