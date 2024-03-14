@@ -28,13 +28,6 @@
 #include "box.h"
 #include <memory>
 
-using colorRGB = uint32_t;
-constexpr colorRGB BLACK_DATA = 0x000000u;
-constexpr colorRGB RED_DATA   = 0x0000FFu;
-constexpr colorRGB GREEN_DATA = RED_DATA << 8;
-constexpr colorRGB BLUE_DATA  = GREEN_DATA << 8;
-constexpr colorRGB YELLOW_DATA= RED_DATA | GREEN_DATA;
-constexpr colorRGB WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
 enum IMAGE_FORMAT {
     BGR_DATA, YUV_DATA
 };
@@ -53,8 +46,8 @@ class Image
         void map_udmabuf();
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
-        void draw_rect(const Box& box, const std::string& str, colorRGB front_color, colorRGB back_color) const;
-        void draw_rect(const Box& box, colorRGB color) const;
+        void draw_rect(const Box& box, const std::string& str, colorRGB back_color) const;
+        void draw_rect(const Box& box) const;
         void draw_rect_fill(const Box& box, colorRGB color) const;
         void write_string(const std::string& pcode, int32_t x,  int32_t y,
                           colorRGB color, colorRGB backcolor, int8_t margin=0) const;

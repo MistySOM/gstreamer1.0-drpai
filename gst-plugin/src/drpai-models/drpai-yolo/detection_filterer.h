@@ -47,7 +47,7 @@ private:
     const float width, height;
     const std::vector<std::string>& labels;
 
-    Box filter_region {width/2, height/2, width, height};
+    Box filter_region = Box(width/2, height/2, width, height, YELLOW_DATA);
 
     std::map<classID, colorRGB> filter_classes {};
 

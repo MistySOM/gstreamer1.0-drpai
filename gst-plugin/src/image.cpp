@@ -245,7 +245,7 @@ void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(const Box& box, const std::string& str, const colorRGB front_color, const colorRGB back_color) const
+void Image::draw_rect(const Box& box, const std::string& str, const colorRGB back_color) const
 {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
@@ -255,9 +255,9 @@ void Image::draw_rect(const Box& box, const std::string& str, const colorRGB fro
     /* Draw the class and probability */
     const auto margin = 5;
     const auto str_height = font_h + 2*margin;
-    write_string(str, x_min + 1, y_min + 1 - str_height, back_color,  front_color, margin);
+    write_string(str, x_min, y_min + 1 - str_height, back_color,  box.color, margin);
     /* Draw the bounding box */
-    draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
     //draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
 }
 
@@ -335,11 +335,11 @@ void Image::draw_rect_fill(const Box& box, colorRGB color) const {
             draw_point(i,j, color);
 }
 
-void Image::draw_rect(const Box &box, colorRGB color) const {
+void Image::draw_rect(const Box &box) const {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
     auto x_max = static_cast<int32_t>(box.getRight());
     auto y_max = static_cast<int32_t>(box.getBottom());
 
-    draw_rect(x_min, y_min, x_max, y_max, color, 0);
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
 }

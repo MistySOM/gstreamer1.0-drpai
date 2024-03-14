@@ -29,12 +29,25 @@
 #include <cstdint>
 #include <cmath>
 
+using colorRGB = uint32_t;
+constexpr colorRGB BLACK_DATA = 0x000000u;
+constexpr colorRGB RED_DATA   = 0x0000FFu;
+constexpr colorRGB GREEN_DATA = RED_DATA << 8;
+constexpr colorRGB BLUE_DATA  = GREEN_DATA << 8;
+constexpr colorRGB YELLOW_DATA= RED_DATA | GREEN_DATA;
+constexpr colorRGB WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
+
 /*****************************************
 * Box : Bounding box coordinates and its size
 ******************************************/
-typedef struct Box
+struct Box
 {
     float x, y, w, h;
+    colorRGB color;
+
+    explicit constexpr Box(float center_x, float center_y, float width, float height, colorRGB color = RED_DATA):
+        x(center_x), y(center_y), w(width), h(height), color(color) {}
+    explicit Box() = default;
 
     constexpr void setLeft(const float _x) { x = _x + w/2; }
     constexpr void setTop(const float _y) { y = _y + h/2; }
@@ -56,16 +69,16 @@ typedef struct Box
         const auto dy = y - b.y;
         return std::sqrt(dx*dx + dy*dy);
     }
-    [[nodiscard]] constexpr Box operator*(const float a) const { return Box {x*a, y*a, w*a, h*a}; }
-    [[nodiscard]] constexpr Box operator/(const float a) const { return Box {x/a, y/a, w/a, h/a}; }
-    [[nodiscard]] constexpr Box operator+(const Box& a) const { return Box {x+a.x, y+a.y, w+a.w, h+a.h}; }
-} Box;
+    [[nodiscard]] constexpr Box operator*(const float a) const { return Box(x*a, y*a, w*a, h*a, color); }
+    [[nodiscard]] constexpr Box operator/(const float a) const { return Box(x/a, y/a, w/a, h/a, color); }
+    [[nodiscard]] constexpr Box operator+(const Box& a) const { return Box(x+a.x, y+a.y, w+a.w, h+a.h, color); }
+};
 
 /*****************************************
 * detection : Detected result
 ******************************************/
 using classID = uint32_t;
-typedef struct detection
+struct detection
 {
     Box bbox {};
     classID c = 0;
@@ -85,6 +98,6 @@ typedef struct detection
         j.add("box", bbox.get_json(true));
         return j;
     }
-} detection;
+};
 
 #endif

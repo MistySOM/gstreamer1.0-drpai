@@ -45,6 +45,9 @@ void detection_filterer::filter_boxes_nms(std::vector<detection>& det)
 }
 
 void detection_filterer::apply(std::vector<detection> &d) {
+    if (d.empty())
+        return;
+
     /* Non-Maximum Suppression filter */
     filter_boxes_nms(d);
 
@@ -53,8 +56,13 @@ void detection_filterer::apply(std::vector<detection> &d) {
         if (det.prob == 0) continue;
 
         /* Skip the bounding boxes outside of region of interest */
-        if (!(filter_classes.empty() || filter_classes.find(det.c) != filter_classes.end()))
-            det.prob = 0;
+        if (!filter_classes.empty()) {
+            const auto f = filter_classes.find(det.c);
+            if (f == filter_classes.end())
+                det.prob = 0;
+            else
+                det.bbox.color = f->second; // colorRGB
+        }
         if ((filter_region & det.bbox) == 0)
             det.prob = 0;
     }
@@ -62,7 +70,7 @@ void detection_filterer::apply(std::vector<detection> &d) {
 
 void detection_filterer::render_filter_region(Image &img) const {
     if (is_filter_region_active())
-        img.draw_rect(filter_region, YELLOW_DATA);
+        img.draw_rect(filter_region);
 }
 
 json_object detection_filterer::get_json() const {
