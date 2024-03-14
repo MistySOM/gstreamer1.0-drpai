@@ -2,8 +2,8 @@
 // Created by matin on 25/12/23.
 //
 
-#include "../src/drpai-models/drpai-yolo/tracker.h"
-#include "../src/box.h"
+#include "drpai-models/drpai-yolo/tracker.h"
+#include "box.h"
 #include <thread>
 #include <chrono>
 #include <cassert>

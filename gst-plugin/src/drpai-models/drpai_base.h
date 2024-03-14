@@ -5,10 +5,10 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 #define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
 
-#include "../rate_controller.h"
-#include "../box.h"
-#include "../image.h"
-#include "../properties.h"
+#include "rate_controller.h"
+#include "box.h"
+#include "image.h"
+#include "properties.h"
 #include <linux/drpai.h>
 #include <gst/gst.h>
 #include <vector>
