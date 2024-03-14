@@ -26,27 +26,37 @@ int main(int argc, char** argv) {
     ARG arg = string_hash(argc, argv);
     assert(arg != ARG_UNKNOWN);
 
-    detection_filterer f(640, 480, {"car", "bike"});
+    std::vector<std::string> labels {"car", "bike"};
 
-    f.set_filter_classes("");
-    assert(f.get_json().to_string() == "[]");
-    f.set_filter_classes("car");
-    auto a = f.get_filter_classes_string();
-    f.set_filter_classes(a);
-    auto b = f.get_filter_classes_string();
-    assert(a == b);
-    f.set_filter_classes("car,bike");
-    f.set_filter_classes("bike, car");
-    f.set_filter_classes("car:ff0000,bike:0000ff");
-    f.set_filter_classes("car:ff0000,bike:0000ff");
+    detection_filterer f(640, 480, labels);
+    assert(!f.is_active());
 
-    bool thrown = false;
-    try {
-        f.set_filter_classes("car,truck,bike");
-    } catch (...) {
-        thrown = true;
+    if (arg == ARG_CLASS) {
+        f.set_filter_classes("");
+        assert(!f.is_active());
+        assert(f.get_filter_classes_json().to_string() == "[]");
+        f.set_filter_classes("car");
+        auto a = f.get_filter_classes_string();
+        f.set_filter_classes(a);
+        auto b = f.get_filter_classes_string();
+        assert(f.is_active());
+        assert(f.is_filter_classes_active());
+        assert(!f.is_filter_region_active());
+        assert(a == b);
+        f.set_filter_classes("car,bike");
+        f.set_filter_classes("bike, car");
+        f.set_filter_classes("car:ff0000,bike:0000ff");
+        b = f.get_filter_classes_json().to_string();
+        assert(b == "[{\"class\": \"car\", \"color\": \"ff0000\"}, {\"class\": \"bike\", \"color\": \"0000ff\"}]");
+
+        bool thrown = false;
+        try {
+            f.set_filter_classes("car,truck,bike");
+        } catch (...) {
+            thrown = true;
+        }
+        assert(thrown);
     }
-    assert(thrown);
 
     return 0;
 }

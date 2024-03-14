@@ -75,18 +75,22 @@ json_object detection_filterer::get_json() const {
 }
 
 void detection_filterer::set_filter_classes(const std::string &s) {
-    if (!filter_classes.empty())
-        std::cout << "Option : Filtering classes to " << s << std::endl;
-    std::stringstream csv_classes(s);
     filter_classes.clear();
+    if (s.empty())
+        return;
+
+    std::cout << "Option : Filtering classes to " << s << std::endl;
+    std::stringstream csv_classes(s);
     while (csv_classes.good()) {
         std::string item;
         std::getline(csv_classes, item, ',');
+        item.erase(0, item.find_first_not_of("\t\n\v\f\r ")); // left trim
+        item.erase(item.find_last_not_of("\t\n\v\f\r ") + 1); // right trim
         if(!item.empty()) {
             colorRGB color;
-            if (auto i = item.find(':'); i != item.size()) {
-                color = std::stoi(item.substr(i), nullptr, 16);
-                item = item.substr(0, i-1);
+            if (auto i = item.find(':'); static_cast<long>(i) != -1) {
+                color = std::stoi(item.substr(i+1), nullptr, 16);
+                item = item.substr(0, i);
             }
             else
                 color = RED_DATA;
@@ -104,7 +108,7 @@ json_array detection_filterer::get_filter_classes_json() const {
         json_object o;
         o.add("class", labels.at(id));
         std::stringstream hex;
-        hex << std::hex << c;
+        hex << std::hex << std::setfill('0') << std::setw(6) << c;
         o.add("color", hex.str());
         j.add(o);
     }
@@ -119,7 +123,7 @@ std::string detection_filterer::get_filter_classes_string() const {
             empty = false;
         else
             ss << ",";
-        ss << labels.at(id) << ":" << std::hex << c;
+        ss << labels.at(id) << ":" << std::hex << std::setfill('0') << std::setw(6) <<  c;
     }
     return ss.str();
 }

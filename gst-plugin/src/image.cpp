@@ -258,7 +258,7 @@ void Image::draw_rect(const Box& box, const std::string& str, const colorRGB fro
     write_string(str, x_min + 1, y_min + 1 - str_height, back_color,  front_color, margin);
     /* Draw the bounding box */
     draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
-    draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
+    //draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
 }
 
 void Image::draw_rect(const int32_t x_min, const int32_t y_min, const int32_t x_max, const int32_t y_max,

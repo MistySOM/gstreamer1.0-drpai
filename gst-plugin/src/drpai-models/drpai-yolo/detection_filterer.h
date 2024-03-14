@@ -51,7 +51,7 @@ private:
 
     std::map<classID, colorRGB> filter_classes {};
 
-    void filter_boxes_nms(std::vector<detection>& det);
+    static void filter_boxes_nms(std::vector<detection>& det);
 };
 
 

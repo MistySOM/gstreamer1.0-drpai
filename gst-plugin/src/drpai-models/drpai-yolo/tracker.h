@@ -69,6 +69,7 @@ public:
     void track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
+    [[nodiscard]] uint32_t count(classID id) const { return counts.at(id); }
     [[nodiscard]] json_array get_detections_json() const;
     [[nodiscard]] json_object get_json() const;
 
@@ -81,6 +82,8 @@ private:
     std::list<std::shared_ptr<tracked_detection>> historical_items;
     std::map<classID, const char*> names;
     std::map<classID, uint32_t> counts;
+
+    void erase_outdated_history();
 };
 
 
