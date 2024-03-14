@@ -188,6 +188,10 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
     DRPAI_Base::open_resource(data_in_address);
     if (filterer.is_filter_region_active())
         std::cout << "Option : Filtering region of interest to " << filterer.get_filter_region_json().to_string() << std::endl;
+    else {
+        filterer.set_filter_region_width(static_cast<float>(IN_WIDTH));
+        filterer.set_filter_region_height(static_cast<float>(IN_HEIGHT));
+    }
 }
 
 /*****************************************
