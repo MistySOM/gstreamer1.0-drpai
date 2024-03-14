@@ -36,7 +36,7 @@ public:
     [[nodiscard]] json_array get_filter_classes_json() const;
 
     [[nodiscard]] json_object get_filter_region_json() const { return filter_region.get_json(false); }
-    [[nodiscard]] constexpr bool is_filter_region_active() const { return filter_region.area() < width * height; }
+    [[nodiscard]] constexpr bool is_filter_region_active() const { auto a = filter_region.area(); return a > 0 && a < width * height; }
     [[nodiscard]] constexpr float get_filter_region_left() const { return filter_region.getLeft(); }
     [[nodiscard]] constexpr float get_filter_region_top() const { return filter_region.getTop(); }
     [[nodiscard]] constexpr float get_filter_region_width() const { return filter_region.w; }
