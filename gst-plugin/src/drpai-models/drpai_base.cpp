@@ -382,7 +382,7 @@ void DRPAI_Base::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
-        img.draw_rect(detection.bbox, detection.to_string_hr(), BLACK_DATA);
+        img.draw_rect(detection.bbox, detection.to_string_hr());
     }
 }
 

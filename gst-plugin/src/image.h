@@ -46,11 +46,11 @@ class Image
         void map_udmabuf();
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
-        void draw_rect(const Box& box, const std::string& str, colorRGB back_color) const;
+        void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;
-        void draw_rect_fill(const Box& box, colorRGB color) const;
-        void write_string(const std::string& pcode, int32_t x,  int32_t y,
-                          colorRGB color, colorRGB backcolor, int8_t margin=0) const;
+        void draw_rect_fill(const Box& box, colorBGR color) const;
+        void write_string(const std::string& pcode, int32_t x, int32_t y,
+                          colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
     private:
         uint8_t udmabuf_fd = 0;
@@ -71,10 +71,10 @@ class Image
         /* drawing section */
         constexpr static int32_t font_w = 6;
         constexpr static int32_t font_h = 8;
-        constexpr void draw_point(uint32_t x, uint32_t y, colorRGB color) const;
-        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, colorRGB color) const;
-        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, colorRGB color, int32_t expand) const;
-        void write_char(char code, int32_t x, int32_t y, colorRGB color, colorRGB backcolor) const;
+        constexpr void draw_point(uint32_t x, uint32_t y, colorBGR color) const;
+        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, colorBGR color) const;
+        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, colorBGR color, int32_t expand) const;
+        void write_char(char code, int32_t x, int32_t y, colorBGR color, colorBGR backcolor) const;
 };
 
 #endif

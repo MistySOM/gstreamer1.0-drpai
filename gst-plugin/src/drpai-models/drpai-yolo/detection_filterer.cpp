@@ -61,7 +61,7 @@ void detection_filterer::apply(std::vector<detection> &d) {
             if (f == filter_classes.end())
                 det.prob = 0;
             else
-                det.bbox.color = f->second; // colorRGB
+                det.bbox.color = f->second; // colorBGR
         }
         if ((filter_region & det.bbox) == 0)
             det.prob = 0;
@@ -95,9 +95,10 @@ void detection_filterer::set_filter_classes(const std::string &s) {
         item.erase(0, item.find_first_not_of("\t\n\v\f\r ")); // left trim
         item.erase(item.find_last_not_of("\t\n\v\f\r ") + 1); // right trim
         if(!item.empty()) {
-            colorRGB color;
+            colorBGR color;
             if (auto i = item.find(':'); static_cast<long>(i) != -1) {
                 color = std::stoi(item.substr(i+1), nullptr, 16);
+                color = rgb2bgr(color);
                 item = item.substr(0, i);
             }
             else
@@ -115,23 +116,21 @@ json_array detection_filterer::get_filter_classes_json() const {
     for (const auto & [id, c]: filter_classes) {
         json_object o;
         o.add("class", labels.at(id));
-        std::stringstream hex;
-        hex << std::hex << std::setfill('0') << std::setw(6) << c;
-        o.add("color", hex.str());
+        o.add("color", rgb2string(rgb2bgr(c)));
         j.add(o);
     }
     return j;
 }
 
 std::string detection_filterer::get_filter_classes_string() const {
-    std::stringstream ss {};
+    std::string s;
     bool empty = true;
     for (const auto & [id, c]: filter_classes) {
         if (empty)
             empty = false;
         else
-            ss << ",";
-        ss << labels.at(id) << ":" << std::hex << std::setfill('0') << std::setw(6) <<  c;
+            s += ",";
+        s += labels.at(id) + ":" + rgb2string(rgb2bgr(c));
     }
-    return ss.str();
+    return s;
 }

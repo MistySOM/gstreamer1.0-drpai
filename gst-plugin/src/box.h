@@ -29,13 +29,24 @@
 #include <cstdint>
 #include <cmath>
 
-using colorRGB = uint32_t;
-constexpr colorRGB BLACK_DATA = 0x000000u;
-constexpr colorRGB RED_DATA   = 0x0000FFu;
-constexpr colorRGB GREEN_DATA = RED_DATA << 8;
-constexpr colorRGB BLUE_DATA  = GREEN_DATA << 8;
-constexpr colorRGB YELLOW_DATA= RED_DATA | GREEN_DATA;
-constexpr colorRGB WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
+using colorBGR = uint32_t;
+constexpr colorBGR BLACK_DATA = 0x000000u;
+constexpr colorBGR RED_DATA   = 0x0000FFu;
+constexpr colorBGR GREEN_DATA = RED_DATA << 8;
+constexpr colorBGR BLUE_DATA  = GREEN_DATA << 8;
+constexpr colorBGR YELLOW_DATA= RED_DATA | GREEN_DATA;
+constexpr colorBGR WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
+constexpr uint32_t rgb2bgr(uint32_t color) {
+    auto r = (color >> 16) & 0x000000FF;
+    auto g = (color >> 8)  & 0x000000FF;
+    auto b = color         & 0x000000FF;
+    return (b << 16) | (g << 8) | r;
+}
+inline std::string rgb2string(uint32_t c) {
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0') << std::setw(6) << c;
+    return ss.str();
+}
 
 /*****************************************
 * Box : Bounding box coordinates and its size
@@ -43,9 +54,9 @@ constexpr colorRGB WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
 struct Box
 {
     float x, y, w, h;
-    colorRGB color;
+    colorBGR color;
 
-    explicit constexpr Box(float center_x, float center_y, float width, float height, colorRGB color = RED_DATA):
+    explicit constexpr Box(float center_x, float center_y, float width, float height, colorBGR color = RED_DATA):
         x(center_x), y(center_y), w(width), h(height), color(color) {}
     explicit Box() = default;
 

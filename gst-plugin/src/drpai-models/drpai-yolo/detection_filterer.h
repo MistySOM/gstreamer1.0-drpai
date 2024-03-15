@@ -49,7 +49,7 @@ private:
 
     Box filter_region {0,0,0,0, YELLOW_DATA};
 
-    std::map<classID, colorRGB> filter_classes {};
+    std::map<classID, colorBGR> filter_classes {};
 
     static void filter_boxes_nms(std::vector<detection>& det);
 };
