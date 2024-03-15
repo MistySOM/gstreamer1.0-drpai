@@ -117,7 +117,7 @@ void tracker::erase_outdated_history() {
 
 json_object tracker::get_json() const {
     json_object j;
-    j.add("minutes", history_length);
+    j.add("minutes", history_length/60);
     j.add("total_count", count());
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));

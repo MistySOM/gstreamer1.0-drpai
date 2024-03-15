@@ -53,7 +53,7 @@ public:
     bool active;
     float time_threshold;
     float doa_threshold;
-    uint16_t history_length; // Minutes to keep the tracking history.
+    uint16_t history_length; // Seconds to keep the tracking history.
     uint16_t bbox_smooth_rate;
 
     /** @brief A list of items corresponding to detections that were present earlier.
@@ -61,7 +61,7 @@ public:
     tracked_detection_vector last_tracked_detection;
 
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
-        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
+        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60*60),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
     /** @brief Track detected items based on previous detections. It populates last_tracked_detection.
