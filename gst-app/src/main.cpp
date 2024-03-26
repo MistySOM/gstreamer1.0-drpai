@@ -44,9 +44,15 @@
 #endif
 
 #include <gst/gst.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <stdexcept>
+#include <cstdarg>
+
+#define DELAY_VALUE 100000
 
 static GstElement *pipeline;
-static GMainLoop *loop;
 
 static gboolean
 message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
@@ -66,9 +72,7 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
             g_error_free (err);
             g_free (debug);
             g_free (name);
-
-            g_main_loop_quit (loop);
-            break;
+            return FALSE;
         }
         case GST_MESSAGE_WARNING:{
             GError *err = NULL;
@@ -77,7 +81,7 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
             name = gst_object_get_path_string (message->src);
             gst_message_parse_warning (message, &err, &debug);
 
-            g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+            g_printerr ("WARNING: from element %s: %s\n", name, err->message);
             if (debug != NULL)
                 g_printerr ("Additional debug info:\n%s\n", debug);
 
@@ -88,12 +92,8 @@ message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
         }
         case GST_MESSAGE_EOS:{
             g_print ("Got EOS\n");
-            g_main_loop_quit (loop);
             gst_element_set_state (pipeline, GST_STATE_NULL);
-            g_main_loop_unref (loop);
-            gst_object_unref (pipeline);
-            exit(0);
-            break;
+            return FALSE;
         }
         default:
             break;
@@ -108,44 +108,76 @@ int sigintHandler(int unused) {
     return 0;
 }
 
+template <class ... Args>
+GstElement* element(const gchar* name, Args ... args) {
+    GstElement* e = gst_element_factory_make(name, name);
+    if(!e)
+        throw std::runtime_error(std::string("Failed to create element: ") + name);
+    if (std::get<0>(std::tie(args...)))
+        g_object_set(e, args...);
+    return e;
+}
+
+template <class ... Args>
+GstElement* create_pipeline(Args ... args) {
+    GstElement* p = gst_pipeline_new(nullptr);
+    if(!p)
+        throw std::runtime_error("Failed to create pipeline");
+    gst_bin_add_many(GST_BIN(p), args...);
+    if (!gst_element_link_many(args...))
+        throw std::runtime_error("Failed to link elements");
+    return p;
+}
+
 int main (int argc, char *argv[]) {
     signal(SIGINT, (__sighandler_t) sigintHandler);
     gst_init(&argc, &argv);
 
-    GstElement *v4l2src;
-    GstElement *videoconvert;
-    GstElement *autovideosink;
-    GstElement *drpai;
-    GstBus *bus;
+    pipeline = create_pipeline(
+        element("v4l2src", "device", "/dev/video0", nullptr),
+        element("drpai", "model","yolov3",
+                "show-fps",FALSE,"log-detects",FALSE,
+                "smooth-video-rate",30,
+                "filter-class","cup:1400fa", nullptr),
+        element("vspmfilter","dmabuf-use",TRUE, nullptr),
+        element("omxh264enc","control-rate",2,"target-bitrate",10485760, "interval_intraframes",14,"periodicty-idr",2, nullptr),
+        element("rtph264pay","config-interval",-1, nullptr),
+        element("udpsink", "host","192.168.99.2","port",51372, nullptr),
+        nullptr
+    );
 
-    pipeline = gst_pipeline_new (NULL);
-    v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
-    videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
-    drpai = gst_element_factory_make("drpai", "drpai");
-    autovideosink = gst_element_factory_make ("autovideosink", "autovideosink");
-    if (!pipeline || !v4l2src || !videoconvert || !drpai || !autovideosink) {
-        g_error("Failed to create elements");
+    if (gst_element_set_state (pipeline,
+                               GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+        g_printerr ("Unable to set the pipeline to the playing state.\n");
+        gst_object_unref (pipeline);
         return -1;
     }
 
-    g_object_set (v4l2src, "device", "/dev/video0", NULL);
-
-    gst_bin_add_many(GST_BIN(pipeline), v4l2src, videoconvert, drpai, autovideosink, NULL);
-    if (!gst_element_link_many(v4l2src, videoconvert, drpai, autovideosink, NULL)) {
-        g_error("Failed to link elements");
-        return -2;
-    }
-
-    loop = g_main_loop_new(NULL, FALSE);
-
-    bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
-    gst_bus_add_signal_watch(bus);
-    g_signal_connect(G_OBJECT(bus), "message", G_CALLBACK(message_cb), NULL);
-    gst_object_unref(GST_OBJECT(bus));
-
+    GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-    g_print("Starting loop");
-    g_main_loop_run(loop);
+    g_print("Starting loop. Send SIGINT to exit.\n");
+    while(true) {
+        GstMessage* msg = gst_bus_pop (bus);
+        /* Note that because input timeout is GST_CLOCK_TIME_NONE,
+           the gst_bus_timed_pop_filtered() function will block forever until a
+           matching message was posted on the bus (GST_MESSAGE_ERROR or
+           GST_MESSAGE_EOS). */
+        if (msg != nullptr) {
+            gchar *debug_info;
+            gboolean r = message_cb(bus, msg, debug_info);
+            gst_message_unref (msg);
+
+            if(r == FALSE)
+                break;
+        }
+    }
+
+    gst_object_unref (bus);
+    g_print ("Returned, stopping playback...\n");
+    gst_element_set_state (pipeline, GST_STATE_NULL);
+    g_print ("Freeing pipeline...\n");
+    gst_object_unref (GST_OBJECT (pipeline));
+    g_print ("Completed. Goodbye!\n");
     return 0;
 }

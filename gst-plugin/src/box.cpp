@@ -28,41 +28,21 @@
 #include "box.h"
 
 /*****************************************
-* Function Name : overlap
-* Description   : Function to compute the overlapped data between coordinate x with size w
-* Arguments     : x1 = 1-dimensional coordinate of first line
-*                 w1 = size of fist line
-*                 x2 = 1-dimensional coordinate of second line
-*                 w2 = size of second line
-* Return value  : overlapped line size
-******************************************/
-float overlap(float x1, float w1, float x2, float w2)
-{
-    float l1 = x1 - w1/2;
-    float l2 = x2 - w2/2;
-    float left = l1 > l2 ? l1 : l2;
-    float r1 = x1 + w1/2;
-    float r2 = x2 + w2/2;
-    float right = r1 < r2 ? r1 : r2;
-    return right - left;
-}
-
-/*****************************************
 * Function Name : box_intersection
 * Description   : Function to compute the area of intersection of Box a and b
 * Arguments     : a = Box 1
 *                 b = Box 2
 * Return value  : area of intersection
 ******************************************/
-float box_intersection(Box a, Box b)
+float Box::operator&(const Box& b) const
 {
-    float w = overlap(a.x, a.w, b.x, b.w);
-    float h = overlap(a.y, a.h, b.y, b.h);
-    if(w < 0 || h < 0)
+    const float _w = std::min(getRight(), b.getRight()) - std::max(getLeft(), b.getLeft());
+    const float _h = std::min(getBottom(), b.getBottom()) - std::max(getTop(), b.getTop());
+    if(_w < 0 || _h < 0)
     {
         return 0;
     }
-    float area = w*h;
+    const float area = _w*_h;
     return area;
 }
 
@@ -73,10 +53,10 @@ float box_intersection(Box a, Box b)
 *                 b = Box 2
 * Return value  : area of union
 ******************************************/
-float box_union(Box a, Box b)
+float Box::operator|(const Box& b) const
 {
-    float i = box_intersection(a, b);
-    float u = a.w*a.h + b.w*b.h - i;
+    const float i = operator&(b);
+    const float u = area() + b.area() - i;
     return u;
 }
 
@@ -87,47 +67,28 @@ float box_union(Box a, Box b)
 *                 b = Box 2
 * Return value  : IoU
 ******************************************/
-float box_iou(Box a, Box b)
+float Box::iou_with(const Box& b) const
 {
-    return box_intersection(a, b)/box_union(a, b);
+    return operator&(b)/operator|(b);
 }
 
-/*****************************************
-* Function Name : filter_boxes_nms
-* Description   : Apply Non-Maximum Suppression (NMS) to get rid of overlapped rectangles.
-* Arguments     : det= detected rectangles
-*                 size = number of detections stored in det
-*                 th_nms = threshold for nms
-* Return value  : -
-******************************************/
-void filter_boxes_nms(detection det[], uint8_t size, float th_nms)
+float Box::doa_with(const Box& b) const
 {
-    for (uint8_t i = 0; i < size; i++)
-    {
-        Box a = det[i].bbox;
-        for (uint8_t j = 0; j < size; j++)
-        {
-            if (i == j)
-            {
-                continue;
-            }
-            if (det[i].c != det[j].c)
-            {
-                continue;
-            }
-            Box b = det[j].bbox;
-            float b_intersection = box_intersection(a, b);
-            if ((box_iou(a, b)>th_nms) || (b_intersection >= a.h * a.w - 1) || (b_intersection >= b.h * b.w - 1))
-            {
-                if (det[i].prob > det[j].prob)
-                {
-                    det[j].prob= 0;
-                }
-                else
-                {
-                    det[i].prob= 0;
-                }
-            }
-        }
+    const double distance = std::pow(x-b.x, 2) + std::pow(y-b.y, 2);
+    const double avg_area = (area() + b.area()) / 2.0;
+    return static_cast<float>(distance/avg_area);
+}
+
+json_object Box::get_json(bool center_origin) const {
+    json_object j;
+    if (center_origin) {
+        j.add("center_x", x, 0);
+        j.add("center_y", y, 0);
+    } else {
+        j.add("left", getLeft(), 0);
+        j.add("top", getTop(), 0);
     }
+    j.add("width", w, 0);
+    j.add("height", h, 0);
+    return j;
 }

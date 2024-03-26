@@ -25,43 +25,56 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include "define.h"
+#include "box.h"
+#include <memory>
+
+enum IMAGE_FORMAT {
+    BGR_DATA, YUV_DATA
+};
 
 class Image
 {
     public:
-        Image(int32_t w, int32_t h, int32_t c):
-            img_w(w), img_h(h), img_c(c), size(w * h * c) {};
+        explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
+            img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c), img_buffer(data),
+            convert_from_format(format) {};
         ~Image();
 
-        uint8_t* img_buffer = nullptr;
-        [[nodiscard]] std::size_t get_size() const { return size; }
-        [[nodiscard]] uint8_t at(int32_t a) const;
-        void set(int32_t a, uint8_t val);
+        [[nodiscard]] constexpr uint8_t at(const int32_t a) const { return img_buffer[a]; }
+        constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
-        [[nodiscard]] uint8_t map_udmabuf();
-        [[nodiscard]] uint8_t read_bmp(const std::string& filename);
-        [[nodiscard]] uint8_t save_bmp(const std::string& filename) const;
-        void draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str);
-        void write_string(const std::string& pcode, int32_t x,  int32_t y,
-                          int32_t color, int32_t backcolor, int8_t margin=0);
+        void map_udmabuf();
+        void copy(const uint8_t* data, IMAGE_FORMAT format);
+        void prepare();
+        void draw_rect(const Box& box, const std::string& str) const;
+        void draw_rect(const Box& box) const;
+        void draw_rect_fill(const Box& box) const;
+        void write_string(const std::string& pcode, int32_t x, int32_t y,
+                          colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
     private:
-        uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
-        std::array<uint8_t, FILEHEADERSIZE+INFOHEADERSIZE_W_V3> bmp_header {};
         uint8_t udmabuf_fd = 0;
-        int32_t img_w;
-        int32_t img_h;
-        int32_t img_c;
-        int32_t size;
+        uint32_t img_w;
+        uint32_t img_h;
+        uint32_t img_c;
+        IMAGE_FORMAT format;
+        uint32_t size;
+        uint8_t* img_buffer = nullptr;
 
-        int32_t front_color = RED_DATA;
-        int32_t back_color = BLACK_DATA;
-        int32_t font_w = CPU_DRAW_FONT_WIDTH;
-        int32_t font_h = CPU_DRAW_FONT_HEIGHT;
-        void draw_point(int32_t x, int32_t y, int32_t color);
-        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color);
-        void write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor);
+        /* converting section */
+        constexpr static uint32_t BGR_NUM_CHANNEL = 3;
+        constexpr static uint32_t YUV2_NUM_CHANNEL = 2;
+        IMAGE_FORMAT convert_from_format;
+        std::unique_ptr<uint8_t[]> convert_buffer = nullptr;
+        void copy_convert_bgr_to_yuy2() const;
+
+        /* drawing section */
+        constexpr static int32_t font_w = 6;
+        constexpr static int32_t font_h = 8;
+        constexpr void draw_point(uint32_t x, uint32_t y, colorBGR color) const;
+        void draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, colorBGR color) const;
+        void draw_rect(int32_t x_min, int32_t y_min, int32_t x_max, int32_t y_max, colorBGR color, int32_t expand) const;
+        void write_char(char code, int32_t x, int32_t y, colorBGR color, colorBGR backcolor) const;
 };
 
 #endif
