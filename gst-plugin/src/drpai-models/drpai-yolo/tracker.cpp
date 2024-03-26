@@ -5,11 +5,8 @@
 #include "tracker.h"
 #include "utils/elapsed_time.h"
 
-inline double get_duration_seconds(const tracking_time &a, const tracking_time &b) {
+inline double get_duration(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
-}
-inline long get_duration_minutes(const tracking_time &a, const tracking_time &b) {
-    return std::chrono::duration_cast<std::chrono::minutes>(a - b).count();
 }
 
 json_object tracked_detection::get_json() const {
@@ -47,7 +44,7 @@ void tracker::track(const std::vector<detection>& detections) {
     for(auto track_item = current_items.begin(); track_item != current_items.end();) {
 
         // Check to see if previously tracked item has not been seen during the past time_threshold time
-        if(get_duration_seconds(now, (*track_item)->seen_last) < time_threshold) {
+        if(get_duration(now, (*track_item)->seen_last) < time_threshold) {
             for(auto& det_item: detections_ptr) {
 
                 // Check if both items in previously tracked and newly detected are in the same class
@@ -91,7 +88,7 @@ void tracker::track(const std::vector<detection>& detections) {
         std_erase(detections_ptr, [&](const auto item) { return item == d; });
     }
 
-    std_erase_after(historical_items, [&](const auto &t) { return get_duration_minutes(now, t->seen_last) > history_length; });
+    erase_outdated_history();
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
@@ -106,9 +103,21 @@ void tracker::track(const std::vector<detection>& detections) {
     last_tracked_detection = result;
 }
 
+void tracker::erase_outdated_history() {
+    const auto now = std::chrono::system_clock::now();
+    const auto outdated = std_find_if(historical_items, [&](const auto &t) {
+        return get_duration(now, t->seen_last) > history_length;
+    });
+    if (outdated != historical_items.end()) {
+        for (auto i = outdated; i != historical_items.end(); ++i)
+            --counts.at(i->get()->c);
+        historical_items.erase(outdated, historical_items.end());
+    }
+}
+
 json_object tracker::get_json() const {
     json_object j;
-    j.add("minutes", history_length);
+    j.add("minutes", history_length/60);
     j.add("total_count", count());
     for (auto const& [c, name] : names)
         j.add(name, counts.at(c));

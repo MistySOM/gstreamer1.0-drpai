@@ -16,15 +16,24 @@ Here is a sample of JSON output when the filters are **on**:
         "timestamp": "2024-02-12T16:03:45.484Z",
         "video_rate": 25.0, 
         "drpai_rate": 5.4, 
-        "filter_classes": [
-            "bottle"
-        ], 
-        "filter_region": {
-            "left": 450, 
-            "top": 350, 
-            "width": 100, 
+        "filters": {
+          "classes": [
+            {
+              "class": "bottle",
+              "color": "0000ff"
+            },
+            {
+              "class": "person",
+              "color": "ff0000"
+            }
+          ],
+          "region": {
+            "left": 450,
+            "top": 350,
+            "width": 100,
             "height": 100
-        }, 
+          }
+        },
         "detections": []
     }
 ```
@@ -100,7 +109,7 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
             "minutes": 60,
             "total_count": 6,
             "person": 2,
-            "wine glass": 3,
+            "wine_glass": 3,
             "chair": 1
         }
     }

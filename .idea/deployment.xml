@@ -6,8 +6,8 @@
         <serverdata>
           <mappings>
             <mapping deploy="/usr/lib64/gstreamer-1.0" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" web="" />
-            <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/yolo/libpostprocess-yolo.so" />
-            <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/dynamic-post-process/deeppose/libpostprocess-deeppose.so" />
+            <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-yolo/libgstdrpai-yolo.so" />
+            <mapping deploy="/usr/lib64/" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-deeppose/libgstdrpai-deeppose.so" />
           </mappings>
         </serverdata>
       </paths>

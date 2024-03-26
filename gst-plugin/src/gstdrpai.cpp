@@ -213,8 +213,10 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
     } catch (std::runtime_error& e) {
         std::cerr << std::endl << e.what() << std::endl << std::endl;
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-    } catch (std::exception&) {
+        throw e;
+    } catch (std::exception& e) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        throw e;
     }
 }
 

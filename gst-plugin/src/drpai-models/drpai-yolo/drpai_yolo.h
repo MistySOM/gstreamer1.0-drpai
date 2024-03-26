@@ -5,8 +5,9 @@
 #ifndef GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 #define GSTREAMER1_0_DRPAI_DRPAI_YOLO_H
 
-#include "drpai_base.h"
-#include "../tracker.h"
+#include "drpai-models/drpai_base.h"
+#include "tracker.h"
+#include "detection_filterer.h"
 
 enum BEST_CLASS_PREDICTION_ALGORITHM {
     BEST_CLASS_PREDICTION_ALGORITHM_NONE = 0,
@@ -23,16 +24,13 @@ enum ANCHOR_DIVIDE_SIZE {
 class DRPAI_Yolo final: public DRPAI_Base {
 
 public:
-    explicit DRPAI_Yolo(const std::string& prefix):
-            DRPAI_Base(prefix),
-            det_tracker(true, 2, 2.25, 1)
-    {}
+    explicit DRPAI_Yolo(const std::string& prefix);
 
     void open_resource(uint32_t data_in_address) override;
-    void release_resource() override;
     void extract_detections() override;
     void render_detections_on_image(Image &img) override;
     void add_corner_text() override;
+
     [[nodiscard]] json_array get_detections_json() const override;
     [[nodiscard]] json_object get_json() const override;
 
@@ -87,10 +85,8 @@ private:
     bool show_track_id = false;
     tracker det_tracker;
 
-    /* Filter section */
     bool show_filter = false;
-    Box filter_region {};
-    std::vector<std::string> filter_classes {};
+    detection_filterer filterer;
 
     uint32_t num_bb = 0;
     std::vector<uint32_t> num_grids {};
@@ -102,7 +98,6 @@ private:
     void load_label_file(const std::string& label_file_name);
     void load_anchors_file(const std::string& anchors_file_name);
     void load_num_grids(const std::string& data_out_list_file_name);
-    void render_filter_region(Image& img) const;
 
     [[nodiscard]] uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x) const;
     [[nodiscard]] constexpr static uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)

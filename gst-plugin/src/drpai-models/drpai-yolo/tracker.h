@@ -25,7 +25,7 @@ using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 struct tracked_detection {
     const uint32_t id;
     smoothie<Box> smooth_bbox;
-    uint32_t c = 0;
+    classID c = 0;
     float prob = 0;
     const char* name = nullptr;
     tracking_time seen_first;
@@ -53,7 +53,7 @@ public:
     bool active;
     float time_threshold;
     float doa_threshold;
-    uint16_t history_length; // Minutes to keep the tracking history.
+    uint16_t history_length; // Seconds to keep the tracking history.
     uint16_t bbox_smooth_rate;
 
     /** @brief A list of items corresponding to detections that were present earlier.
@@ -61,7 +61,7 @@ public:
     tracked_detection_vector last_tracked_detection;
 
     tracker(const bool active, const float time_threshold, const float doa_threshold, const uint16_t bbox_smooth_rate):
-        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60),
+        active(active), time_threshold(time_threshold), doa_threshold(doa_threshold), history_length(60*60),
         bbox_smooth_rate(bbox_smooth_rate) {}
 
     /** @brief Track detected items based on previous detections. It populates last_tracked_detection.
@@ -69,6 +69,7 @@ public:
     void track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
+    [[nodiscard]] uint32_t count(classID id) const { return counts.at(id); }
     [[nodiscard]] json_array get_detections_json() const;
     [[nodiscard]] json_object get_json() const;
 
@@ -79,8 +80,10 @@ private:
     /** List of tracked items that are gone (t > time_threshold)
      * They can be used to query the history and counting. */
     std::list<std::shared_ptr<tracked_detection>> historical_items;
-    std::map<uint32_t, const char*> names;
-    std::map<uint32_t, uint32_t> counts;
+    std::map<classID, const char*> names;
+    std::map<classID, uint32_t> counts;
+
+    void erase_outdated_history();
 };
 
 

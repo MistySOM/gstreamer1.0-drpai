@@ -44,6 +44,11 @@
 #endif
 
 #include <gst/gst.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <stdexcept>
+#include <cstdarg>
 
 #define DELAY_VALUE 100000
 
@@ -103,35 +108,43 @@ int sigintHandler(int unused) {
     return 0;
 }
 
+template <class ... Args>
+GstElement* element(const gchar* name, Args ... args) {
+    GstElement* e = gst_element_factory_make(name, name);
+    if(!e)
+        throw std::runtime_error(std::string("Failed to create element: ") + name);
+    if (std::get<0>(std::tie(args...)))
+        g_object_set(e, args...);
+    return e;
+}
+
+template <class ... Args>
+GstElement* create_pipeline(Args ... args) {
+    GstElement* p = gst_pipeline_new(nullptr);
+    if(!p)
+        throw std::runtime_error("Failed to create pipeline");
+    gst_bin_add_many(GST_BIN(p), args...);
+    if (!gst_element_link_many(args...))
+        throw std::runtime_error("Failed to link elements");
+    return p;
+}
+
 int main (int argc, char *argv[]) {
     signal(SIGINT, (__sighandler_t) sigintHandler);
     gst_init(&argc, &argv);
 
-    pipeline = gst_pipeline_new(NULL);
-    GstElement* v4l2src = gst_element_factory_make ("v4l2src", "v4l2src");
-    GstElement* videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
-    GstElement* drpai = gst_element_factory_make("drpai", "drpai");
-    GstElement* fpsdisplaysink = gst_element_factory_make ("fpsdisplaysink", "fpsdisplaysink");
-    GstElement* fakesink = gst_element_factory_make ("fakesink", "fakesink");
-
-    if (!pipeline || !videoconvert || !v4l2src || !drpai || !fpsdisplaysink || !fakesink) {
-        g_error("Failed to create elements");
-        return -1;
-    }
-
-    g_object_set (v4l2src, "device", "/dev/video0", NULL);
-    g_object_set (drpai,
-                  "model", "yolov3",
-                  "smooth-video-rate", 10,
-                  "log-server", "mw-it-p51.local:8080",
-                  NULL);
-    g_object_set ( fpsdisplaysink, "text-overlay", FALSE, "video-sink", fakesink, NULL);
-
-    gst_bin_add_many(GST_BIN(pipeline), v4l2src, videoconvert, drpai, fpsdisplaysink, NULL);
-    if (!gst_element_link_many(v4l2src, videoconvert, drpai, fpsdisplaysink, NULL)) {
-        g_error("Failed to link elements");
-        return -2;
-    }
+    pipeline = create_pipeline(
+        element("v4l2src", "device", "/dev/video0", nullptr),
+        element("drpai", "model","yolov3",
+                "show-fps",FALSE,"log-detects",FALSE,
+                "smooth-video-rate",30,
+                "filter-class","cup:1400fa", nullptr),
+        element("vspmfilter","dmabuf-use",TRUE, nullptr),
+        element("omxh264enc","control-rate",2,"target-bitrate",10485760, "interval_intraframes",14,"periodicty-idr",2, nullptr),
+        element("rtph264pay","config-interval",-1, nullptr),
+        element("udpsink", "host","192.168.99.2","port",51372, nullptr),
+        nullptr
+    );
 
     if (gst_element_set_state (pipeline,
                                GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
@@ -143,33 +156,20 @@ int main (int argc, char *argv[]) {
     GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-    guint delay_show_FPS = 0;
     g_print("Starting loop. Send SIGINT to exit.\n");
-    while(1) {
+    while(true) {
         GstMessage* msg = gst_bus_pop (bus);
         /* Note that because input timeout is GST_CLOCK_TIME_NONE,
            the gst_bus_timed_pop_filtered() function will block forever until a
            matching message was posted on the bus (GST_MESSAGE_ERROR or
            GST_MESSAGE_EOS). */
-        if (msg != NULL) {
+        if (msg != nullptr) {
             gchar *debug_info;
             gboolean r = message_cb(bus, msg, debug_info);
             gst_message_unref (msg);
 
             if(r == FALSE)
                 break;
-        }
-
-        /* Display information FPS to console */
-        delay_show_FPS++;
-        if ((delay_show_FPS % DELAY_VALUE) == 0) {
-            gchar *fps_msg;
-            g_object_get (G_OBJECT (fpsdisplaysink), "last-message", &fps_msg, NULL);
-            if (fps_msg != NULL) {
-                g_print ("Frame info: %s\n", fps_msg);
-                delay_show_FPS = 0;
-            }
-            g_free (fps_msg);
         }
     }
 

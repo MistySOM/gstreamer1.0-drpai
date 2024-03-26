@@ -60,12 +60,16 @@ private:
 class json_array final: public json_base {
 public:
     json_array() = default;
-    explicit json_array(const std::vector<std::string>& array) { for(auto& a: array) add(a); }
+    explicit json_array(const std::vector<std::string>& array)
+    { for (auto& a: array) { add_comma(); json_base::add(a); } }
 
     template <typename T> void add(const T value) { add_comma(); json_base::add(value); }
     void add(const float value, const int precision) override { add_comma(); json_base::add(value, precision); }
 
     [[nodiscard]] std::string to_string() const override { return "[" + s + "]"; }
+
+private:
+    using json_base::add;
 };
 
 #endif //JSON_H
