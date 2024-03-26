@@ -16,6 +16,11 @@ do_compile() {
     meson compile -v ${PARALLEL_MAKE} ${MESON_TARGET}
 }
 
+do_install_append() {
+    find ${D}${libdir} -type f -not -name "lib${MESON_TARGET}.so" -delete
+    find ${D}${libdir} -type d -empty -delete
+}
+
 S = "${WORKDIR}/git"
 PV = "1.0"
 
