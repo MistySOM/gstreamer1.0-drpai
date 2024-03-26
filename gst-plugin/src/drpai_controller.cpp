@@ -3,7 +3,7 @@
 //
 
 #include "drpai_controller.h"
-#include "drpai-models/drpai_yolo.h"
+#include "src/drpai-models/drpai-yolo/drpai_yolo.h"
 #include <memory>
 #include <iostream>
 #include <netdb.h>
@@ -18,8 +18,6 @@ void DRPAI_Controller::open_resources() {
         std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
         return;
     }
-
-    std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
 
     if (multithread)
         process_thread = std::make_unique<std::thread>(&DRPAI_Controller::thread_function_loop, this);
@@ -209,6 +207,8 @@ void DRPAI_Controller::thread_function_single() {
 }
 
 void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
+    std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
+
     char *error;
     std::string params_file_name = modelPrefix + "/" + modelPrefix + "_post_process_params.txt";
     std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]");

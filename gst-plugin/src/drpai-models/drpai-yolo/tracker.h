@@ -18,13 +18,14 @@
 #define std_find_if(vector, pred)    std::find_if(vector.begin(), vector.end(), pred)
 #define std_sort(vector, pred)       std::sort(vector.begin(), vector.end(), pred)
 #define std_erase(vector, pred)      vector.erase(std_remove_if(vector, pred), vector.end())
+#define std_erase_after(vector,pred) vector.erase(std_find_if(vector, pred), vector.end())
 
 using tracking_time = std::chrono::time_point<std::chrono::system_clock>;
 
 struct tracked_detection {
     const uint32_t id;
     smoothie<Box> smooth_bbox;
-    uint32_t c = 0;
+    classID c = 0;
     float prob = 0;
     const char* name = nullptr;
     tracking_time seen_first;
@@ -68,7 +69,7 @@ public:
     void track(const std::vector<detection>& detections);
 
     [[nodiscard]] uint32_t count() const { return current_items.size() + historical_items.size(); }
-    [[nodiscard]] uint32_t count(uint32_t c) const { return counts.at(c); }
+    [[nodiscard]] uint32_t count(classID id) const { return counts.at(id); }
     [[nodiscard]] json_array get_detections_json() const;
     [[nodiscard]] json_object get_json() const;
 
@@ -79,8 +80,8 @@ private:
     /** List of tracked items that are gone (t > time_threshold)
      * They can be used to query the history and counting. */
     std::list<std::shared_ptr<tracked_detection>> historical_items;
-    std::map<uint32_t, const char*> names;
-    std::map<uint32_t, uint32_t> counts;
+    std::map<classID, const char*> names;
+    std::map<classID, uint32_t> counts;
 
     void erase_outdated_history();
 };

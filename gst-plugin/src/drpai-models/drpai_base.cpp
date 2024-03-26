@@ -3,7 +3,7 @@
 //
 
 #include "drpai_base.h"
-#include "drpai_yolo.h"
+#include "src/drpai-models/drpai-yolo/drpai_yolo.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -263,14 +263,6 @@ void DRPAI_Base::wait() const {
 }
 
 void DRPAI_Base::open_resource(const uint32_t data_in_address) {
-    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
-    read_addrmap_txt(drpai_address_file);
-    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
-
-    /*Load pixel format from data_in_list file*/
-    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
-    read_data_in_list(data_in_list);
-
     /* Open DRP-AI Driver */
     errno = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
@@ -390,7 +382,7 @@ void DRPAI_Base::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
-        img.draw_rect(detection.bbox, detection.to_string_hr(), RED_DATA, BLACK_DATA);
+        img.draw_rect(detection.bbox, detection.to_string_hr());
     }
 }
 
@@ -541,4 +533,18 @@ void DRPAI_Base::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *>
                                                           "Number of last DRPAI frame rates to average for a more smooth value.",
                                                           1, 1000, 1, G_PARAM_READWRITE));
     DRPAI_Yolo::install_properties(params);
+}
+
+DRPAI_Base::DRPAI_Base(const std::string& class_name, const std::string &prefix) :
+        prefix(prefix), params_file_name(prefix + "/" + prefix + "_post_process_params.txt")
+{
+    std::cout << "Model : " << class_name << "\t| " << prefix << std::endl;
+
+    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
+    read_addrmap_txt(drpai_address_file);
+    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+
+    /*Load pixel format from data_in_list file*/
+    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
+    read_data_in_list(data_in_list);
 }

@@ -1,11 +1,15 @@
-tracker_test_sources = [
-    '../src/tracker.cpp',
-    '../src/box.cpp',
-    'tracker_test.cpp'
-]
+gstdrpai_yolo_dep = declare_dependency(link_with : gstdrpai_yolo, include_directories : incdir)
 
-e = executable('tracker_test', tracker_test_sources, dependencies: [thread_dep])
-test('Tracking Add', e)
-test('Tracking DOA', e, args: ['doa'])
-test('Tracking Time', e, args: ['time'])
-test('Tracking History', e, args: ['history'])
+tracker_test = executable('tracker_test', 'tracker_test.cpp', include_directories : incdir,
+    dependencies: [thread_dep, gstdrpai_yolo_dep]
+)
+test('Tracking Add', tracker_test)
+test('Tracking DOA', tracker_test, args: ['doa'])
+test('Tracking Time', tracker_test, args: ['time'])
+test('Tracking History', tracker_test, args: ['history'])
+
+filter_test = executable('filter_test', 'filter_test.cpp', include_directories : incdir,
+    dependencies: [thread_dep, gstdrpai_yolo_dep]
+)
+test('Filtering Inactive', filter_test)
+test('Filtering Classes', filter_test, args: ['class'])

@@ -93,7 +93,7 @@ void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(const char code, const int32_t x, const int32_t y, const uint32_t color, const uint32_t backcolor) const
+void Image::write_char(const char code, const int32_t x, const int32_t y, const colorBGR color, const colorBGR backcolor) const
 {
     // Pick the pattern related to the ASCII code from the elements of the g_ascii_table array.
     // The array doesn't include the non-printable characters, so we need to shift the code to match the element.
@@ -131,8 +131,8 @@ void Image::write_char(const char code, const int32_t x, const int32_t y, const 
 *                 backcolor = character background color
 * Return Value  : -
 ******************************************/
-void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
-                         const uint32_t color, const uint32_t backcolor, int8_t margin) const
+void Image::write_string(const std::string& pcode, int32_t x, int32_t y,
+                         const colorBGR color, const colorBGR backcolor, int8_t margin) const
 {
     const auto str_size = static_cast<int32_t>(pcode.size());
     if (str_size == 0) return;
@@ -161,7 +161,7 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
 *                 color = point color
 * Return Value  : -
 ******************************************/
-constexpr void Image::draw_point(const uint32_t x, const uint32_t y, const uint32_t color) const
+constexpr void Image::draw_point(const uint32_t x, const uint32_t y, const colorBGR color) const
 {
     if(x >= img_w || y >= img_h) return;
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
@@ -179,7 +179,7 @@ constexpr void Image::draw_point(const uint32_t x, const uint32_t y, const uint3
 *                 color = line color
 * Return Value  : -
 ******************************************/
-void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const uint32_t color) const
+void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const colorBGR color) const
 {
     auto dx = static_cast<float>(x1 - x0);
     auto dy = static_cast<float>(y1 - y0);
@@ -245,24 +245,30 @@ void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(const Box& box, const std::string& str, const uint32_t front_color, const uint32_t back_color) const
+void Image::draw_rect(const Box& box, const std::string& str) const
 {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
     auto x_max = static_cast<int32_t>(box.getRight());
     auto y_max = static_cast<int32_t>(box.getBottom());
 
+    /* Determine the text color based on the text background */
+    auto b = (box.color >> 16) & 0x000000FF;
+    auto g = (box.color >> 8)  & 0x000000FF;
+    auto r = box.color         & 0x000000FF;
+    auto text_color = (r*0.299 + g*0.587 + b*0.114) > 186 ? BLACK_DATA : WHITE_DATA;
+
     /* Draw the class and probability */
     const auto margin = 5;
     const auto str_height = font_h + 2*margin;
-    write_string(str, x_min + 1, y_min + 1 - str_height, back_color,  front_color, margin);
+    write_string(str, x_min, y_min + 1 - str_height, text_color,  box.color, margin);
     /* Draw the bounding box */
-    draw_rect(x_min, y_min, x_max, y_max, front_color, 0);
-    draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
+    //draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
 }
 
 void Image::draw_rect(const int32_t x_min, const int32_t y_min, const int32_t x_max, const int32_t y_max,
-                      const uint32_t color, const int32_t expand) const {
+                      const colorBGR color, const int32_t expand) const {
     draw_line(x_min - expand, y_min - expand, x_max + expand, y_min - expand, color);
     draw_line(x_max + expand, y_min - expand, x_max + expand, y_max + expand, color);
     draw_line(x_max + expand, y_max + expand, x_min - expand, y_max + expand, color);
@@ -324,7 +330,7 @@ void Image::prepare() {
     }
 }
 
-void Image::draw_rect_fill(const Box& box, uint32_t color) const {
+void Image::draw_rect_fill(const Box& box, colorBGR color) const {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
     auto x_max = static_cast<int32_t>(box.getRight());
@@ -335,11 +341,11 @@ void Image::draw_rect_fill(const Box& box, uint32_t color) const {
             draw_point(i,j, color);
 }
 
-void Image::draw_rect(const Box &box, uint32_t color) const {
+void Image::draw_rect(const Box &box) const {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
     auto x_max = static_cast<int32_t>(box.getRight());
     auto y_max = static_cast<int32_t>(box.getBottom());
 
-    draw_rect(x_min, y_min, x_max, y_max, color, 0);
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
 }
