@@ -4,10 +4,7 @@
 
 #include "drpai-models/drpai-yolo/detection_filterer.h"
 #include "box.h"
-#include <thread>
-#include <chrono>
 #include <cassert>
-#include <algorithm>
 #include <string>
 
 enum ARG {

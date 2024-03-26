@@ -5,7 +5,6 @@
 #include "drpai_yolo.h"
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 /*****************************************
 * Function Name : print_box

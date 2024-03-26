@@ -28,7 +28,6 @@
 #include "image.h"
 #include "ascii.h"
 #include "box.h"
-#include <algorithm>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
