@@ -30,7 +30,6 @@ gstplugindrpai = library('gstdrpai',
 )
 gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
 
-gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
 enable_deeppose = get_option('enable-deeppose')
 
 subdir('src/drpai-models/drpai-yolo')
