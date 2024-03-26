@@ -48,7 +48,7 @@ class Image
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;
-        void draw_rect_fill(const Box& box, colorBGR color) const;
+        void draw_rect_fill(const Box& box) const;
         void write_string(const std::string& pcode, int32_t x, int32_t y,
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 

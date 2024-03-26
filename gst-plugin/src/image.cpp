@@ -329,7 +329,7 @@ void Image::prepare() {
     }
 }
 
-void Image::draw_rect_fill(const Box& box, colorBGR color) const {
+void Image::draw_rect_fill(const Box& box) const {
     auto x_min = static_cast<int32_t>(box.getLeft());
     auto y_min = static_cast<int32_t>(box.getTop());
     auto x_max = static_cast<int32_t>(box.getRight());
@@ -337,7 +337,7 @@ void Image::draw_rect_fill(const Box& box, colorBGR color) const {
 
     for (auto i = x_min; i<x_max; i++)
         for (auto j = y_min; j<y_max; j++)
-            draw_point(i,j, color);
+            draw_point(i,j, box.color);
 }
 
 void Image::draw_rect(const Box &box) const {
