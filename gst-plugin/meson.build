@@ -29,5 +29,11 @@ gstplugindrpai = library('gstdrpai',
   install_dir : join_paths(get_option('libdir'), 'gstreamer-1.0'),
 )
 
+gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
+enable_deeppose = get_option('enable-deeppose')
+
 subdir('src/drpai-models/drpai-yolo')
+if enable_deeppose
+    subdir('src/drpai-models/drpai-deeppose')
+endif
 subdir('tests')

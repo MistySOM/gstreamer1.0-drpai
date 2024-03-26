@@ -2,7 +2,7 @@
 // Created by matin on 01/12/23.
 //
 
-#include "drpai_deeppose.h"
+#include "drpai-models/drpai-deeppose/drpai_deeppose.h"
 
 #include <iostream>
 
@@ -28,7 +28,7 @@ void DRPAI_DeepPose::extract_detections() {
     last_det.clear();
     last_det.reserve(NUM_OUTPUT_KEYPOINT);
     {
-        const auto &[crop_x, crop_y, crop_w, crop_h] = crop_region;
+        const auto &[crop_x, crop_y, crop_w, crop_h, crop_color] = crop_region;
         for (uint8_t i = 0; i < NUM_OUTPUT_KEYPOINT; i++) {
             /* Conversion from input image coordinates to display image coordinates. */
             auto posx = drpai_output_buf[2 * i] * crop_w + crop_x - crop_w / 2 + OUTPUT_ADJ_X;
@@ -37,7 +37,7 @@ void DRPAI_DeepPose::extract_detections() {
             posx = std::clamp(posx, 0.0f, static_cast<float>(IN_WIDTH - KEY_POINT_SIZE - 1));
             posy = std::clamp(posy, 0.0f, static_cast<float>(IN_HEIGHT - KEY_POINT_SIZE - 1));
             last_det.emplace_back(
-                    detection{{posx, posy, KEY_POINT_SIZE, KEY_POINT_SIZE}, 0, 1});
+                    detection{Box(posx, posy, KEY_POINT_SIZE, KEY_POINT_SIZE, 0x008000u), 0, 1});
         }
     }
 
@@ -69,7 +69,6 @@ void DRPAI_DeepPose::extract_detections() {
 }
 
 void DRPAI_DeepPose::open_resource(const uint32_t data_in_address) {
-    std::cout << "Model : Darknet YOLO      | " << prefix << std::endl;
     DRPAI_Base::open_resource(data_in_address);
 
     std::cout << "\tLoading : " << ML_DESC_NAME << std::endl;
@@ -91,7 +90,7 @@ void DRPAI_DeepPose::release_resource() {
 
 void DRPAI_DeepPose::render_detections_on_image(Image &img) {
     for (const auto& detection: last_det)
-        img.draw_rect_fill(detection.bbox, 0x008000u);
+        img.draw_rect_fill(detection.bbox);
 }
 
 json_object DRPAI_DeepPose::get_json() const {

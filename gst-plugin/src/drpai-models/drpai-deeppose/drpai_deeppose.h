@@ -6,7 +6,7 @@
 #define GSTREAMER1_0_DRPAI_DRPAI_DEEPPOSE_H
 
 
-#include "drpai_base.h"
+#include "drpai-models/drpai_base.h"
 #include <opencv2/ml.hpp>
 
 enum HeadPose: int8_t { Center=0, Down, Right, Left, Up  };
@@ -15,7 +15,7 @@ class DRPAI_DeepPose final: public DRPAI_Base {
 
 public:
     explicit DRPAI_DeepPose(const std::string& prefix):
-            DRPAI_Base(prefix),
+            DRPAI_Base("DeepPose", prefix),
             ML_DESC_NAME(prefix + "/rf_gaze_dir.xml")
     {}
 

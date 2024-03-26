@@ -1,0 +1,1 @@
+option('enable-deeppose', type: 'boolean', value: false, description: 'Enable compilation of the deeppose library.')
