@@ -28,6 +28,7 @@ gstplugindrpai = library('gstdrpai',
   include_directories: incdir,
   install_dir : join_paths(get_option('libdir'), 'gstreamer-1.0'),
 )
+gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
 
 gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
 enable_deeppose = get_option('enable-deeppose')
