@@ -93,7 +93,7 @@ void tracker::track(const std::vector<detection>& detections) {
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
     for (auto d: detections_ptr) {
-        auto item = std::make_shared<tracked_detection>(count() + 1, *d, now, bbox_smooth_rate);
+        auto item = std::make_shared<tracked_detection>(generate_ID(), *d, now, bbox_smooth_rate);
         names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);

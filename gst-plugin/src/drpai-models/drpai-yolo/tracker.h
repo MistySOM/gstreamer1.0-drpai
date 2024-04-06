@@ -74,6 +74,10 @@ public:
     [[nodiscard]] json_object get_json() const;
 
 private:
+    /** @brief Generates a new unique ID for tracking */
+    [[nodiscard]] constexpr uint32_t generate_ID() { return ++last_used_ID; }
+    uint32_t last_used_ID = 0;
+
     /** List of tracked items that are still visible (t < time_threshold)
      * They will be used for tracking process */
     std::list<std::shared_ptr<tracked_detection>> current_items;
