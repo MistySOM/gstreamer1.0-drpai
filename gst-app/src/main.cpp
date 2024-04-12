@@ -44,119 +44,42 @@
 #endif
 
 #include <gst/gst.h>
+#include "messages.h"
+#include "thread.h"
 #include <string>
-#include <vector>
-#include <map>
-#include <stdexcept>
-#include <cstdarg>
 
-#define DELAY_VALUE 100000
+GstElement *pipeline;
 
-static GstElement *pipeline;
-
-static gboolean
-message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
-{
-    switch (GST_MESSAGE_TYPE (message)) {
-        case GST_MESSAGE_ERROR:{
-            GError *err = NULL;
-            gchar *name, *debug = NULL;
-
-            name = gst_object_get_path_string (message->src);
-            gst_message_parse_error (message, &err, &debug);
-
-            g_printerr ("ERROR: from element %s: %s\n", name, err->message);
-            if (debug != NULL)
-                g_printerr ("Additional debug info:\n%s\n", debug);
-
-            g_error_free (err);
-            g_free (debug);
-            g_free (name);
-            return FALSE;
-        }
-        case GST_MESSAGE_WARNING:{
-            GError *err = NULL;
-            gchar *name, *debug = NULL;
-
-            name = gst_object_get_path_string (message->src);
-            gst_message_parse_warning (message, &err, &debug);
-
-            g_printerr ("WARNING: from element %s: %s\n", name, err->message);
-            if (debug != NULL)
-                g_printerr ("Additional debug info:\n%s\n", debug);
-
-            g_error_free (err);
-            g_free (debug);
-            g_free (name);
-            break;
-        }
-        case GST_MESSAGE_EOS:{
-            g_print ("Got EOS\n");
-            gst_element_set_state (pipeline, GST_STATE_NULL);
-            return FALSE;
-        }
-        default:
-            break;
-    }
-
-    return TRUE;
-}
-
-int sigintHandler(int unused) {
-    g_print("You ctrl-c-ed! Sending EoS");
-    gst_element_send_event(pipeline, gst_event_new_eos());
+int signalHandler(int signal) {
+    g_print("\nSignal %s received! Exiting...\n", strsignal(signal));
+    gst_element_set_state (pipeline, GST_STATE_NULL);
     return 0;
 }
 
-template <class ... Args>
-GstElement* element(const gchar* name, Args ... args) {
-    GstElement* e = gst_element_factory_make(name, name);
-    if(!e)
-        throw std::runtime_error(std::string("Failed to create element: ") + name);
-    if (std::get<0>(std::tie(args...)))
-        g_object_set(e, args...);
-    return e;
-}
-
-template <class ... Args>
-GstElement* create_pipeline(Args ... args) {
-    GstElement* p = gst_pipeline_new(nullptr);
-    if(!p)
-        throw std::runtime_error("Failed to create pipeline");
-    gst_bin_add_many(GST_BIN(p), args...);
-    if (!gst_element_link_many(args...))
-        throw std::runtime_error("Failed to link elements");
-    return p;
-}
-
 int main (int argc, char *argv[]) {
-    signal(SIGINT, (__sighandler_t) sigintHandler);
+    signal(SIGINT, (__sighandler_t) signalHandler);
+    signal(SIGTERM, (__sighandler_t) signalHandler);
     gst_init(&argc, &argv);
 
-    pipeline = create_pipeline(
-        element("v4l2src", "device", "/dev/video0", nullptr),
-        element("drpai", "model","yolov3",
-                "show-fps",FALSE,"log-detects",FALSE,
-                "smooth-video-rate",30,
-                "filter-class","cup:1400fa", nullptr),
-        element("vspmfilter","dmabuf-use",TRUE, nullptr),
-        element("omxh264enc","control-rate",2,"target-bitrate",10485760, "interval_intraframes",14,"periodicty-idr",2, nullptr),
-        element("rtph264pay","config-interval",-1, nullptr),
-        element("udpsink", "host","192.168.99.2","port",51372, nullptr),
-        nullptr
-    );
+    GError *error = nullptr;
+    pipeline = gst_parse_launch(argv[1], &error);
+    if (!error) {
+        g_print ("Parse error: %s\n", error->message);
+        return -1;
+    }
 
-    if (gst_element_set_state (pipeline,
-                               GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+    auto splitmuxsink = gst_bin_get_by_name( GST_BIN( pipeline ), "my_split_mux" );
+    split_thread thread (splitmuxsink);
+
+    if (gst_element_set_state (pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         g_printerr ("Unable to set the pipeline to the playing state.\n");
         gst_object_unref (pipeline);
         return -1;
     }
 
     GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
-    gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-    g_print("Starting loop. Send SIGINT to exit.\n");
+    g_print("Starting loop. Send SIGINT or SIGTERM to exit.\n");
     while(true) {
         GstMessage* msg = gst_bus_pop (bus);
         /* Note that because input timeout is GST_CLOCK_TIME_NONE,
@@ -164,8 +87,7 @@ int main (int argc, char *argv[]) {
            matching message was posted on the bus (GST_MESSAGE_ERROR or
            GST_MESSAGE_EOS). */
         if (msg != nullptr) {
-            gchar *debug_info;
-            gboolean r = message_cb(bus, msg, debug_info);
+            gboolean r = message_cb(pipeline, msg);
             gst_message_unref (msg);
 
             if(r == FALSE)
@@ -173,11 +95,13 @@ int main (int argc, char *argv[]) {
         }
     }
 
+    thread.stop();
     gst_object_unref (bus);
-    g_print ("Returned, stopping playback...\n");
+    g_print ("Stopping playback...\n");
     gst_element_set_state (pipeline, GST_STATE_NULL);
     g_print ("Freeing pipeline...\n");
     gst_object_unref (GST_OBJECT (pipeline));
-    g_print ("Completed. Goodbye!\n");
+    if (splitmuxsink)
+        gst_object_unref (GST_OBJECT (splitmuxsink));
     return 0;
 }
