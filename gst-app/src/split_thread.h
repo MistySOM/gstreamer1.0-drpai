@@ -11,21 +11,22 @@
 #include <iomanip>
 
 struct split_thread {
-    std::thread *t;
     GstElement *e;
+    std::thread *t;
     bool thread_stop = false;
 
-    explicit split_thread(GstElement *splitmuxsink): e(splitmuxsink) {
-        if (splitmuxsink)
-            t = new std::thread(&split_thread::worker_thread, this);
-    }
+    explicit split_thread(GstElement *splitmuxsink):
+        e(splitmuxsink),
+        t(splitmuxsink? new std::thread(&split_thread::worker_thread, this) : nullptr)
+    { }
 
     void stop() {
         if (t) {
-            g_print("Stopping split thread..\n");
+            g_print("Stopping split thread..");
             thread_stop = true;
             t->join();
             delete t;
+            g_print("SUCCESS\n");
         }
     }
 

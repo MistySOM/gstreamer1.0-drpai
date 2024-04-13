@@ -62,15 +62,14 @@ gboolean message_cb(GstElement* pipeline, GstMessage *message)
                 gst_message_parse_state_changed(message, &oldState, &newState, &pendingState);
                 const gchar* name = gst_element_state_get_name(newState);
                 g_print ("State changed to %s.\n", name);
-
-                if (newState == GST_STATE_NULL)
-                    return FALSE;
             }
             break;
         }
         case GST_MESSAGE_EOS:{
-            g_print ("Got EOS.\n");
-            break;
+            g_print ("Got EOS. Stopping the playback...");
+            auto r = gst_element_set_state (pipeline, GST_STATE_NULL);
+            g_print("%s\n", gst_element_state_change_return_get_name(r));
+            return FALSE;
         }
         case GST_MESSAGE_LATENCY: {
             g_print ("Latency changed by element %s.\n", gst_element_get_name(message->src));

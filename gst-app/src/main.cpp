@@ -44,40 +44,56 @@
 #endif
 
 #include <gst/gst.h>
-#include "messages.h"
-#include "thread.h"
 #include <string>
+#include "messages.h"
+#ifdef ENABLE_SPLIT
+#include "split_thread.h"
+#endif
 
 GstElement *pipeline;
 
 int signalHandler(int signal) {
-    g_print("\nSignal %s received! Exiting...\n", strsignal(signal));
-    gst_element_set_state (pipeline, GST_STATE_NULL);
+    g_print("\n\nSignal %s received! Exiting...\n\n", strsignal(signal));
+    gst_element_send_event(pipeline, gst_event_new_eos());
     return 0;
 }
 
 int main (int argc, char *argv[]) {
+    if (argc < 2)
+        g_error("Need a pipeline launch argument, starting with src and ending with sink.");
+
     signal(SIGINT, (__sighandler_t) signalHandler);
     signal(SIGTERM, (__sighandler_t) signalHandler);
+
+    std::string arg = argv[1];
+    for (int i = 2; i<argc; i++)
+        arg += std::string(" ") + argv[i];
+
     gst_init(&argc, &argv);
 
+    g_print ("Loading pipeline...\n");
     GError *error = nullptr;
-    pipeline = gst_parse_launch(argv[1], &error);
-    if (!error) {
-        g_print ("Parse error: %s\n", error->message);
-        return -1;
-    }
+    pipeline = gst_parse_launch(arg.c_str(), &error);
+    if (error)
+        g_error ("Parse error: %s\n", error->message);
 
+#ifdef ENABLE_SPLIT
     auto splitmuxsink = gst_bin_get_by_name( GST_BIN( pipeline ), "my_split_mux" );
     split_thread thread (splitmuxsink);
+#endif
 
-    if (gst_element_set_state (pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+    GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
+    if (!bus)
+        g_error ("Unable to get the bus of the pipeline\n");
+
+    g_print ("Starting pipeline...\n");
+    auto state_change_return = gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    if (state_change_return == GST_STATE_CHANGE_FAILURE) {
         g_printerr ("Unable to set the pipeline to the playing state.\n");
+        gst_object_unref (bus);
         gst_object_unref (pipeline);
         return -1;
     }
-
-    GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE(pipeline));
 
     g_print("Starting loop. Send SIGINT or SIGTERM to exit.\n");
     while(true) {
@@ -95,13 +111,14 @@ int main (int argc, char *argv[]) {
         }
     }
 
+#ifdef ENABLE_SPLIT
     thread.stop();
+#endif
+
+    g_print ("Freeing pipeline...");
+    state_change_return = gst_element_set_state (pipeline, GST_STATE_NULL);
+    g_print("%s\n", gst_element_state_change_return_get_name(state_change_return));
     gst_object_unref (bus);
-    g_print ("Stopping playback...\n");
-    gst_element_set_state (pipeline, GST_STATE_NULL);
-    g_print ("Freeing pipeline...\n");
     gst_object_unref (GST_OBJECT (pipeline));
-    if (splitmuxsink)
-        gst_object_unref (GST_OBJECT (splitmuxsink));
     return 0;
 }
