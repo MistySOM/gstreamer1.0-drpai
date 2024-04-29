@@ -5,15 +5,15 @@ SRCREV = "${AUTOREV}"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 DEPENDS = "gstreamer1.0 drpai"
 
-do_unpack_append() {
+inherit meson
+MESON_BUILDTYPE = "release"
+MESON_TARGET ?= ""
+
+do_patch_append() {
     f = f"{d.getVar('S')}/gst-plugin/src/linux/drpai.h"
     if os.path.exists(f):
       os.remove(f)
 }
-
-inherit meson
-MESON_BUILDTYPE = "release"
-MESON_TARGET ?= ""
 
 do_compile() {
     meson compile -v ${PARALLEL_MAKE} ${MESON_TARGET}
