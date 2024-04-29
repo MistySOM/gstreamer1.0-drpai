@@ -58,20 +58,19 @@ jobs:
 
     - name: Change the build to only gstreamer1.0-drpai
       run: |
-        sed -i -e 's/bitbake mistysom-image/bitbake gstreamer1.0-drpai gstreamer1.0-drpai-yolo/g' rzv2l/Build/exec.sh
-        sed -i -e 's|/tmp/deploy/images/|/tmp/deploy/rpm/aarch64/gstreamer1.0-drpai*|g' rzv2l/Build/exec.sh
+        sed -i -e 's/bitbake mistysom-image/bitbake gst-launch-split gstreamer1.0-drpai gstreamer1.0-drpai-yolo/g' rzv2l/Build/exec.sh
+        sed -i -e 's|/tmp/deploy/images/|/tmp/deploy/rpm/aarch64/|g' rzv2l/Build/exec.sh
 
     - name: Build the Docker image
       run: cd rzv2l/Build && ./build.sh;
     
     - name: Run the Docker image and build output files
       run: cd rzv2l/Build && ./run.sh -c /home/github/rzv2l-cache;
-
-    - name: List files that are generated
-      run: ls -lah rzv2l/Build/output/
       
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: rpm-files
-        path: rzv2l/Build/output/
+        path: |
+          rzv2l/Build/output/gstreamer1.0-drpai*
+          rzv2l/Build/output/gst-launch-split*

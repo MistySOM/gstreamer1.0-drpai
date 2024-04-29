@@ -19,6 +19,9 @@ do_compile() {
 do_install_append() {
     find ${D}${libdir} -type f -not -name "lib${MESON_TARGET}.so" -delete
     find ${D}${libdir} -type d -empty -delete
+
+    find ${D}${bindir} -type f -not -name "${MESON_TARGET}" -delete
+    find ${D}${bindir} -type d -empty -delete
 }
 
 S = "${WORKDIR}/git"

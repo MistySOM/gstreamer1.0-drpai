@@ -22,7 +22,7 @@ gboolean message_cb(GstElement* pipeline, GstMessage *message)
             g_error_free (err);
             g_free (debug);
             g_free (name);
-            return FALSE;
+            break;
         }
         case GST_MESSAGE_WARNING:{
             GError *err = nullptr;

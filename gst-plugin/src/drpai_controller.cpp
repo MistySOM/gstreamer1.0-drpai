@@ -54,7 +54,7 @@ void DRPAI_Controller::open_resources() {
 }
 
 void DRPAI_Controller::process_image(uint8_t* img_data) {
-    if (drpai->rate.get_max_rate() != 0 && thread_state != Processing) {
+    if (drpai->rate.get_max_rate() != 0) {
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -68,6 +68,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
                 if (multithread)
                     v.notify_one();
 
+            case Processing:
             default:
                 break;
         }
