@@ -6,7 +6,9 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
 DEPENDS = "gstreamer1.0 drpai"
 
 do_unpack_append() {
-    os.remove("{0}/gst-plugin/src/linux/drpai.h".format(d.getVar("S")))
+    f = f"{d.getVar('S')}/gst-plugin/src/linux/drpai.h"
+    if os.path.exists(f):
+      os.remove(f)
 }
 
 inherit meson
