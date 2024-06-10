@@ -199,11 +199,12 @@ void DRPAI_Controller::thread_function_single() {
         j.add("video_rate", video_rate.get_smooth_rate(), 1);
         j.concatenate(drpai->get_json());
         const auto str = j.to_string() + "\n";
-        auto r = sendto(socket_fd, str.c_str(), str.size(), MSG_DONTWAIT,
+        auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
                         reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
-        if (r < static_cast<ssize_t>(str.size()))
-//            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
-            return;
+        
+        if (r < static_cast<ssize_t>(str.size())) {
+            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+        }
     }
 }
 
