@@ -71,15 +71,19 @@ static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *q
     std::cout << "DRP-AI received query: " << GST_QUERY_TYPE_NAME(query) << std::endl;
     const auto obj = GST_PLUGIN_DRPAI(parent);
 
-    if(query->type == GST_QUERY_ALLOCATION) {
-        if (obj->drpai_controller->share_udma_buffer) {
-            const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
-            gst_query_add_allocation_pool(query, pool, 0, 0, 0);
-            std::cout << "UDMA buffer allocation pool provided." << std::endl;
-            return TRUE;
-        }
+    switch (query->type) {
+        case GST_QUERY_ALLOCATION:
+            if (obj->drpai_controller->share_udma_buffer) {
+                const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
+                gst_query_add_allocation_pool(query, pool, 0, 0, 0);
+                std::cout << "UDMA buffer allocation pool provided." << std::endl;
+            }
+            break;
+        default:
+            break;
     }
-    return FALSE;
+
+    return TRUE;
 }
 
 static GstStateChangeReturn
