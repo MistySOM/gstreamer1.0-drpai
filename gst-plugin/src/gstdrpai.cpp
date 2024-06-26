@@ -57,115 +57,45 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
 
 #include "gstdrpai.h"
+#include "gst_udma_buffer_pool.h"
 #include "properties.h"
 #include "drpai_controller.h"
 #include <gst/gst.h>
 #include <iostream>
 
-GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
-#define GST_CAT_DEFAULT gst_drpai_debug
+static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *query) {
+    std::cout << "DRP-AI received query: " << GST_QUERY_TYPE_NAME(query) << std::endl;
+    const auto obj = GST_PLUGIN_DRPAI(parent);
 
-/* Filter signals and args */
-enum {
-    /* FILL ME */
-    LAST_SIGNAL
-};
-
-/* the capabilities of the inputs and outputs.
- *
- * describe the real formats here.
- */
-#define CAP_WIDTH (640)
-#define CAP_HEIGHT (480)
-auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
-static GstStaticPadTemplate sink_factory =
-        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
-static GstStaticPadTemplate src_factory =
-        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
-
-#define gst_drpai_parent_class parent_class
-
-G_DEFINE_TYPE (GstDRPAI, gst_drpai, GST_TYPE_ELEMENT);
-
-static void gst_drpai_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
-
-static void gst_drpai_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
-
-static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event);
-
-static GstFlowReturn gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf);
-
-static GstStateChangeReturn gst_drpai_change_state (GstElement * element, GstStateChange transition);
-
-/* GObject vmethod implementations */
-
-/* initialize the plugin's class */
-static void
-gst_drpai_class_init(GstDRPAIClass *klass) {
-    const auto gobject_class = reinterpret_cast<GObjectClass *>(klass);
-    const auto gstelement_class = reinterpret_cast<GstElementClass *>(klass);
-
-    gobject_class->set_property = gst_drpai_set_property;
-    gobject_class->get_property = gst_drpai_get_property;
-
-    gstelement_class->change_state = gst_drpai_change_state;
-
-    std::map<GstDRPAI_Properties, _GParamSpec*> params;
-    params.emplace(PROP_STOP_ERROR, g_param_spec_boolean("stop_error", "Stop On Errors",
-                                                      "Stop the gstreamer if kernel modules fail to open.",
-                                                      TRUE, G_PARAM_READWRITE));
-    DRPAI_Controller::install_properties(params);
-
-    for (auto& [prop_id, spec]: params)
-        g_object_class_install_property(gobject_class, prop_id, spec);
-
-    gst_element_class_set_details_simple(gstelement_class,
-                                         "DRP-AI",
-                                         "DRP-AI",
-                                         "DRP-AI Element", "Matin Lotfaliei matin.lotfali@mistywest.com");
-
-    gst_element_class_add_pad_template(gstelement_class,
-                                       gst_static_pad_template_get(&src_factory));
-    gst_element_class_add_pad_template(gstelement_class,
-                                       gst_static_pad_template_get(&sink_factory));
-}
-
-/* initialize the new element
- * instantiate pads and add them to element
- * set pad callback functions
- * initialize instance structure
- */
-static void
-gst_drpai_init(GstDRPAI* self) {
-    self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
-    gst_pad_set_event_function (self->sinkpad,
-                                GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
-    gst_pad_set_chain_function (self->sinkpad,
-                                GST_DEBUG_FUNCPTR(gst_drpai_chain));
-    GST_PAD_SET_PROXY_CAPS (self->sinkpad);
-    gst_element_add_pad(GST_ELEMENT (self), self->sinkpad);
-
-    self->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
-    GST_PAD_SET_PROXY_CAPS (self->srcpad);
-    gst_element_add_pad(GST_ELEMENT (self), self->srcpad);
-
-    self->drpai_controller = new DRPAI_Controller();
-    self->stop_error = TRUE;
+    if(query->type == GST_QUERY_ALLOCATION) {
+        if (obj->drpai_controller->share_udma_buffer) {
+            const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
+            gst_query_add_allocation_pool(query, pool, 0, 0, 0);
+            std::cout << "UDMA buffer allocation pool provided." << std::endl;
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static GstStateChangeReturn
 gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
-    const auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
+    auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
 
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             try {
+                obj->udma_buffer_pool = gst_udma_buffer_pool_new();
+
+                /* Obtain udmabuf memory area starting address */
+                const auto udmabuf_address = Gst_UDMA_BufferPool::get_physical_address();
+
                 /* open the device */
-                obj->drpai_controller->open_resources();
+                obj->drpai_controller->open_resources(obj->udma_buffer_pool->udmabuf_fd, udmabuf_address);
             }
             catch (std::runtime_error &e) {
                 std::cerr << std::endl << e.what() << std::endl << std::endl;
@@ -243,13 +173,10 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
 
 /* this function handles sink events */
 static gboolean
-gst_drpai_sink_event(GstPad *pad, GstObject *parent,
-                            GstEvent *event) {
-    gboolean ret;
-    const auto obj = GST_PLUGIN_DRPAI(parent);
+gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event) {
 
-    GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT,
-                    GST_EVENT_TYPE_NAME(event), event);
+    // const auto obj = GST_PLUGIN_DRPAI(parent);
+    // std::cout << "DRP-AI received event: "<< GST_EVENT_TYPE_NAME(event) << std::endl;
 
     switch (GST_EVENT_TYPE (event)) {
         case GST_EVENT_CAPS: {
@@ -258,15 +185,14 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
             gst_event_parse_caps(event, &caps);
             /* do something with the caps */
 
+            // std::cout << "\tCaps: " << gst_caps_to_string(caps) << std::endl;
+
             /* and forward */
-            ret = gst_pad_event_default(pad, parent, event);
-            break;
+            return gst_pad_event_default(pad, parent, event);
         }
         default:
-            ret = gst_pad_event_default(pad, parent, event);
-            break;
+            return gst_pad_event_default(pad, parent, event);
     }
-    return ret;
 }
 
 /* chain function
@@ -295,6 +221,59 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 
     /* just push out the incoming buffer without touching it */
     return gst_pad_push(obj->srcpad, buf);
+}
+
+/* initialize the new element
+ * instantiate pads and add them to element
+ * set pad callback functions
+ * initialize instance structure
+ */
+static void
+gst_drpai_init(GstDRPAI* self) {
+    self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
+    gst_pad_set_event_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
+    gst_pad_set_query_function(self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_query));
+    gst_pad_set_chain_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_chain));
+    GST_PAD_SET_PROXY_CAPS (self->sinkpad);
+    gst_element_add_pad(GST_ELEMENT (self), self->sinkpad);
+
+    self->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
+    GST_PAD_SET_PROXY_CAPS (self->srcpad);
+    gst_element_add_pad(GST_ELEMENT (self), self->srcpad);
+
+    self->drpai_controller = new DRPAI_Controller();
+    self->stop_error = TRUE;
+}
+
+/* initialize the plugin's class */
+static void
+gst_drpai_class_init(GstDRPAIClass *klass) {
+    const auto gobject_class = reinterpret_cast<GObjectClass *>(klass);
+    const auto gstelement_class = reinterpret_cast<GstElementClass *>(klass);
+
+    gobject_class->set_property = gst_drpai_set_property;
+    gobject_class->get_property = gst_drpai_get_property;
+
+    gstelement_class->change_state = gst_drpai_change_state;
+
+    std::map<GstDRPAI_Properties, _GParamSpec*> params;
+    params.emplace(PROP_STOP_ERROR, g_param_spec_boolean("stop_error", "Stop On Errors",
+                                                      "Stop the gstreamer if kernel modules fail to open.",
+                                                      TRUE, G_PARAM_READWRITE));
+    DRPAI_Controller::install_properties(params);
+
+    for (auto& [prop_id, spec]: params)
+        g_object_class_install_property(gobject_class, prop_id, spec);
+
+    gst_element_class_set_details_simple(gstelement_class,
+                                         "DRP-AI",
+                                         "DRP-AI",
+                                         "DRP-AI Element", "Matin Lotfaliei matin.lotfali@mistywest.com");
+
+    gst_element_class_add_pad_template(gstelement_class,
+                                       gst_static_pad_template_get(&src_factory));
+    gst_element_class_add_pad_template(gstelement_class,
+                                       gst_static_pad_template_get(&sink_factory));
 }
 
 

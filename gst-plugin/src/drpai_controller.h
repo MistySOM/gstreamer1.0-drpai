@@ -21,10 +21,12 @@ class DRPAI_Base;
 class DRPAI_Controller {
 
 public:
+    bool share_udma_buffer = false;
+
     explicit DRPAI_Controller() = default;
 
     void open_drpai_model(const std::string& modelPrefix);
-    void open_resources();
+    void open_resources(uint32_t udmabuf_fd, uint32_t udmabuf_physical_address);
     void release_resources();
     void process_image(uint8_t* img_data);
 
