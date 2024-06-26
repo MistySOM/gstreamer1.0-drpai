@@ -77,13 +77,14 @@ static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *q
                 const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
                 gst_query_add_allocation_pool(query, pool, 0, 0, 0);
                 std::cout << "UDMA buffer allocation pool provided." << std::endl;
+                return TRUE;
             }
             break;
         default:
             break;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static GstStateChangeReturn
