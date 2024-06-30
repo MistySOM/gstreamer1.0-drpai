@@ -37,13 +37,14 @@ G_DEFINE_TYPE(Gst_UDMA_BufferPool, gst_udma_buffer_pool, GST_TYPE_BUFFER_POOL);
 
 GstFlowReturn
 gst_udma_buffer_pool_alloc_buffer (GstBufferPool *pool, GstBuffer **buffer, GstBufferPoolAcquireParams *params) {
-    std::cout << "UDMA Buffer allocated by other gstreamer elements." << std::endl;
     constexpr uint32_t MAPSIZE = 0x1000;
     constexpr uint32_t MAPMASK = 0xFFFFF000;
 
     const auto udma_buffer_pool = reinterpret_cast<Gst_UDMA_BufferPool*>(pool);
     constexpr auto imageLength = 640*480*3;
     constexpr auto offset = (imageLength + MAPSIZE - 1) & MAPMASK;
+    std::cout << "UDMA Buffer allocated by other gstreamer elements. Index: " << static_cast<int>(udma_buffer_pool->pool_index) << std::endl;
+
     const auto mem_ptr = mmap(nullptr, imageLength, PROT_READ | PROT_WRITE, MAP_SHARED,
         udma_buffer_pool->udmabuf_fd,
         offset * udma_buffer_pool->pool_index);
@@ -56,7 +57,8 @@ gst_udma_buffer_pool_alloc_buffer (GstBufferPool *pool, GstBuffer **buffer, GstB
 
     // Write once to allocate physical memory to u-dma-buf virtual space.
     const auto word_ptr = static_cast<uint8_t*>(mem_ptr);
-    std::fill_n(word_ptr, imageLength, 0);
+    for(int i=0; i<imageLength; ++i)
+        word_ptr[i] = 0;
 
     *buffer = gst_buffer_new_wrapped(mem_ptr, imageLength);
 

@@ -68,18 +68,24 @@
 #include <iostream>
 
 static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *query) {
-    std::cout << "DRP-AI received query: " << GST_QUERY_TYPE_NAME(query) << std::endl;
+    std::cout << "DRP-AI received query from sink: " <<  GST_QUERY_TYPE_NAME(query) << std::endl;
     const auto obj = GST_PLUGIN_DRPAI(parent);
 
     switch (query->type) {
-        case GST_QUERY_ALLOCATION:
-            if (obj->drpai_controller->share_udma_buffer) {
+        case GST_QUERY_ALLOCATION: {
+            GstCaps *caps = nullptr;
+            gboolean need_pool;
+            gst_query_parse_allocation(query, &caps, &need_pool);
+            if (need_pool && obj->drpai_controller->share_udma_buffer) {
+                std::cout << "\tNeed a pool for " << gst_caps_to_string(caps) << std::endl;
+
                 const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
                 gst_query_add_allocation_pool(query, pool, 0, 0, 0);
                 std::cout << "UDMA buffer allocation pool provided." << std::endl;
                 return TRUE;
             }
             break;
+        }
         default:
             break;
     }
@@ -181,7 +187,7 @@ static gboolean
 gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event) {
 
     // const auto obj = GST_PLUGIN_DRPAI(parent);
-    // std::cout << "DRP-AI received event: "<< GST_EVENT_TYPE_NAME(event) << std::endl;
+    std::cout << "DRP-AI received event from sink: " << GST_EVENT_TYPE_NAME(event) << std::endl;
 
     switch (GST_EVENT_TYPE (event)) {
         case GST_EVENT_CAPS: {

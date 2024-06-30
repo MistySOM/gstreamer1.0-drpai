@@ -44,6 +44,7 @@ class Image
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf(uint32_t udmabuf_fd);
+        void map_udmabuf(uint8_t* udmabuf_buf) { img_buffer = udmabuf_buf; }
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;

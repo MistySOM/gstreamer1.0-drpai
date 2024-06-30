@@ -30,8 +30,10 @@ void DRPAI_Controller::open_resources(const uint32_t udmabuf_fd, const uint32_t 
     /* Read and set DRP-AI Object files address and size */
     drpai->open_resource(udmabuf_physical_address);
 
-    image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf(udmabuf_fd);
+    if (!share_udma_buffer) {
+        image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL,drpai->IN_FORMAT, nullptr);
+        image_mapped_udma->map_udmabuf(udmabuf_fd);
+    }
 
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
@@ -174,7 +176,8 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
-    image_mapped_udma->prepare();
+    if (!share_udma_buffer)
+        image_mapped_udma->prepare();
     drpai->run_inference();
 
     if(socket_fd) {
