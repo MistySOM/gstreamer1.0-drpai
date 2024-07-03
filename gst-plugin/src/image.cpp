@@ -71,12 +71,12 @@ void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
         return;
 
     if (format == f)
-        std::copy(data, data+size, img_buffer);
+        std::copy_n(data, size, img_buffer);
     else if(format == YUV_DATA && f == BGR_DATA) {
         const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
         if (convert_buffer == nullptr)
             convert_buffer = std::make_unique<uint8_t[]>(s);
-        std::copy(data, data+s, convert_buffer.get());
+        std::copy_n(data, s, convert_buffer.get());
         convert_from_format = f;
     } else
         throw std::runtime_error("[ERROR] Can't convert image formats.");

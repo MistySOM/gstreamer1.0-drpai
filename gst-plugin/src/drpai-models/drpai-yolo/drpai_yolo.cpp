@@ -286,7 +286,7 @@ void DRPAI_Yolo::add_corner_text() {
     DRPAI_Base::add_corner_text();
     if (det_tracker.active) {
         corner_text.push_back(
-                "Tracked/" + std::to_string(static_cast<uint32_t>(det_tracker.history_length)) + "min: " +
+                "Tracked/" + std::to_string(det_tracker.history_length/60) + "min: " +
                 std::to_string(det_tracker.count()));
     }
 }

@@ -67,6 +67,31 @@ struct _GstDRPAI
   DRPAI_Controller *drpai_controller;
 };
 
+GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
+#define GST_CAT_DEFAULT gst_drpai_debug
+
+/* Filter signals and args */
+enum {
+    /* FILL ME */
+    LAST_SIGNAL
+};
+
+/* the capabilities of the inputs and outputs.
+ *
+ * describe the real formats here.
+ */
+#define CAP_WIDTH (640)
+#define CAP_HEIGHT (480)
+constexpr auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
+static GstStaticPadTemplate sink_factory =
+        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
+static GstStaticPadTemplate src_factory =
+        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
+
+#define gst_drpai_parent_class parent_class
+
+G_DEFINE_TYPE (GstDRPAI, gst_drpai, GST_TYPE_ELEMENT);
+
 G_END_DECLS
 
 #endif /* GST_PLUGIN_DRPAI_H */

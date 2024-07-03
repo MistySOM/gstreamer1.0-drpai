@@ -66,9 +66,10 @@ gboolean message_cb(GstElement* pipeline, GstMessage *message)
             break;
         }
         case GST_MESSAGE_EOS:{
-            g_print ("Got EOS. Stopping the playback...");
+            g_print ("Got EOS. Stopping the playback...\n");
             auto r = gst_element_set_state (pipeline, GST_STATE_NULL);
-            g_print("%s\n", gst_element_state_change_return_get_name(r));
+            if (r != GST_STATE_CHANGE_SUCCESS)
+                g_print("\t%s\n", gst_element_state_change_return_get_name(r));
             return FALSE;
         }
         case GST_MESSAGE_LATENCY: {
