@@ -44,8 +44,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef __GST_PLUGIN_DRPAI_H__
-#define __GST_PLUGIN_DRPAI_H__
+#ifndef GST_PLUGIN_DRPAI_H
+#define GST_PLUGIN_DRPAI_H
 
 #include <gst/gst.h>
 
@@ -54,7 +54,7 @@ G_BEGIN_DECLS
 #define GST_TYPE_PLUGIN_DRPAI (gst_drpai_get_type())
 G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
-class DRPAI;
+class DRPAI_Controller;
 
 struct _GstDRPAI
 {
@@ -64,9 +64,34 @@ struct _GstDRPAI
 
   gboolean stop_error;
 
-  DRPAI *drpai;
+  DRPAI_Controller *drpai_controller;
 };
+
+GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
+#define GST_CAT_DEFAULT gst_drpai_debug
+
+/* Filter signals and args */
+enum {
+    /* FILL ME */
+    LAST_SIGNAL
+};
+
+/* the capabilities of the inputs and outputs.
+ *
+ * describe the real formats here.
+ */
+#define CAP_WIDTH (640)
+#define CAP_HEIGHT (480)
+constexpr auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
+static GstStaticPadTemplate sink_factory =
+        GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
+static GstStaticPadTemplate src_factory =
+        GST_STATIC_PAD_TEMPLATE ("src", GST_PAD_SRC, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
+
+#define gst_drpai_parent_class parent_class
+
+G_DEFINE_TYPE (GstDRPAI, gst_drpai, GST_TYPE_ELEMENT);
 
 G_END_DECLS
 
-#endif /* __GST_PLUGIN_DRPAI_H__ */
+#endif /* GST_PLUGIN_DRPAI_H */

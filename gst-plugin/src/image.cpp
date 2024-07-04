@@ -27,6 +27,11 @@
 ******************************************/
 #include "image.h"
 #include "ascii.h"
+#include "box.h"
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdexcept>
 
 Image::~Image()
 {
@@ -47,145 +52,34 @@ Image::~Image()
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-uint8_t Image::map_udmabuf()
+void Image::map_udmabuf()
 {
     udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
     if (udmabuf_fd < 0)
-    {
-        return -1;
-    }
-    img_buffer =(uint8_t*) mmap(nullptr, size ,PROT_READ|PROT_WRITE, MAP_SHARED,  udmabuf_fd, 0);
+        throw std::runtime_error("[ERROR] Failed to open image buffer to UDMA.");
+
+    img_buffer = static_cast<uint8_t *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, udmabuf_fd, 0));
 
     if (img_buffer == MAP_FAILED)
-    {
-        return -1;
-    }
-    /* Write once to allocate physical memory to u-dma-buf virtual space.
-    * Note: Do not use memset() for this.
-    *       Because it does not work as expected. */
-    {
-        for (int32_t i = 0 ; i < size; i++)
-        {
-            img_buffer[i] = 0;
-        }
-    }
-    return 0;
+        throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
+    // Write once to allocate physical memory to u-dma-buf virtual space.
+    std::fill(img_buffer, img_buffer+size, 0);
 }
 
-/*****************************************
-* Function Name : read_bmp
-* Description   : Function to load BMP file into img_buffer
-* NOTE          : This is just the simplest example to read Windows Bitmap v3 file.
-*                 This function does not have header check.
-* Arguments     : filename = name of BMP file to be read
-* Return value  : 0 if succeeded
-*                 not 0 otherwise
-******************************************/
-uint8_t Image::read_bmp(const std::string& filename)
-{
-    uint32_t width = img_w;
-    uint32_t height = img_h;
-    uint32_t channel = img_c;
-    FILE *fp = nullptr;
-    size_t ret = 0;
-    uint8_t * bmp_line_data;
-    /* Number of byte in single row */
-    /* NOTE: Number of byte in single row of Windows Bitmap image must be aligned to 4 bytes. */
-    uint32_t line_width = width * channel + width % 4;
+void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
+    if(img_buffer == nullptr)
+        return;
 
-    /*  Read header for Windows Bitmap v3 file. */
-    fp = fopen(filename.c_str(), "rb");
-    if (nullptr == fp)
-    {
-        return -1;
-    }
-
-    /* Read all header */
-    ret = fread(bmp_header.data(), sizeof(uint8_t), header_size, fp);
-    if (!ret)
-    {
-        fclose(fp);
-        return -1;
-    }
-    /* Single row image data */
-    bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
-    if (nullptr == bmp_line_data)
-    {
-        free(bmp_line_data);
-        fclose(fp);
-        return -1;
-    }
-
-    for (int32_t i = (int32_t)height-1; i >= 0; i--)
-    {
-        ret = fread(bmp_line_data, sizeof(uint8_t), line_width, fp);
-        if (!ret)
-        {
-            free(bmp_line_data);
-            fclose(fp);
-            return -1;
-        }
-        std::memcpy(img_buffer+i*width*channel, bmp_line_data, sizeof(uint8_t)*width*channel);
-    }
-
-    free(bmp_line_data);
-    fclose(fp);
-    return 0;
-}
-
-
-/*****************************************
-* Function Name : save_bmp
-* Description   : Save the image in img_buffer into Windows Bitmap v3 file.
-*                 This function uses the bmp_header,
-*                  which read_bmp() stored the input image header information
-* Arguments     : filename = name of output image file
-* Return value  : 0 if suceeded
-*                 not 0 otherwise
-******************************************/
-uint8_t Image::save_bmp(const std::string& filename) const
-{
-    FILE * fp = nullptr;
-    uint8_t * bmp_line_data;
-    uint32_t width = img_w;
-    uint32_t height = img_h;
-    uint32_t channel = img_c;
-    size_t ret = 0;
-
-    /* Number of byte in single row */
-    uint32_t line_width = width * channel + width % 4;
-
-    fp = fopen(filename.c_str(), "wb");
-    if (nullptr == fp)
-    {
-        return -1;
-    }
-
-    /* Write header for Windows Bitmap v3 file. */
-    fwrite(bmp_header.data(), sizeof(uint8_t), header_size, fp);
-
-    bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
-    if (nullptr == bmp_line_data)
-    {
-        free(bmp_line_data);
-        fclose(fp);
-        return -1;
-    }
-
-    for (int32_t i = (int32_t)height - 1; i >= 0; i--)
-    {
-        memcpy(bmp_line_data, img_buffer + i*width*channel, sizeof(uint8_t)*width*channel);
-        ret = fwrite(bmp_line_data, sizeof(uint8_t), line_width, fp);
-        if (!ret)
-        {
-            free(bmp_line_data);
-            fclose(fp);
-            return -1;
-        }
-    }
-    free(bmp_line_data);
-    fclose(fp);
-    return 0;
+    if (format == f)
+        std::copy_n(data, size, img_buffer);
+    else if(format == YUV_DATA && f == BGR_DATA) {
+        const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
+        if (convert_buffer == nullptr)
+            convert_buffer = std::make_unique<uint8_t[]>(s);
+        std::copy_n(data, s, convert_buffer.get());
+        convert_from_format = f;
+    } else
+        throw std::runtime_error("[ERROR] Can't convert image formats.");
 }
 
 /*****************************************
@@ -198,19 +92,19 @@ uint8_t Image::save_bmp(const std::string& filename) const
 *                 backcolor = character background color
 * Return value  : -
 ******************************************/
-void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t backcolor)
+void Image::write_char(const char code, const int32_t x, const int32_t y, const colorBGR color, const colorBGR backcolor) const
 {
     // Pick the pattern related to the ASCII code from the elements of the g_ascii_table array.
     // The array doesn't include the non-printable characters, so we need to shift the code to match the element.
-    auto& p_pattern = ASCII_IS_PRINTABLE_CHAR(code) ?
-                                        g_ascii_table[code - ASCII_FIRST_PRINTABLE_CHAR]:
-                                        g_ascii_table[10]; /* Use '*' if it is an unprintable character */
+    const auto& p_pattern = ASCII_IS_PRINTABLE_CHAR(code) ?
+                                             g_ascii_table[code - ASCII_FIRST_PRINTABLE_CHAR]:
+                                             g_ascii_table[10]; /* Use '*' if it is an unprintable character */
 
     /* Drawing */
     uint8_t row_mask = (1 << (font_h-1)); // the first row of pattern
-    for (int32_t height = 0; height < font_h; height++)
+    for (uint32_t height = 0; height < font_h; height++)
     {
-        for (int32_t width = 0; width < font_w; width++)
+        for (uint32_t width = 0; width < font_w; width++)
         {
             if (p_pattern[width] & row_mask)
             {
@@ -236,14 +130,11 @@ void Image::write_char(char code, int32_t x, int32_t y, int32_t color, int32_t b
 *                 backcolor = character background color
 * Return Value  : -
 ******************************************/
-void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
-                         int32_t color, int32_t backcolor, int8_t margin)
+void Image::write_string(const std::string& pcode, int32_t x, int32_t y,
+                         const colorBGR color, const colorBGR backcolor, int8_t margin) const
 {
-    const auto str_size = (int32_t)pcode.size();
-    x = std::max(0, x);
-    x = std::min(img_w - str_size*font_w - 2, x);
-    y = std::max(0, y);
-    y = std::min(img_h - font_h - 2, y);
+    const auto str_size = static_cast<int32_t>(pcode.size());
+    if (str_size == 0) return;
 
     int32_t right = margin * 2 + str_size * font_w - 1;
     int32_t bottom = margin * 2 + font_h - 1;
@@ -269,8 +160,9 @@ void Image::write_string(const std::string& pcode, int32_t x,  int32_t y,
 *                 color = point color
 * Return Value  : -
 ******************************************/
-void Image::draw_point(int32_t x, int32_t y, int32_t color)
+constexpr void Image::draw_point(const uint32_t x, const uint32_t y, const colorBGR color) const
 {
+    if(x >= img_w || y >= img_h) return;
     img_buffer[(y * img_w + x) * img_c]   = (color >> 16)   & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 1] = (color >> 8)  & 0x000000FF;
     img_buffer[(y * img_w + x) * img_c + 2] = color         & 0x000000FF;
@@ -286,10 +178,10 @@ void Image::draw_point(int32_t x, int32_t y, int32_t color)
 *                 color = line color
 * Return Value  : -
 ******************************************/
-void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color)
+void Image::draw_line(int32_t x0, int32_t y0, const int32_t x1, const int32_t y1, const colorBGR color) const
 {
-    int32_t dx = x1 - x0;
-    int32_t dy = y1 - y0;
+    auto dx = static_cast<float>(x1 - x0);
+    auto dy = static_cast<float>(y1 - y0);
     int32_t sx = 1;
     int32_t sy = 1;
     float de;
@@ -313,13 +205,13 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
     if (dx > dy)
     {
         /* Horizontal Line */
-        for (i = dx, de = (float)i / 2; i; i--)
+        for (i = static_cast<int32_t>(dx), de = static_cast<float>(i) / 2; i; i--)
         {
             x0 += sx;
-            de += (float)dy;
-            if (de > (float)dx)
+            de += dy;
+            if (de > dx)
             {
-                de -= (float)dx;
+                de -= dx;
                 y0 += sy;
             }
             draw_point(x0, y0, color);
@@ -328,13 +220,13 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
     else
     {
         /* Vertical Line */
-        for (i = dy, de = (float)i / 2; i; i--)
+        for (i = static_cast<int32_t>(dy), de = static_cast<float>(i) / 2; i; i--)
         {
             y0 += sy;
-            de += (float)dx;
-            if (de > (float)dy)
+            de += dx;
+            if (de > dy)
             {
-                de -= (float)dy;
+                de -= dy;
                 x0 += sx;
             }
             draw_point(x0, y0, color);
@@ -352,53 +244,107 @@ void Image::draw_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t co
 *                 str = string to label the rectangle
 * Return Value  : -
 ******************************************/
-void Image::draw_rect(int32_t x, int32_t y, int32_t w, int32_t h, const std::string& str)
+void Image::draw_rect(const Box& box, const std::string& str) const
 {
-    int32_t x_min = x - (int32_t)round(w / 2.);
-    int32_t y_min = y - (int32_t)round(h / 2.);
-    int32_t x_max = x + (int32_t)round(w / 2.) - 1;
-    int32_t y_max = y + (int32_t)round(h / 2.) - 1;
-    /* Check the bounding box is in the image range */
-    x_min = x_min < 1 ? 1 : x_min;
-    x_max = ((img_w - 2) < x_max) ? (img_w - 2) : x_max;
-    y_min = y_min < 1 ? 1 : y_min;
-    y_max = ((img_h - 2) < y_max) ? (img_h - 2) : y_max;
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
+
+    /* Determine the text color based on the text background */
+    auto b = (box.color >> 16) & 0x000000FF;
+    auto g = (box.color >> 8)  & 0x000000FF;
+    auto r = box.color         & 0x000000FF;
+    auto text_color = (r*0.299 + g*0.587 + b*0.114) > 186 ? BLACK_DATA : WHITE_DATA;
 
     /* Draw the class and probability */
-    write_string(str, x_min + 1, y_min + 1, back_color,  front_color, 5);
+    const auto margin = 5;
+    const auto str_height = font_h + 2*margin;
+    write_string(str, x_min, y_min + 1 - str_height, text_color,  box.color, margin);
     /* Draw the bounding box */
-    draw_line(x_min, y_min, x_max, y_min, front_color);
-    draw_line(x_max, y_min, x_max, y_max, front_color);
-    draw_line(x_max, y_max, x_min, y_max, front_color);
-    draw_line(x_min, y_max, x_min, y_min, front_color);
-    draw_line(x_min-1, y_min-1, x_max+1, y_min-1, back_color);
-    draw_line(x_max+1, y_min-1, x_max+1, y_max+1, back_color);
-    draw_line(x_max+1, y_max+1, x_min-1, y_max+1, back_color);
-    draw_line(x_min-1, y_max+1, x_min-1, y_min-1, back_color);
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
+    //draw_rect(x_min, y_min, x_max, y_max, back_color, 1);
 }
 
-
-/*****************************************
-* Function Name : at
-* Description   : Get the value of img_buffer at index a.
-*                 This function is NOT used currently.
-* Arguments     : a = index of img_buffer
-* Return Value  : value of img_buffer at index a
-******************************************/
-uint8_t Image::at(int32_t a) const
-{
-    return img_buffer[a];
+void Image::draw_rect(const int32_t x_min, const int32_t y_min, const int32_t x_max, const int32_t y_max,
+                      const colorBGR color, const int32_t expand) const {
+    draw_line(x_min - expand, y_min - expand, x_max + expand, y_min - expand, color);
+    draw_line(x_max + expand, y_min - expand, x_max + expand, y_max + expand, color);
+    draw_line(x_max + expand, y_max + expand, x_min - expand, y_max + expand, color);
+    draw_line(x_min - expand, y_max + expand, x_min - expand, y_min - expand, color);
 }
 
 /*****************************************
-* Function Name : set
-* Description   : Set the value of img_buffer at index a.
-*                 This function is NOT used currently.
-* Arguments     : a = index of img_buffer
-*                 val = new value to be set
-* Return Value  : -
+* Function Name : convert_bgr_to_yuy2
+* Description   : Convert BGR image to YUY2 format
+* Arguments     : -
+* Return value  : -
 ******************************************/
-void Image::set(int32_t a, uint8_t val)
-{
-    img_buffer[a] = val;
+void Image::copy_convert_bgr_to_yuy2() const {
+    if(img_buffer == nullptr)
+        return;
+
+    for (uint32_t y = 0; y < img_h; ++y) {
+        const auto& bgrRow = &convert_buffer.get()[BGR_NUM_CHANNEL * img_w * y];
+        const auto& yuy2Row = &img_buffer[YUV2_NUM_CHANNEL * img_w * y];
+
+        for (uint32_t x = 0; x < img_w; x += 2) {
+            // Convert two BGR pixels to YUY2 format
+            const auto bgrIdx1 = BGR_NUM_CHANNEL * x;
+            const auto bgrIdx2 = BGR_NUM_CHANNEL * (x + 1);
+
+            const auto& b1 = bgrRow[bgrIdx1];
+            const auto& g1 = bgrRow[bgrIdx1 + 1];
+            const auto& r1 = bgrRow[bgrIdx1 + 2];
+
+            const auto& b2 = bgrRow[bgrIdx2];
+            const auto& g2 = bgrRow[bgrIdx2 + 1];
+            const auto& r2 = bgrRow[bgrIdx2 + 2];
+
+            // Calculate Y, U, and V values for the first pixel
+            const auto y1 = static_cast<uint8_t>(0.299 * r1 + 0.587 * g1 + 0.114 * b1);
+            const auto u1 = static_cast<uint8_t>(-0.14713 * r1 - 0.288862 * g1 + 0.436 * b1 + 128);
+            const auto v1 = static_cast<uint8_t>(0.615 * r1 - 0.51498 * g1 - 0.10001 * b1 + 128);
+
+            // Calculate Y, U, and V values for the second pixel
+            const auto y2 = static_cast<uint8_t>(0.299 * r2 + 0.587 * g2 + 0.114 * b2);
+            // const auto u2 = static_cast<uint8_t>(-0.14713 * r2 - 0.288862 * g2 + 0.436 * b2 + 128);
+            // const auto v2 = static_cast<uint8_t>(0.615 * r2 - 0.51498 * g2 - 0.10001 * b2 + 128);
+
+            // Pack the Y, U, and Y, V values into a 32-bit word
+            yuy2Row[YUV2_NUM_CHANNEL * x] = y1;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 1] = u1;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 2] = y2;
+            yuy2Row[YUV2_NUM_CHANNEL * x + 3] = v1;
+        }
+    }
+}
+
+void Image::prepare() {
+    if (convert_buffer != nullptr) {
+        if (convert_from_format == BGR_DATA && format == YUV_DATA) {
+            copy_convert_bgr_to_yuy2();
+            convert_from_format = format;
+        }
+    }
+}
+
+void Image::draw_rect_fill(const Box& box) const {
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
+
+    for (auto i = x_min; i<x_max; i++)
+        for (auto j = y_min; j<y_max; j++)
+            draw_point(i,j, box.color);
+}
+
+void Image::draw_rect(const Box &box) const {
+    auto x_min = static_cast<int32_t>(box.getLeft());
+    auto y_min = static_cast<int32_t>(box.getTop());
+    auto x_max = static_cast<int32_t>(box.getRight());
+    auto y_max = static_cast<int32_t>(box.getBottom());
+
+    draw_rect(x_min, y_min, x_max, y_max, box.color, 0);
 }

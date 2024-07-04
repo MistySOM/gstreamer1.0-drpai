@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MistySOM-V2L" type="com.jetbrains.cidr.remote.gdbserver.type" factoryName="com.jetbrains.cidr.remote.gdbserver.factory" PROGRAM_PARAMS=":1234 $PROJECT_DIR$/../../../../root/gst-launch &quot;v4l2src ! video/x-raw, format=BGR ! drpai model=yolov3 log-detects=true ! fakesink" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="gstreamer1.0-drpai" TARGET_NAME="all" CONFIG_NAME="Default" version="1" RUN_TARGET_PROJECT_NAME="gstreamer1.0-drpai" RUN_TARGET_NAME="gst-launch">
+    <custom-gdb-server version="1" gdb-connect="MistySOM-V2L-Matin.mistywest.com:1234" executable="" warmup-ms="0" download-type="ALWAYS" sshConfigName="root@MistySOM-V2L-Matin.mistywest.com:22 password" uploadFile="$PROJECT_DIR$/../../../../root/gst-launch" defaultGdbServerArgs=":1234 $PROJECT_DIR$/../../../../root/gst-launch">
+      <debugger kind="GDB" isBundled="true" />
+    </custom-gdb-server>
+    <method v="2">
+      <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      <option name="FtpUpload" enabled="true">
+        <server_id>987944b8-5fb4-4b09-bc8d-e787735e5f54</server_id>
+        <server_name>Matin-V2L-Matin</server_name>
+        <group_name />
+        <path>$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so</path>
+        <path>$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-yolo/libgstdrpai-yolo.so</path>
+      </option>
+      <option name="RemoteToolBeforeRunTask" enabled="true" actionId="RemoteTool_Remote Tools_v4l2-init" />
+    </method>
+  </configuration>
+</component>
