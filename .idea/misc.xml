@@ -11,7 +11,9 @@
           </set>
         </option>
         <option name="profiles">
-          <MesonProfile />
+          <MesonProfile>
+            <option name="toolchainName" value="Poky aarch64" />
+          </MesonProfile>
         </option>
       </MesonProjectSettings>
     </option>

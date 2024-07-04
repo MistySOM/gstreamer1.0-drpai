@@ -163,9 +163,10 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
     switch (GST_EVENT_TYPE (event)) {
         case GST_EVENT_CAPS: {
             GstCaps *caps;
-
             gst_event_parse_caps(event, &caps);
+
             /* do something with the caps */
+            GST_DEBUG("\tCaps: %s\n", gst_caps_to_string(caps));
 
             /* and forward */
             ret = gst_pad_event_default(pad, parent, event);
@@ -202,7 +203,6 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
 
     gst_buffer_unmap(buf, &info);
 
-    /* just push out the incoming buffer without touching it */
     return gst_pad_push(obj->srcpad, buf);
 }
 
