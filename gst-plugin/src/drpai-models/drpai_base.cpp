@@ -203,7 +203,6 @@ void DRPAI_Base::get_result()
         static_cast<uint32_t>(drpai_address.data_out_addr),
         static_cast<uint32_t>(drpai_address.data_out_size)
     };
-    float drpai_buf[BUF_SIZE];
 
     errno = 0;
     /* Assign the memory address and size to be read */
@@ -211,21 +210,9 @@ void DRPAI_Base::get_result()
         throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
     /* Read the memory via DRP-AI Driver and store the output to buffer */
-    for (uint32_t i = 0; i < (drpai_data.size / BUF_SIZE); i++)
-    {
-        errno = 0;
-        if ( read(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
-            throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-        std::memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
-    }
-
-    if ( 0 != (drpai_data.size % BUF_SIZE))
-    {
-        errno = 0;
-        if ( read(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) == -1 )
-            throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-        std::memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
-    }
+    drpai_output_buf.reserve(drpai_data.size / sizeof(float));
+    if ( read(drpai_fd, drpai_output_buf.data(), drpai_data.size) == -1 )
+        throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
 void DRPAI_Base::start() {

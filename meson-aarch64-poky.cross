@@ -12,7 +12,7 @@ needs_exe_wrapper = true
 [built-in options]
 c_args = ['-O2', '-pipe', '-g', '-feliminate-unused-debug-types']
 c_link_args = ['-Wl,-O1', '-Wl,--hash-style=gnu', '-Wl,--as-needed', '-fstack-protector-strong', '-Wl,-z,relro,-z,now']
-cpp_args = []
+cpp_args = ['-O2', '-pipe', '-g', '-feliminate-unused-debug-types']
 cpp_link_args = ['-Wl,-O1', '-Wl,--hash-style=gnu', '-Wl,--as-needed', '-fstack-protector-strong', '-Wl,-z,relro,-z,now']
 
 [host_machine]
