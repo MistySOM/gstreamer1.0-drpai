@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="mistysom-v2l-matin" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="Matin-V2L-Matin">
+      <paths name="mistysom-v2l-matin">
         <serverdata>
           <mappings>
             <mapping deploy="/usr/lib64/gstreamer-1.0/libgstdrpai.so" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" web="" />
