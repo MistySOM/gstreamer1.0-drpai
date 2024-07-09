@@ -9,6 +9,7 @@ enum GstDRPAI_Properties {
     PROP_0,
     PROP_MULTITHREAD,
     PROP_MODEL,
+    PROP_SHARE_UDMA_BUF,
     PROP_TRACKING,
     PROP_SHOW_FPS,
     PROP_SHOW_TIME,

@@ -29,15 +29,13 @@
 #include "ascii.h"
 #include "box.h"
 #include <sys/mman.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
 
 Image::~Image()
 {
-    if(udmabuf_fd != 0) {
+    if(img_buffer != nullptr) {
         munmap(img_buffer, size);
-        close(udmabuf_fd);
     }
 }
 
@@ -52,18 +50,16 @@ Image::~Image()
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void Image::map_udmabuf()
+void Image::map_udmabuf(const uint32_t udmabuf_fd)
 {
-    udmabuf_fd = open("/dev/udmabuf0", O_RDWR );
-    if (udmabuf_fd < 0)
-        throw std::runtime_error("[ERROR] Failed to open image buffer to UDMA.");
-
-    img_buffer = static_cast<uint8_t *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, udmabuf_fd, 0));
+    img_buffer = static_cast<uint8_t *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED,
+        static_cast<int>(udmabuf_fd), 0));
 
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
+
     // Write once to allocate physical memory to u-dma-buf virtual space.
-    std::fill(img_buffer, img_buffer+size, 0);
+    std::fill_n(img_buffer, size, 0);
 }
 
 void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {

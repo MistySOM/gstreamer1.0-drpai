@@ -12,6 +12,7 @@ configure_file(output : 'config.h', configuration : cdata)
 incdir = include_directories('src')
 
 plugin_sources = [
+  'src/gst_udma_buffer_pool.cpp',
   'src/gstdrpai.cpp',
   'src/drpai_controller.cpp',
   'src/drpai-models/drpai_base.cpp',

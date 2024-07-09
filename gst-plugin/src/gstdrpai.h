@@ -55,6 +55,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
 class DRPAI_Controller;
+struct Gst_UDMA_BufferPool;
 
 struct _GstDRPAI
 {
@@ -63,6 +64,8 @@ struct _GstDRPAI
   GstPad *sinkpad, *srcpad;
 
   gboolean stop_error;
+
+  Gst_UDMA_BufferPool *udma_buffer_pool;
 
   DRPAI_Controller *drpai_controller;
 };

@@ -13,7 +13,10 @@
 #include <cstring>
 
 
-void DRPAI_Controller::open_resources() {
+void DRPAI_Controller::open_resources(const uint32_t udmabuf_fd, const uint32_t udmabuf_physical_address) {
+    if (!drpai)
+        throw std::runtime_error("[ERROR] drpai model parameter needs to be specified");
+
     if (drpai->rate.get_max_rate() == 0) {
         std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
         return;
@@ -24,31 +27,13 @@ void DRPAI_Controller::open_resources() {
     else
         thread_state = Ready;
 
-    /* Obtain udmabuf memory area starting address */
-    char addr[1024];
-    errno = 0;
-    const auto fd = open("/sys/class/u-dma-buf/udmabuf0/phys_addr", O_RDONLY);
-    if (0 > fd)
-        throw std::runtime_error("[ERROR] Failed to open udmabuf0/phys_addr : errno="  + std::string(std::strerror(errno)));
-    if ( read(fd, addr, 1024) < 0 )
-    {
-        close(fd);
-        throw std::runtime_error("[ERROR] Failed to read udmabuf0/phys_addr :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+    /* Read and set DRP-AI Object files address and size */
+    drpai->open_resource(udmabuf_physical_address);
+
+    if (!share_udma_buffer) {
+        image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL,drpai->IN_FORMAT, nullptr);
+        image_mapped_udma->map_udmabuf(udmabuf_fd);
     }
-    uint64_t udmabuf_address = std::strtoul(addr, nullptr, 16);
-    close(fd);
-    /* Filter the bit higher than 32 bit */
-    udmabuf_address &=0xFFFFFFFF;
-
-    /**********************************************************************/
-    /* Inference preparation                                              */
-    /**********************************************************************/
-
-    /* Read DRP-AI Object files address and size */
-    drpai->open_resource(udmabuf_address);
-
-    image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf();
 
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
@@ -62,7 +47,8 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
                 throw std::exception();
 
             case Ready:
-                image_mapped_udma->copy(img_data, BGR_DATA);
+                if (!share_udma_buffer)
+                    image_mapped_udma->copy(img_data, BGR_DATA);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread)
@@ -190,7 +176,8 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
-    image_mapped_udma->prepare();
+    if (!share_udma_buffer)
+        image_mapped_udma->prepare();
     drpai->run_inference();
 
     if(socket_fd) {
@@ -201,7 +188,7 @@ void DRPAI_Controller::thread_function_single() {
         const auto str = j.to_string() + "\n";
         auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
                         reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
-        
+
         if (r < static_cast<ssize_t>(str.size())) {
             std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
         }
@@ -233,6 +220,9 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_MULTITHREAD:
             multithread = g_value_get_boolean(value);
             break;
+        case PROP_SHARE_UDMA_BUF:
+            share_udma_buffer = g_value_get_boolean(value);
+            break;
         case PROP_LOG_SERVER:
             set_socket_address(g_value_get_string(value));
             break;
@@ -262,6 +252,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_MULTITHREAD:
             g_value_set_boolean(value, multithread);
             break;
+        case PROP_SHARE_UDMA_BUF:
+            g_value_set_boolean(value, share_udma_buffer);
+            break;
         case PROP_SHOW_FPS:
             g_value_set_boolean(value, show_fps);
             break;
@@ -287,6 +280,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_MULTITHREAD, g_param_spec_boolean("multithread", "MultiThread",
                                                        "Use a separate thread for object detection.",
                                                        TRUE, G_PARAM_READWRITE));
+    params.emplace(PROP_SHARE_UDMA_BUF, g_param_spec_boolean("share_udma_buf", "Share UDMA Buffer",
+                                                       "Use a shared buffer for DRP-AI and other elements.",
+                                                       FALSE, G_PARAM_READWRITE));
     params.emplace(PROP_SHOW_FPS, g_param_spec_boolean("show_fps", "Show Frame Rates",
                                                     "Render frame rates of video and DRPAI at the corner of the video.",
                                                     FALSE, G_PARAM_READWRITE));

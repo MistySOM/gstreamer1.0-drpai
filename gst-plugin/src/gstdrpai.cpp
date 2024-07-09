@@ -61,20 +61,52 @@
 #endif
 
 #include "gstdrpai.h"
+#include "gst_udma_buffer_pool.h"
 #include "properties.h"
 #include "drpai_controller.h"
 #include <gst/gst.h>
 #include <iostream>
 
+static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *query) {
+    std::cout << "DRP-AI received query from sink: " <<  GST_QUERY_TYPE_NAME(query) << std::endl;
+    const auto obj = GST_PLUGIN_DRPAI(parent);
+
+    switch (query->type) {
+        case GST_QUERY_ALLOCATION: {
+            GstCaps *caps = nullptr;
+            gboolean need_pool;
+            gst_query_parse_allocation(query, &caps, &need_pool);
+            if (need_pool && obj->drpai_controller->share_udma_buffer) {
+                std::cout << "\tNeed a pool for " << gst_caps_to_string(caps) << std::endl;
+
+                const auto pool = reinterpret_cast<GstBufferPool*>(obj->udma_buffer_pool);
+                gst_query_add_allocation_pool(query, pool, 0, 0, 0);
+                std::cout << "UDMA buffer allocation pool provided." << std::endl;
+                return TRUE;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    return FALSE;
+}
+
 static GstStateChangeReturn
 gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
-    const auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
+    auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
 
     switch (transition) {
         case GST_STATE_CHANGE_NULL_TO_READY:
             try {
+                obj->udma_buffer_pool = gst_udma_buffer_pool_new();
+
+                /* Obtain udmabuf memory area starting address */
+                const auto udmabuf_address = Gst_UDMA_BufferPool::get_physical_address();
+
                 /* open the device */
-                obj->drpai_controller->open_resources();
+                obj->drpai_controller->open_resources(obj->udma_buffer_pool->udmabuf_fd, udmabuf_address);
             }
             catch (std::runtime_error &e) {
                 std::cerr << std::endl << e.what() << std::endl << std::endl;
@@ -152,13 +184,10 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
 
 /* this function handles sink events */
 static gboolean
-gst_drpai_sink_event(GstPad *pad, GstObject *parent,
-                            GstEvent *event) {
-    gboolean ret;
-    const auto obj = GST_PLUGIN_DRPAI(parent);
+gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event) {
 
-    GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT,
-                    GST_EVENT_TYPE_NAME(event), event);
+    // const auto obj = GST_PLUGIN_DRPAI(parent);
+    std::cout << "DRP-AI received event from sink: " << GST_EVENT_TYPE_NAME(event) << std::endl;
 
     switch (GST_EVENT_TYPE (event)) {
         case GST_EVENT_CAPS: {
@@ -168,15 +197,14 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
             /* do something with the caps */
             GST_DEBUG("\tCaps: %s\n", gst_caps_to_string(caps));
 
+            // std::cout << "\tCaps: " << gst_caps_to_string(caps) << std::endl;
+
             /* and forward */
-            ret = gst_pad_event_default(pad, parent, event);
-            break;
+            return gst_pad_event_default(pad, parent, event);
         }
         default:
-            ret = gst_pad_event_default(pad, parent, event);
-            break;
+            return gst_pad_event_default(pad, parent, event);
     }
-    return ret;
 }
 
 /* chain function
@@ -215,6 +243,7 @@ static void
 gst_drpai_init(GstDRPAI* self) {
     self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
     gst_pad_set_event_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
+    gst_pad_set_query_function(self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_query));
     gst_pad_set_chain_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_chain));
     GST_PAD_SET_PROXY_CAPS (self->sinkpad);
     gst_element_add_pad(GST_ELEMENT (self), self->sinkpad);

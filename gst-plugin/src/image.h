@@ -43,7 +43,8 @@ class Image
         [[nodiscard]] constexpr uint8_t at(const int32_t a) const { return img_buffer[a]; }
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
-        void map_udmabuf();
+        void map_udmabuf(uint32_t udmabuf_fd);
+        void map_udmabuf(uint8_t* udmabuf_buf) { img_buffer = udmabuf_buf; }
         void copy(const uint8_t* data, IMAGE_FORMAT format);
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
@@ -53,7 +54,6 @@ class Image
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
     private:
-        uint8_t udmabuf_fd = 0;
         uint32_t img_w;
         uint32_t img_h;
         uint32_t img_c;
