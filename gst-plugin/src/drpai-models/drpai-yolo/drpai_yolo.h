@@ -89,8 +89,8 @@ private:
     [[nodiscard]] uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x) const;
     [[nodiscard]] constexpr static uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
     { return offs + channel * num_grid * num_grid; }
-    [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + expf(-x)); }
-    static inline void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
+    [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + std::exp(-x)); }
+    static void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
     static void softmax(std::vector<float>& val) ;
 };
 

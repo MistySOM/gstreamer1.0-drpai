@@ -85,7 +85,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
             throw;
         }
 
-    Image img (drpai->IN_WIDTH, drpai->IN_HEIGHT, 3, BGR_DATA, img_data);
+    Image img (640, 480, 3, BGR_DATA, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */

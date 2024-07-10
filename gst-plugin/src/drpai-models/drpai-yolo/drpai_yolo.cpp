@@ -79,6 +79,7 @@ void DRPAI_Yolo::extract_detections()
 {
     std::unique_lock lock (mutex);
 
+    std::vector<float> classes (labels.size());
     last_det.clear();
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
@@ -95,11 +96,10 @@ void DRPAI_Yolo::extract_detections()
                     const float& tc = drpai_output_buf.at(yolo_index(num_grid, offs, 4));
                     const float objectness = sigmoid(tc);
 
-                    std::vector<float> classes (labels.size());
                     /* Get the class prediction */
-                    for (uint32_t i = 0; i < labels.size(); i++)
+                    for (uint32_t i = 0; i < classes.size(); i++)
                     {
-                        classes[i] = drpai_output_buf.at(yolo_index(num_grid, offs, 5+i));
+                        classes.at(i) = drpai_output_buf.at(yolo_index(num_grid, offs, 5+i));
                     }
 
                     switch (yolo_version) {
@@ -112,16 +112,10 @@ void DRPAI_Yolo::extract_detections()
                             break;
                     }
 
-                    float max_pred = 0;
-                    uint32_t pred_class = -1;
-                    for (uint32_t i = 0; i < labels.size(); i++)
-                    {
-                        if (classes[i] > max_pred)
-                        {
-                            pred_class = i;
-                            max_pred = classes[i];
-                        }
-                    }
+                    // float max_pred = 0;
+                    const auto it = std::max_element(classes.begin(), classes.end());
+                    const float max_pred = *it;
+                    const uint32_t pred_class = it - classes.begin();
 
                     /* Store the result into the list if the probability is more than the threshold */
                     if (const float probability = max_pred * objectness; probability > TH_PROB)
