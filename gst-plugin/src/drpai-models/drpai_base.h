@@ -10,7 +10,7 @@
 #include "image.h"
 #include "properties.h"
 #include <linux/drpai.h>
-#include <gst/gst.h>
+#include <glib-object.h>
 #include <vector>
 #include <array>
 #include <mutex>

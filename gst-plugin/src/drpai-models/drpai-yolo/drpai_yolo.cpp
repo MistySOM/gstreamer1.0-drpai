@@ -102,10 +102,15 @@ void DRPAI_Yolo::extract_detections()
                         classes[i] = drpai_output_buf.at(yolo_index(num_grid, offs, 5+i));
                     }
 
-                    if (best_class_prediction_algorithm == BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID)
-                        sigmoid(classes);
-                    else if (best_class_prediction_algorithm == BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX)
-                        softmax(classes);
+                    switch (yolo_version) {
+                        case 5:
+                        case 3:
+                            sigmoid(classes); break;
+                        case 2:
+                            softmax(classes); break;
+                        default:
+                            break;
+                    }
 
                     float max_pred = 0;
                     uint32_t pred_class = -1;
@@ -128,25 +133,39 @@ void DRPAI_Yolo::extract_detections()
 
                         /* Compute the bounding box */
                         /*get_yolo_box/get_region_box in paper implementation*/
-                        float center_x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
-                        float center_y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
-                        float box_w = expf(tw) * anchors.at(anchor_offset + 2 * b + 0);
-                        float box_h = expf(th) * anchors.at(anchor_offset + 2 * b + 1);
-                        if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_MODEL_IN) {
-                            box_w /= MODEL_IN_W;
-                            box_h /= MODEL_IN_H;
-                        } else if (anchor_divide_size == ANCHOR_DIVIDE_SIZE_NUM_GRID) {
-                            box_w /= static_cast<float>(num_grid);
-                            box_h /= static_cast<float>(num_grid);
+                        Box box {};
+                        switch (yolo_version) {
+                            case 5: {
+                                box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
+                                box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
+                                box.w = std::exp(2*sigmoid(tw)) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                box.h = std::exp(2*sigmoid(th)) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                break;
+                            }
+                            case 3: {
+                                box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
+                                box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
+                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                break;
+                            }
+                            case 2: {
+                                box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
+                                box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
+                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / static_cast<float>(num_grid);
+                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / static_cast<float>(num_grid);
+                                break;
+                            }
+                            default:
+                                break;
                         }
-
-                        center_x = std::roundf(center_x * static_cast<float>(IN_WIDTH));
-                        center_y = std::roundf(center_y * static_cast<float>(IN_HEIGHT));
-                        box_w = std::roundf(box_w * static_cast<float>(IN_WIDTH));
-                        box_h = std::roundf(box_h * static_cast<float>(IN_HEIGHT));
+                        box.x = std::round(box.x * static_cast<float>(IN_WIDTH));
+                        box.y = std::round(box.y * static_cast<float>(IN_HEIGHT));
+                        box.w = std::round(box.w * static_cast<float>(IN_WIDTH));
+                        box.h = std::round(box.h * static_cast<float>(IN_HEIGHT));
 
                         last_det.emplace_back(detection {
-                                Box(center_x, center_y, box_w, box_h),
+                                box,
                                 pred_class, probability, labels.at(pred_class).c_str()
                         });
                     }
@@ -426,21 +445,22 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
     num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
     std::cout << " & num BB: " << num_bb << std::endl;
 
-    std::string value = get_param("[best_class_prediction_algorithm]");
-    if (value == "sigmoid")
-        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID;
-    else if (value == "softmax")
-        best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX;
-    else
-        throw std::runtime_error("[ERROR] Failed to load value for param [best_class_prediction_algorithm]: " + value);
-
-    value = get_param("[anchor_divide_size]");
-    if (value == "model_in")
-        anchor_divide_size = ANCHOR_DIVIDE_SIZE_MODEL_IN;
-    else if (value == "num_grid")
-        anchor_divide_size = ANCHOR_DIVIDE_SIZE_NUM_GRID;
-    else
-        throw std::runtime_error("[ERROR] Failed to load value for param [anchor_divide_size]: " + value);
+    const std::string value = get_param("[yolo_version]");
+    if (value.empty())
+        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
+    switch (const uint8_t version = value.at(0) - '0') {
+        case 2:
+        case 3:
+            yolo_version = version;
+            MODEL_IN_W = MODEL_IN_H = 416;
+            break;
+        case 5:
+            yolo_version = version;
+            MODEL_IN_W = MODEL_IN_H = 640;
+            break;
+        default:
+            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
+    }
 }
 
 DRPAI_Base* create_DRPAI_instance(const char* prefix) {

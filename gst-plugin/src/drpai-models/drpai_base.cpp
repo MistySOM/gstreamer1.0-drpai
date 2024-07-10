@@ -231,7 +231,7 @@ void DRPAI_Base::wait() const {
 
     switch (select(drpai_fd + 1, &rfds, nullptr, nullptr, &tv)) {
         case 0:
-            throw std::runtime_error("[ERROR] DRP-AI select() Timeout :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+            throw std::runtime_error("[ERROR] DRP-AI select() Timeout");
         case -1: {
             auto s = "[ERROR] DRP-AI select() Error :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno));
             if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1)
@@ -440,7 +440,7 @@ void DRPAI_Base::load_drpai_param_file(const drpai_data_t& _proc, const std::str
     std::cout << "Loading : " << param_file << std::endl;
     std::ifstream file_stream(param_file, std::ios::ate | std::ios::binary);
     if (!file_stream.is_open())
-        throw std::runtime_error("[ERROR] Failed to open: " + param_file);
+        return;
 
     drpai_assign_param_t assign_param {static_cast<uint32_t>(file_stream.tellg()), _proc };
     if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &assign_param))
