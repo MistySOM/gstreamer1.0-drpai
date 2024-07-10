@@ -191,7 +191,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
     try {
-        obj->drpai_controller->process_image(info.data);
+        obj->drpai_controller->process_image(info.data, info.size);
     }
     catch (const std::exception& e) {
         std::cerr << std::endl << e.what() << std::endl << std::endl;

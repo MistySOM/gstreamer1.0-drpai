@@ -63,23 +63,39 @@ void Image::map_udmabuf()
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
     // Write once to allocate physical memory to u-dma-buf virtual space.
-    std::fill(img_buffer, img_buffer+size, 0);
+    std::fill_n(img_buffer, size, 0);
 }
 
-void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
+void Image::copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT f) {
     if(img_buffer == nullptr)
         return;
 
-    if (format == f)
-        std::copy_n(data, size, img_buffer);
-    else if(format == YUV_DATA && f == BGR_DATA) {
-        const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
-        if (convert_buffer == nullptr)
-            convert_buffer = std::make_unique<uint8_t[]>(s);
-        std::copy_n(data, s, convert_buffer.get());
-        convert_from_format = f;
-    } else
+    if (f != BGR_DATA)
         throw std::runtime_error("[ERROR] Can't convert image formats.");
+
+    switch (format) {
+        case RGB_DATA: {
+            for (uint32_t i = 0; i < data_len; i += 3) {
+                img_buffer[i+2] = data[i+0];
+                img_buffer[i+1] = data[i+1];
+                img_buffer[i+0] = data[i+2];
+            }
+            break;
+        }
+        case YUV_DATA:
+        {
+            if (convert_buffer == nullptr)
+                convert_buffer = std::make_unique<uint8_t[]>(data_len);
+            std::copy_n(data, data_len, convert_buffer.get());
+            convert_from_format = f;
+            break;
+        }
+        case BGR_DATA:
+            std::copy_n(data, data_len, img_buffer);
+            break;
+        default:
+            throw std::runtime_error("[ERROR] Can't convert image formats.");
+    }
 }
 
 /*****************************************

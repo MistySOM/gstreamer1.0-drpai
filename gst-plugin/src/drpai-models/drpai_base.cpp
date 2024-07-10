@@ -350,6 +350,8 @@ void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
                 IN_FORMAT = BGR_DATA;
             else if (value == "yuv_data")
                 IN_FORMAT = YUV_DATA;
+            else if (value == "rgb_data")
+                IN_FORMAT = RGB_DATA;
             else
                 throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
             std::cout << " " << value;

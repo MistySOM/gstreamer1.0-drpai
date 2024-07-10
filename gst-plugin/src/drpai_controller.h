@@ -26,7 +26,7 @@ public:
     void open_drpai_model(const std::string& modelPrefix);
     void open_resources();
     void release_resources();
-    void process_image(uint8_t* img_data);
+    void process_image(uint8_t* img_data, uint32_t img_data_len);
 
     void set_property(GstDRPAI_Properties prop, const GValue* value);
     void get_property(GstDRPAI_Properties prop, GValue* value) const;
