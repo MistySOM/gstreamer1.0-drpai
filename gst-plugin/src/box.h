@@ -54,7 +54,7 @@ inline std::string rgb2string(uint32_t c) {
 struct Box
 {
     float x, y, w, h;
-    colorBGR color;
+    colorBGR color = RED_DATA;
 
     explicit constexpr Box(float center_x, float center_y, float width, float height, colorBGR color = RED_DATA):
         x(center_x), y(center_y), w(width), h(height), color(color) {}
