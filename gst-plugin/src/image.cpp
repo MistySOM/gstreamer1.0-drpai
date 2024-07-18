@@ -78,7 +78,6 @@ void Image::copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT f) {
             auto img_buffer_b = &img_buffer[0];
             auto img_buffer_g = &img_buffer[1];
             auto img_buffer_r = &img_buffer[2];
-            auto img_buffer_last = &img_buffer[data_len];
             auto data_r = &data[0];
             auto data_g = &data[1];
             auto data_b = &data[2];
@@ -94,13 +93,6 @@ void Image::copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT f) {
                 data_g += 3;
                 data_b += 3;
             }
-//            for (uint32_t i=1; i < data_len; i += 3) {
-//                img_buffer[i] = data[i];
-//            }
-//            for (uint32_t i=0, j=2; i < data_len; i += 3, j += 3) {
-//                img_buffer[j] = data[i];
-//                img_buffer[i] = data[j];
-//            }
             break;
         }
         case YUV_DATA:

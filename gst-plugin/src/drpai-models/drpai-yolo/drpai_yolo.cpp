@@ -35,12 +35,12 @@ void DRPAI_Yolo::print_box(detection d, int32_t i)
 ******************************************/
 uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x) const
 {
-    const uint8_t& num = num_grids[n];
+    const uint8_t& num = num_grids.at(n);
     uint32_t prev_layer_num = 0;
 
     for (int32_t i = 0 ; i < n; i++)
     {
-        prev_layer_num += num_bb *(labels.size() + 5)* num_grids[i] * num_grids[i];
+        prev_layer_num += num_bb *(labels.size() + 5)* num_grids.at(i) * num_grids.at(i);
     }
     return prev_layer_num + b *(labels.size()+ 5)* num * num + y * num + x;
 }
@@ -83,7 +83,9 @@ void DRPAI_Yolo::extract_detections()
     last_det.clear();
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
-        const uint8_t& num_grid = num_grids[n];
+        const uint8_t& num_grid = num_grids.at(n);
+//        if (n != 2)
+//            continue;
         const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
         for (uint32_t b = 0;b<num_bb;b++)
@@ -132,8 +134,10 @@ void DRPAI_Yolo::extract_detections()
                             case 5: {
                                 box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
                                 box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
-                                box.w = std::exp(2*sigmoid(tw)) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
-                                box.h = std::exp(2*sigmoid(th)) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W /
+                                        1; //(n == 0? 20.f:1.f);
+                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H /
+                                        1; //(n == 0? 20.f:1.f);
                                 break;
                             }
                             case 3: {
@@ -157,6 +161,17 @@ void DRPAI_Yolo::extract_detections()
                         box.y = std::round(box.y * static_cast<float>(IN_HEIGHT));
                         box.w = std::round(box.w * static_cast<float>(IN_WIDTH));
                         box.h = std::round(box.h * static_cast<float>(IN_HEIGHT));
+                        switch (n) {
+                            case 0:
+                                box.color = RED_DATA;
+                                break;
+                            case 1:
+                                box.color = BLUE_DATA;
+                                break;
+                            case 2:
+                                box.color = BLACK_DATA;
+                                break;
+                        }
 
                         last_det.emplace_back(detection {
                                 box,
