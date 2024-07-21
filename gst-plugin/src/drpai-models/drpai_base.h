@@ -88,7 +88,7 @@ protected:
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
-    [[nodiscard]] inline std::string get_param(const std::string& param) { return get_param(params_file_name, param); }
+    [[nodiscard]] std::string get_param(const std::string& param) const { return get_param(params_file_name, param); }
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;

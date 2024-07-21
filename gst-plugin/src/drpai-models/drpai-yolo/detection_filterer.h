@@ -15,6 +15,8 @@
 class detection_filterer {
 
 public:
+    float TH_NMS = 0.5f;
+
     explicit detection_filterer(float width, float height, const std::vector<std::string>& labels):
         width(width), height(height), labels(labels)
     {};
@@ -43,7 +45,6 @@ public:
     [[nodiscard]] constexpr float get_filter_region_height() const { return filter_region.h; }
 
 private:
-    constexpr static float TH_NMS = 0.5f;
     const float width, height;
     const std::vector<std::string>& labels;
 
@@ -51,7 +52,7 @@ private:
 
     std::map<classID, colorBGR> filter_classes {};
 
-    static void filter_boxes_nms(std::vector<detection>& det);
+    void filter_boxes_nms(std::vector<detection>& det);
 };
 
 

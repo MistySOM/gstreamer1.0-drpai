@@ -84,9 +84,7 @@ void DRPAI_Yolo::extract_detections()
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
         const uint8_t& num_grid = num_grids.at(n);
-//        if (n != 2)
-//            continue;
-        const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
+        const uint8_t anchor_offset = 2 * num_bb * (yolo_version == 5? n : num_grids.size() - (n + 1));
 
         for (uint32_t b = 0;b<num_bb;b++)
         {
@@ -134,11 +132,8 @@ void DRPAI_Yolo::extract_detections()
                             case 5: {
                                 box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
                                 box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
-                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W /
-                                        1; //(n == 0? 20.f:1.f);
-                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H /
-                                        1; //(n == 0? 20.f:1.f);
-                                break;
+                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
                             }
                             case 3: {
                                 box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
@@ -161,17 +156,6 @@ void DRPAI_Yolo::extract_detections()
                         box.y = std::round(box.y * static_cast<float>(IN_HEIGHT));
                         box.w = std::round(box.w * static_cast<float>(IN_WIDTH));
                         box.h = std::round(box.h * static_cast<float>(IN_HEIGHT));
-                        switch (n) {
-                            case 0:
-                                box.color = RED_DATA;
-                                break;
-                            case 1:
-                                box.color = BLUE_DATA;
-                                break;
-                            case 2:
-                                box.color = BLACK_DATA;
-                                break;
-                        }
 
                         last_det.emplace_back(detection {
                                 box,
@@ -454,7 +438,7 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
     num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
     std::cout << " & num BB: " << num_bb << std::endl;
 
-    const std::string value = get_param("[yolo_version]");
+    auto value = get_param("[yolo_version]");
     if (value.empty())
         throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
     switch (const uint8_t version = value.at(0) - '0') {
@@ -470,6 +454,15 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
         default:
             throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
     }
+
+    value = get_param("[iou_threshold]");
+    if (!value.empty())
+        try {
+            filterer.TH_NMS = std::stof(value);
+        }
+        catch (...) {
+            throw std::runtime_error("[ERROR] Failed to read value for param [threshhold_nms]: " + value);
+        }
 }
 
 DRPAI_Base* create_DRPAI_instance(const char* prefix) {
