@@ -84,7 +84,7 @@ void DRPAI_Yolo::extract_detections()
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
         const uint8_t& num_grid = num_grids.at(n);
-        const uint8_t anchor_offset = 2 * num_bb * (yolo_version == 5? n : num_grids.size() - (n + 1));
+        const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
         for (uint32_t b = 0;b<num_bb;b++)
         {
