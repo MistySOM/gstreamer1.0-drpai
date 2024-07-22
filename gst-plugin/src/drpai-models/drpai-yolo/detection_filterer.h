@@ -8,6 +8,7 @@
 #include "box.h"
 #include "image.h"
 #include <vector>
+#include <list>
 #include <map>
 
 #define std_find_index(vector, item) (std::find(vector.begin(), vector.end(), item) - vector.begin())
@@ -21,7 +22,7 @@ public:
         width(width), height(height), labels(labels)
     {};
 
-    void apply(std::vector<detection>& det);
+    void apply(std::list<detection>& det);
     void render_filter_region(Image& img) const;
 
     void set_filter_classes(const std::string& s);
@@ -52,7 +53,7 @@ private:
 
     std::map<classID, colorBGR> filter_classes {};
 
-    void filter_boxes_nms(std::vector<detection>& det);
+    void filter_boxes_nms(std::list<detection>& det);
 };
 
 

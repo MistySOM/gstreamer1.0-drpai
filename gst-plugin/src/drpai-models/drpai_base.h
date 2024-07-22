@@ -12,6 +12,7 @@
 #include <linux/drpai.h>
 #include <glib-object.h>
 #include <vector>
+#include <list>
 #include <array>
 #include <mutex>
 #include <map>
@@ -42,7 +43,7 @@ typedef struct
 class DRPAI_Base {
 
 public:
-    std::vector<detection> last_det {};
+    std::list<detection> last_det {};
     std::vector<std::string> corner_text {};
     rate_controller rate {};
 
@@ -67,7 +68,9 @@ public:
     virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
     virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;
     static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
-    [[nodiscard]] static std::string get_param(const std::string& params_file_name, const std::string& param);
+    [[nodiscard]] static std::string get_param(const std::string& params_file_name,
+                                               const std::string& param,
+                                               bool error_not_found);
 
 protected:
     bool log_detects = false;
@@ -88,7 +91,8 @@ protected:
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
-    [[nodiscard]] std::string get_param(const std::string& param) const { return get_param(params_file_name, param); }
+    [[nodiscard]] std::string get_param(const std::string& param, bool error_not_found = true) const
+    { return get_param(params_file_name, param, error_not_found); }
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;

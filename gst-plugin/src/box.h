@@ -91,10 +91,14 @@ struct Box
 using classID = uint32_t;
 struct detection
 {
-    Box bbox {};
-    classID c = 0;
-    float prob = 0;
-    const char* name = nullptr;
+    Box bbox;
+    const classID c;
+    const float prob;
+    const char* name;
+
+    detection(const detection& det) = default;
+    explicit detection(Box box, classID c, float prob, const char* name = nullptr):
+        bbox(box), c(c), prob(prob), name(name)  { }
 
     [[nodiscard]] std::string to_string_hr() const {
         if (name)

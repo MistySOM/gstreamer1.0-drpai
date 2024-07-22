@@ -13,58 +13,55 @@
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void detection_filterer::filter_boxes_nms(std::vector<detection>& det)
+void detection_filterer::filter_boxes_nms(std::list<detection>& det)
 {
-    for (std::size_t i = 0; i < det.size(); i++)
+    for (auto i = det.begin(); i != det.end(); ++i)
     {
-        const Box& a = det[i].bbox;
-        for (std::size_t j = 0; j < det.size(); j++)
+        const Box& a = i->bbox;
+        for (auto j = det.begin(); j != det.end(); ++j)
         {
             if (i == j)
             {
                 continue;
             }
-            if (det[i].c != det[j].c)
+            if (i->c != j->c)
             {
                 continue;
             }
-            const Box& b = det[j].bbox;
+            const Box& b = j->bbox;
             if (const float b_intersection = a & b; (a.iou_with(b)>TH_NMS) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
             {
-                if (det[i].prob > det[j].prob)
+                if (i->prob > j->prob)
                 {
-                    det[j].prob= 0;
+                    j = det.erase(j);
                 }
                 else
                 {
-                    det[i].prob= 0;
+                    i = det.erase(i);
                 }
             }
         }
     }
 }
 
-void detection_filterer::apply(std::vector<detection> &d) {
+void detection_filterer::apply(std::list<detection> &d) {
     if (d.empty())
         return;
 
     /* Non-Maximum Suppression filter */
     filter_boxes_nms(d);
 
-    for (auto& det: d) {
-        /* Skip the overlapped bounding boxes */
-        if (det.prob == 0) continue;
-
+    for (auto det = d.begin(); det != d.end(); ++det) {
         /* Skip the bounding boxes outside of region of interest */
         if (!filter_classes.empty()) {
-            const auto f = filter_classes.find(det.c);
+            const auto f = filter_classes.find(det->c);
             if (f == filter_classes.end())
-                det.prob = 0;
+                det = d.erase(det);
             else
-                det.bbox.color = f->second; // colorBGR
+                det->bbox.color = f->second; // colorBGR
         }
-        if ((filter_region & det.bbox) == 0)
-            det.prob = 0;
+        if ((filter_region & det->bbox) == 0)
+            det = d.erase(det);
     }
 }
 
