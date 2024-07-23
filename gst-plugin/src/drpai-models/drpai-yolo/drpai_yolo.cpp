@@ -35,12 +35,12 @@ void DRPAI_Yolo::print_box(detection d, int32_t i)
 ******************************************/
 uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x) const
 {
-    const uint8_t& num = num_grids[n];
+    const uint8_t& num = num_grids.at(n);
     uint32_t prev_layer_num = 0;
 
     for (int32_t i = 0 ; i < n; i++)
     {
-        prev_layer_num += num_bb *(labels.size() + 5)* num_grids[i] * num_grids[i];
+        prev_layer_num += num_bb *(labels.size() + 5)* num_grids.at(i) * num_grids.at(i);
     }
     return prev_layer_num + b *(labels.size()+ 5)* num * num + y * num + x;
 }
@@ -83,7 +83,7 @@ void DRPAI_Yolo::extract_detections()
     last_det.clear();
     for (uint32_t n = 0; n<num_grids.size(); n++)
     {
-        const uint8_t& num_grid = num_grids[n];
+        const uint8_t& num_grid = num_grids.at(n);
         const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
         for (uint32_t b = 0;b<num_bb;b++)
@@ -94,7 +94,6 @@ void DRPAI_Yolo::extract_detections()
                 {
                     const uint32_t offs = yolo_offset(n, b, y, x);
                     const float& tc = drpai_output_buf.at(yolo_index(num_grid, offs, 4));
-                    const float objectness = sigmoid(tc);
 
                     /* Get the class prediction */
                     for (uint32_t i = 0; i < classes.size(); i++)
@@ -112,14 +111,14 @@ void DRPAI_Yolo::extract_detections()
                             break;
                     }
 
-                    // float max_pred = 0;
-                    const auto it = std::max_element(classes.begin(), classes.end());
-                    const float max_pred = *it;
-                    const uint32_t pred_class = it - classes.begin();
+                    const auto max_pred = std::max_element(classes.begin(), classes.end());
+                    const float objectness = sigmoid(tc);
+                    const float probability = *max_pred * objectness;
 
                     /* Store the result into the list if the probability is more than the threshold */
-                    if (const float probability = max_pred * objectness; probability > TH_PROB)
+                    if ( probability > TH_PROB)
                     {
+                        const uint32_t pred_class = max_pred - classes.begin();
                         const float& tx = drpai_output_buf.at(offs);
                         const float& ty = drpai_output_buf.at(yolo_index(num_grid, offs, 1));
                         const float& tw = drpai_output_buf.at(yolo_index(num_grid, offs, 2));
@@ -132,8 +131,8 @@ void DRPAI_Yolo::extract_detections()
                             case 5: {
                                 box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
                                 box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
-                                box.w = std::exp(2*sigmoid(tw)) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
-                                box.h = std::exp(2*sigmoid(th)) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
                                 break;
                             }
                             case 3: {
@@ -158,10 +157,10 @@ void DRPAI_Yolo::extract_detections()
                         box.w = std::round(box.w * static_cast<float>(IN_WIDTH));
                         box.h = std::round(box.h * static_cast<float>(IN_HEIGHT));
 
-                        last_det.emplace_back(detection {
+                        last_det.emplace_back(
                                 box,
                                 pred_class, probability, labels.at(pred_class).c_str()
-                        });
+                        );
                     }
                 }
             }
@@ -169,7 +168,6 @@ void DRPAI_Yolo::extract_detections()
     }
 
     filterer.apply(last_det);
-    std_erase(last_det, [&](const auto& items) { return items.prob == 0; });
 
     if(det_tracker.active)
         det_tracker.track(last_det);
@@ -439,7 +437,7 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
     num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
     std::cout << " & num BB: " << num_bb << std::endl;
 
-    const std::string value = get_param("[yolo_version]");
+    auto value = get_param("[yolo_version]");
     if (value.empty())
         throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
     switch (const uint8_t version = value.at(0) - '0') {
@@ -455,6 +453,15 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
         default:
             throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
     }
+
+    value = get_param("[iou_threshold]", false);
+    if (!value.empty())
+        try {
+            filterer.TH_NMS = std::stof(value);
+        }
+        catch (...) {
+            throw std::runtime_error("[ERROR] Failed to read value for param [iou_threshold]: " + value);
+        }
 }
 
 DRPAI_Base* create_DRPAI_instance(const char* prefix) {

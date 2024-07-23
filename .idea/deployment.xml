@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="mistysom-v2l-matin" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="mistysom-v2l" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
+      <paths name="mistysom-v2l">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/usr/lib64/gstreamer-1.0/libgstdrpai.so" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" web="" />
+            <mapping deploy="/usr/lib64/libgstdrpai-yolo.so" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-yolo/libgstdrpai-yolo.so" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="mistysom-v2l-matin">
         <serverdata>
           <mappings>

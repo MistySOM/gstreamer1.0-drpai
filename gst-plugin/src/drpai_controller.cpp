@@ -213,7 +213,7 @@ void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
 
     char *error;
     std::string params_file_name = modelPrefix + "/" + modelPrefix + "_post_process_params.txt";
-    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]");
+    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]", true);
 
     std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);

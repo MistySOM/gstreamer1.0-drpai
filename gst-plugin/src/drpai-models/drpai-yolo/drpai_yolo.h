@@ -91,7 +91,7 @@ private:
     { return offs + channel * num_grid * num_grid; }
     [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + std::exp(-x)); }
     static void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
-    static void softmax(std::vector<float>& val) ;
+    static void softmax(std::vector<float>& val);
 };
 
 

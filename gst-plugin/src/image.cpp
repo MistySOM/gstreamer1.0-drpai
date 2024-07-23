@@ -75,10 +75,23 @@ void Image::copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT f) {
 
     switch (format) {
         case RGB_DATA: {
-            for (uint32_t i = 0; i < data_len; i += 3) {
-                img_buffer[i+2] = data[i+0];
-                img_buffer[i+1] = data[i+1];
-                img_buffer[i+0] = data[i+2];
+            auto img_buffer_b = &img_buffer[0];
+            auto img_buffer_g = &img_buffer[1];
+            auto img_buffer_r = &img_buffer[2];
+            auto data_r = &data[0];
+            auto data_g = &data[1];
+            auto data_b = &data[2];
+            auto data_last = &data[data_len];
+            while (data_r != data_last) {
+                *img_buffer_r = *data_r;
+                *img_buffer_g = *data_g;
+                *img_buffer_b = *data_b;
+                img_buffer_b += 3;
+                img_buffer_g += 3;
+                img_buffer_r += 3;
+                data_r += 3;
+                data_g += 3;
+                data_b += 3;
             }
             break;
         }
