@@ -17,7 +17,6 @@ void detection_filterer::filter_boxes_nms(std::list<detection>& det)
 {
     for (auto i = det.begin(); i != det.end(); ++i)
     {
-        const Box& a = i->bbox;
         for (auto j = det.begin(); j != det.end(); ++j)
         {
             if (i == j)
@@ -28,16 +27,18 @@ void detection_filterer::filter_boxes_nms(std::list<detection>& det)
             {
                 continue;
             }
-            const Box& b = j->bbox;
-            if (const float b_intersection = a & b; (a.iou_with(b)>TH_NMS) || (b_intersection >= a.area() - 1) || (b_intersection >= b.area() - 1))
+
+            const float b_intersection = i->bbox & j->bbox;
+            if ((i->bbox.iou_with(j->bbox)>TH_NMS) || (b_intersection >= i->bbox.area() - 1) || (b_intersection >= j->bbox.area() - 1))
             {
                 if (i->prob > j->prob)
                 {
-                    j = det.erase(j);
+                    j = --det.erase(j);
                 }
                 else
                 {
-                    i = det.erase(i);
+                    i = --det.erase(i);
+                    break;
                 }
             }
         }

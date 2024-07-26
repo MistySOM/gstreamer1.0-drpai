@@ -453,11 +453,13 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
         default:
             throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
     }
+    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
 
     value = get_param("[iou_threshold]", false);
     if (!value.empty())
         try {
             filterer.TH_NMS = std::stof(value);
+            std::cout << "Option: IOU Threshold: " << filterer.TH_NMS << std::endl;
         }
         catch (...) {
             throw std::runtime_error("[ERROR] Failed to read value for param [iou_threshold]: " + value);
