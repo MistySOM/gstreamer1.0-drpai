@@ -9,18 +9,6 @@
 #include "tracker.h"
 #include "detection_filterer.h"
 
-enum BEST_CLASS_PREDICTION_ALGORITHM {
-    BEST_CLASS_PREDICTION_ALGORITHM_NONE = 0,
-    BEST_CLASS_PREDICTION_ALGORITHM_SIGMOID,
-    BEST_CLASS_PREDICTION_ALGORITHM_SOFTMAX,
-};
-
-enum ANCHOR_DIVIDE_SIZE {
-    ANCHOR_DIVIDE_SIZE_NONE = 0,
-    ANCHOR_DIVIDE_SIZE_MODEL_IN,
-    ANCHOR_DIVIDE_SIZE_NUM_GRID,
-};
-
 class DRPAI_Yolo final: public DRPAI_Base {
 
 public:
@@ -78,9 +66,7 @@ public:
     void print_box(detection d, int32_t i);
 
 private:
-    static constexpr float TH_PROB      = 0.5f;
-    static constexpr int32_t MODEL_IN_W = 416;
-    static constexpr int32_t MODEL_IN_H = 416;
+    static constexpr float TH_PROB = 0.5f;
 
     bool show_track_id = false;
     tracker det_tracker;
@@ -88,12 +74,13 @@ private:
     bool show_filter = false;
     detection_filterer filterer;
 
+    float MODEL_IN_W;
+    float MODEL_IN_H;
+    uint8_t yolo_version = 0;
     uint32_t num_bb = 0;
     std::vector<uint32_t> num_grids {};
     std::vector<float> anchors {};
     std::vector<std::string> labels {};
-    BEST_CLASS_PREDICTION_ALGORITHM best_class_prediction_algorithm = BEST_CLASS_PREDICTION_ALGORITHM_NONE;
-    ANCHOR_DIVIDE_SIZE anchor_divide_size = ANCHOR_DIVIDE_SIZE_NONE;
 
     void load_label_file(const std::string& label_file_name);
     void load_anchors_file(const std::string& anchors_file_name);
@@ -102,9 +89,9 @@ private:
     [[nodiscard]] uint32_t yolo_offset(uint8_t n, uint32_t b, uint32_t y, uint32_t x) const;
     [[nodiscard]] constexpr static uint32_t yolo_index(const uint8_t num_grid, const uint32_t offs, const uint32_t channel)
     { return offs + channel * num_grid * num_grid; }
-    [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + expf(-x)); }
-    static inline void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
-    static void softmax(std::vector<float>& val) ;
+    [[nodiscard]] constexpr static float sigmoid(const float x) { return 1.0f/(1.0f + std::exp(-x)); }
+    static void sigmoid(std::vector<float>& val) { for (auto& v: val) v = sigmoid(v); }
+    static void softmax(std::vector<float>& val);
 };
 
 

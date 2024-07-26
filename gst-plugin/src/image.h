@@ -29,7 +29,7 @@
 #include <memory>
 
 enum IMAGE_FORMAT {
-    BGR_DATA, YUV_DATA
+    BGR_DATA, RGB_DATA, YUV_DATA
 };
 
 class Image
@@ -44,7 +44,7 @@ class Image
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(const uint8_t* data, IMAGE_FORMAT format);
+        void copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT format);
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;

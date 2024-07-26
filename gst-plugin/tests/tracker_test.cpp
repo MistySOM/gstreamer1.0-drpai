@@ -33,10 +33,10 @@ int main(int argc, char** argv) {
     tracker t(true, 1, 2.25, 1);
     t.history_length = 3;
 
-    std::vector<detection> detections = {
-            detection{Box(100, 100, 20, 20), 1, 1, "name"},
-            detection{Box(200, 100, 20, 20), 2, 1, "name"},
-            detection{Box(100, 200, 20, 20), 1, 1, "name"},
+    std::list<detection> detections = {
+            detection(Box(100, 100, 20, 20), 1, 1, "name"),
+            detection(Box(200, 100, 20, 20), 2, 1, "name"),
+            detection(Box(100, 200, 20, 20), 1, 1, "name"),
     };
     t.track(detections);
     auto result = t.last_tracked_detection;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         if (arg == ARG_HISTORY) assert(t.count() == 3 && t.count(1) == 2 && t.count(2) == 1);
         if (arg == ARG_TIME || arg == ARG_HISTORY) std::this_thread::sleep_for(std::chrono::seconds(2));
 
-        detections = {
+        detections = std::list<detection> {
                 detection{Box(202, 101, 20, 20), 2, 1, "name"},
                 detection{Box(102, 201, 20, 20), 1, 1, "name"},
                 detection{Box(101, 105, 20, 20), 1, 1, "name"},
