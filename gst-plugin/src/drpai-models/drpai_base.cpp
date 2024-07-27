@@ -203,7 +203,6 @@ void DRPAI_Base::get_result()
         static_cast<uint32_t>(drpai_address.data_out_addr),
         static_cast<uint32_t>(drpai_address.data_out_size)
     };
-    float drpai_buf[BUF_SIZE];
 
     errno = 0;
     /* Assign the memory address and size to be read */
@@ -211,21 +210,8 @@ void DRPAI_Base::get_result()
         throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 
     /* Read the memory via DRP-AI Driver and store the output to buffer */
-    for (uint32_t i = 0; i < (drpai_data.size / BUF_SIZE); i++)
-    {
-        errno = 0;
-        if ( read(drpai_fd, drpai_buf, BUF_SIZE) == -1 )
-            throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-        std::memcpy(&drpai_output_buf[BUF_SIZE/sizeof(float)*i], drpai_buf, BUF_SIZE);
-    }
-
-    if ( 0 != (drpai_data.size % BUF_SIZE))
-    {
-        errno = 0;
-        if ( read(drpai_fd, drpai_buf, (drpai_data.size % BUF_SIZE)) == -1 )
-            throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-        std::memcpy(&drpai_output_buf[(drpai_data.size - (drpai_data.size%BUF_SIZE))/sizeof(float)], drpai_buf, (drpai_data.size % BUF_SIZE));
-    }
+    if ( read(drpai_fd, drpai_output_buf.data(), drpai_data.size) == -1 )
+        throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
 void DRPAI_Base::start() {
@@ -244,7 +230,7 @@ void DRPAI_Base::wait() const {
 
     switch (select(drpai_fd + 1, &rfds, nullptr, nullptr, &tv)) {
         case 0:
-            throw std::runtime_error("[ERROR] DRP-AI select() Timeout :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+            throw std::runtime_error("[ERROR] DRP-AI select() Timeout");
         case -1: {
             auto s = "[ERROR] DRP-AI select() Error :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno));
             if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1)
@@ -302,7 +288,7 @@ void DRPAI_Base::open_resource(const uint32_t data_in_address) {
 * Return value      : 0 if succeeded
 *                     not 0 if error occurred
 ******************************************/
-std::string DRPAI_Base::get_param(const std::string& params_file_name, const std::string& param)
+std::string DRPAI_Base::get_param(const std::string& params_file_name, const std::string& param, bool error_not_found)
 {
     std::ifstream infile(params_file_name);
     if (!infile.is_open())
@@ -325,7 +311,10 @@ std::string DRPAI_Base::get_param(const std::string& params_file_name, const std
             found = true;
     }
     infile.close();
-    throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);
+    if (error_not_found)
+        throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);
+    else
+        return "";
 }
 
 void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
@@ -363,6 +352,8 @@ void DRPAI_Base::read_data_in_list(const std::string &data_in_list) {
                 IN_FORMAT = BGR_DATA;
             else if (value == "yuv_data")
                 IN_FORMAT = YUV_DATA;
+            else if (value == "rgb_data")
+                IN_FORMAT = RGB_DATA;
             else
                 throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
             std::cout << " " << value;
@@ -451,7 +442,7 @@ void DRPAI_Base::load_drpai_param_file(const drpai_data_t& _proc, const std::str
     std::cout << "Loading : " << param_file << std::endl;
     std::ifstream file_stream(param_file, std::ios::ate | std::ios::binary);
     if (!file_stream.is_open())
-        throw std::runtime_error("[ERROR] Failed to open: " + param_file);
+        return;
 
     drpai_assign_param_t assign_param {static_cast<uint32_t>(file_stream.tellg()), _proc };
     if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &assign_param))

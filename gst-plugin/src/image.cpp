@@ -63,23 +63,52 @@ void Image::map_udmabuf()
     if (img_buffer == MAP_FAILED)
         throw std::runtime_error("[ERROR] Failed to map Image buffer to UDMA.");
     // Write once to allocate physical memory to u-dma-buf virtual space.
-    std::fill(img_buffer, img_buffer+size, 0);
+    std::fill_n(img_buffer, size, 0);
 }
 
-void Image::copy(const uint8_t* data, IMAGE_FORMAT f) {
+void Image::copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT f) {
     if(img_buffer == nullptr)
         return;
 
-    if (format == f)
-        std::copy(data, data+size, img_buffer);
-    else if(format == YUV_DATA && f == BGR_DATA) {
-        const uint32_t s = img_w * img_h * BGR_NUM_CHANNEL;
-        if (convert_buffer == nullptr)
-            convert_buffer = std::make_unique<uint8_t[]>(s);
-        std::copy(data, data+s, convert_buffer.get());
-        convert_from_format = f;
-    } else
+    if (f != BGR_DATA)
         throw std::runtime_error("[ERROR] Can't convert image formats.");
+
+    switch (format) {
+        case RGB_DATA: {
+            auto img_buffer_b = &img_buffer[0];
+            auto img_buffer_g = &img_buffer[1];
+            auto img_buffer_r = &img_buffer[2];
+            auto data_r = &data[0];
+            auto data_g = &data[1];
+            auto data_b = &data[2];
+            auto data_last = &data[data_len];
+            while (data_r != data_last) {
+                *img_buffer_r = *data_r;
+                *img_buffer_g = *data_g;
+                *img_buffer_b = *data_b;
+                img_buffer_b += 3;
+                img_buffer_g += 3;
+                img_buffer_r += 3;
+                data_r += 3;
+                data_g += 3;
+                data_b += 3;
+            }
+            break;
+        }
+        case YUV_DATA:
+        {
+            if (convert_buffer == nullptr)
+                convert_buffer = std::make_unique<uint8_t[]>(data_len);
+            std::copy_n(data, data_len, convert_buffer.get());
+            convert_from_format = f;
+            break;
+        }
+        case BGR_DATA:
+            std::copy_n(data, data_len, img_buffer);
+            break;
+        default:
+            throw std::runtime_error("[ERROR] Can't convert image formats.");
+    }
 }
 
 /*****************************************

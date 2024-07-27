@@ -53,8 +53,8 @@ void DRPAI_Controller::open_resources() {
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
-void DRPAI_Controller::process_image(uint8_t* img_data) {
-    if (drpai->rate.get_max_rate() != 0 && thread_state != Processing) {
+void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
+    if (drpai->rate.get_max_rate() != 0) {
         switch (thread_state) {
             case Failed:
             case Unknown:
@@ -62,12 +62,13 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
                 throw std::exception();
 
             case Ready:
-                image_mapped_udma->copy(img_data, BGR_DATA);
+                image_mapped_udma->copy(img_data, img_data_len, BGR_DATA);
                 //std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread)
                     v.notify_one();
 
+            case Processing:
             default:
                 break;
         }
@@ -84,7 +85,7 @@ void DRPAI_Controller::process_image(uint8_t* img_data) {
             throw;
         }
 
-    Image img (drpai->IN_WIDTH, drpai->IN_HEIGHT, 3, BGR_DATA, img_data);
+    Image img (640, 480, 3, BGR_DATA, img_data);
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
@@ -198,11 +199,12 @@ void DRPAI_Controller::thread_function_single() {
         j.add("video_rate", video_rate.get_smooth_rate(), 1);
         j.concatenate(drpai->get_json());
         const auto str = j.to_string() + "\n";
-        auto r = sendto(socket_fd, str.c_str(), str.size(), MSG_DONTWAIT,
+        auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
                         reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
-        if (r < static_cast<ssize_t>(str.size()))
-//            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
-            return;
+        
+        if (r < static_cast<ssize_t>(str.size())) {
+            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+        }
     }
 }
 
@@ -211,7 +213,7 @@ void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
 
     char *error;
     std::string params_file_name = modelPrefix + "/" + modelPrefix + "_post_process_params.txt";
-    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]");
+    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]", true);
 
     std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
