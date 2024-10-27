@@ -370,6 +370,7 @@ void DRPAI_Base::release_resource() {
 }
 
 void DRPAI_Base::render_detections_on_image(Image &img) {
+    std::unique_lock lock (mutex);
     for (const auto& detection: last_det)
     {
         /* Draw the bounding box on the image */
@@ -387,14 +388,15 @@ void DRPAI_Base::add_corner_text() {
     corner_text.push_back("DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A"));
 }
 
-json_array DRPAI_Base::get_detections_json() const {
+json_array DRPAI_Base::get_detections_json() {
+    std::unique_lock lock (mutex);
     json_array a;
     for(auto det: last_det)
         a.add(det.get_json());
     return a;
 }
 
-json_object DRPAI_Base::get_json() const {
+json_object DRPAI_Base::get_json() {
     json_object j;
     j.add("drpai_rate", rate.get_smooth_rate(), 1);
     j.add("detections", get_detections_json());
