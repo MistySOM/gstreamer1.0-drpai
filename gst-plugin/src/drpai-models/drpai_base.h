@@ -62,8 +62,8 @@ public:
 
     virtual void add_corner_text();
     virtual void extract_detections() = 0;
-    [[nodiscard]] virtual json_array get_detections_json() const;
-    [[nodiscard]] virtual json_object get_json() const;
+    [[nodiscard]] virtual json_array get_detections_json();
+    [[nodiscard]] virtual json_object get_json();
 
     virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
     virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;

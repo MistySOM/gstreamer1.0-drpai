@@ -19,8 +19,8 @@ public:
     void render_detections_on_image(Image &img) override;
     void add_corner_text() override;
 
-    [[nodiscard]] json_array get_detections_json() const override;
-    [[nodiscard]] json_object get_json() const override;
+    [[nodiscard]] json_array get_detections_json() override;
+    [[nodiscard]] json_object get_json() override;
 
     void set_property(GstDRPAI_Properties prop, const GValue* value) override;
     void get_property(GstDRPAI_Properties prop, GValue* value) const override;

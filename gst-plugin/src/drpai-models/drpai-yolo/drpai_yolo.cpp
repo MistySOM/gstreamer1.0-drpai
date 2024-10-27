@@ -302,14 +302,14 @@ void DRPAI_Yolo::add_corner_text() {
     }
 }
 
-json_array DRPAI_Yolo::get_detections_json() const {
+json_array DRPAI_Yolo::get_detections_json() {
     if (det_tracker.active)
         return det_tracker.get_detections_json();
     else
         return DRPAI_Base::get_detections_json();
 }
 
-json_object DRPAI_Yolo::get_json() const {
+json_object DRPAI_Yolo::get_json() {
     json_object j = DRPAI_Base::get_json();
     if (filterer.is_active())
         j.add("filter", filterer.get_json());
