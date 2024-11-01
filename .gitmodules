@@ -1,0 +1,3 @@
+[submodule "gst-plugin/src/drpai-models/drpai-tvm/tvm"]
+	path = gst-plugin/src/drpai-models/drpai-tvm/tvm
+	url = https://github.com/apache/tvm
