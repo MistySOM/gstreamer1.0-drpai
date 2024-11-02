@@ -403,7 +403,7 @@ json_object DRPAI_Base::get_json() {
     return j;
 }
 
-void DRPAI_Base::run_inference() {
+void DRPAI_Base::run_inference(uint8_t* img_buffer) {
     if(drpai_fd) {
         rate.inform_frame();
 

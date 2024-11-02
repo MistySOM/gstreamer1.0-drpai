@@ -31,10 +31,14 @@
 #define DRPAI_RESET                 _IO  (DRPAI_IO_TYPE, 2)
 #define DRPAI_GET_STATUS            _IOR (DRPAI_IO_TYPE, 3, drpai_status_t)
 #define DRPAI_REG_DUMP              _IO  (DRPAI_IO_TYPE, 5)
-#define DRPAI_ASSIGN_PARAM          _IOW (DRPAI_IO_TYPE, 6, drpai_assign_param_t)
+#define DRPAI_ASSIGN_PARAM          _IOW (DRPAI_IO_TYPE, 6, drpai_assign_param_t)  /* Since the sturecture size is different,       */
+                                                                                   /* it will be a different ID from DRPAI_SET_SEQ. */
 #define DRPAI_PREPOST_CROP          _IOW (DRPAI_IO_TYPE, 7, drpai_crop_t)
 #define DRPAI_PREPOST_INADDR        _IOW (DRPAI_IO_TYPE, 8, drpai_inout_t)
-#define DRPAI_SET_SEQ               _IOW (DRPAI_IO_TYPE, 6, drpai_seq_t)
+#define DRPAI_SET_SEQ               _IOW (DRPAI_IO_TYPE, 6, drpai_seq_t)           /* Since the sturecture size is different,            */
+                                                                                   /* it will be a different ID from DRPAI_ASSIGN_PARAM. */
+#define DRPAI_ASSIGN_DYNAMIC        _IOW (DRPAI_IO_TYPE, 10, drpai_data_dynamic_t)
+#define DRPAI_GET_DRPAI_AREA        _IOR (DRPAI_IO_TYPE, 11, drpai_data_t)
 
 #define DRPAI_INDEX_NUM             (7)
 #define DRPAI_INDEX_INPUT           (0)
@@ -57,6 +61,13 @@
 #define DRPAI_EXE_DRP               (2)
 #define DRPAI_DRP_NOLOAD            (0)
 #define DRPAI_MAX_NODE_NAME         (256)
+#define DRPAI_FILE_TYPE_DESC        (0x10000)
+#define DRPAI_FILE_TYPE_PARAM       (0x20000)
+#define DRPAI_FILE_TYPE_DRP_DESC    (DRPAI_FILE_TYPE_DESC  | DRPAI_INDEX_DRP_DESC)
+#define DRPAI_FILE_TYPE_DRP_CFG     (                        DRPAI_INDEX_DRP_CFG)
+#define DRPAI_FILE_TYPE_DRP_PARAM   (DRPAI_FILE_TYPE_PARAM | DRPAI_INDEX_DRP_PARAM)
+#define DRPAI_FILE_TYPE_AIMAC_DESC  (DRPAI_FILE_TYPE_DESC  | DRPAI_INDEX_AIMAC_DESC)
+#define DRPAI_FILE_TYPE_WEIGHT      (                        DRPAI_INDEX_WEIGHT)
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +78,14 @@ typedef struct drpai_data
     uint32_t        address;
     uint32_t        size;
 } drpai_data_t;
+
+typedef struct drpai_data_dynamic
+{
+    uint32_t        start_address;
+    uint32_t        offset;
+    uint32_t        size;
+    uint32_t        file_type;
+} drpai_data_dynamic_t;
 
 typedef struct drpai_status
 {

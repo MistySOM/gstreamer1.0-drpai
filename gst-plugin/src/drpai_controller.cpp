@@ -191,7 +191,7 @@ void DRPAI_Controller::thread_function_single() {
     }
 
     image_mapped_udma->prepare();
-    drpai->run_inference();
+    drpai->run_inference(image_mapped_udma->img_buffer);
 
     if(socket_fd) {
         json_object j;

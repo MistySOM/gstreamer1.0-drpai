@@ -53,7 +53,7 @@ public:
     int32_t IN_CHANNEL = 0;
     IMAGE_FORMAT IN_FORMAT = BGR_DATA;
 
-    virtual void run_inference();
+    virtual void run_inference(uint8_t* img_buffer);
     virtual void open_resource(uint32_t data_in_address);
     virtual void release_resource();
 

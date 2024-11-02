@@ -36,7 +36,7 @@ class Image
 {
     public:
         explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
-            img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c), img_buffer(data),
+            img_buffer(data), img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c),
             convert_from_format(format) {};
         ~Image();
 
@@ -52,6 +52,8 @@ class Image
         void write_string(const std::string& pcode, int32_t x, int32_t y,
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
+        uint8_t* img_buffer = nullptr;
+
     private:
         uint8_t udmabuf_fd = 0;
         uint32_t img_w;
@@ -59,7 +61,6 @@ class Image
         uint32_t img_c;
         IMAGE_FORMAT format;
         uint32_t size;
-        uint8_t* img_buffer = nullptr;
 
         /* converting section */
         constexpr static uint32_t BGR_NUM_CHANNEL = 3;

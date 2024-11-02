@@ -31,4 +31,5 @@ gstplugindrpai = library('gstdrpai',
 gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directories : incdir)
 
 subdir('src/drpai-models/drpai-yolo')
+subdir('src/drpai-models/drpai-tvm')
 subdir('tests')
