@@ -3,7 +3,7 @@
 //
 
 #include "drpai_controller.h"
-#include "src/drpai-models/drpai-yolo/drpai_yolo.h"
+#include "src/drpai-models/drpai-yolo/yolo_post_processor.h"
 #include <memory>
 #include <iostream>
 #include <netdb.h>
@@ -89,21 +89,22 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
-    drpai->corner_text.clear();
+    postprocessor->corner_text.clear();
     if (show_time) {
         const auto now = std::chrono::system_clock::now();
         const auto now_t = std::chrono::system_clock::to_time_t(now);
         const auto now_l = std::localtime(&now_t);
         char now_str[25];
         snprintf( now_str, 25, "Current Time: %02d:%02d:%02d", now_l->tm_hour, now_l->tm_min, now_l->tm_sec);
-        drpai->corner_text.emplace_back(now_str);
+        postprocessor->corner_text.emplace_back(now_str);
     }
     if (show_fps) {
-        drpai->corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
-        drpai->add_corner_text();
+        postprocessor->corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
+        postprocessor->corner_text.push_back(drpai->get_status());
+        postprocessor->corner_text.push_back(postprocessor->get_status());
     }
-    drpai->render_detections_on_image(img);
-    drpai->render_text_on_image(img);
+    postprocessor->render_detections_on_image(img);
+    postprocessor->render_text_on_image(img);
 }
 
 void DRPAI_Controller::set_socket_address(const std::string& address) {
@@ -192,6 +193,7 @@ void DRPAI_Controller::thread_function_single() {
 
     image_mapped_udma->prepare();
     drpai->run_inference();
+    postprocessor->extract_detections(drpai->drpai_output_buf);
 
     if(socket_fd) {
         json_object j;
@@ -208,12 +210,10 @@ void DRPAI_Controller::thread_function_single() {
     }
 }
 
-void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
-    std::cout << "RZ/V2L DRP-AI Plugin" << std::endl;
-
+void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefix) {
     char *error;
     std::string params_file_name = modelPrefix + "/" + modelPrefix + "_post_process_params.txt";
-    std::string model_library_path = DRPAI_Base::get_param(params_file_name, "[dynamic_library]", true);
+    std::string model_library_path = BasePostProcessor::get_param(params_file_name, "[dynamic_library]", true);
 
     std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
@@ -221,11 +221,13 @@ void DRPAI_Controller::open_drpai_model(const std::string &modelPrefix) {
         throw std::runtime_error("[ERROR] Failed to open library " + std::string(dlerror()));
 
     dlerror();    /* Clear any existing error */
-    const auto create_DRPAI_instance_dl = reinterpret_cast<create_DRPAI_instance_def>(dlsym(dynamic_library_handle, "create_DRPAI_instance"));
+    const auto create_post_processor_instance_dl = reinterpret_cast<create_post_processor_instance_def>(dlsym(dynamic_library_handle, "create_post_processor_instance"));
     if ((error = dlerror()) != nullptr)
         throw std::runtime_error("[ERROR] Failed to locate function in " + model_library_path + ": error=" + error);
 
-    drpai = (*create_DRPAI_instance_dl)(modelPrefix.c_str());
+    postprocessor = (*create_post_processor_instance_dl)(modelPrefix.c_str(),
+            drpai->IN_WIDTH, drpai->IN_HEIGHT,
+            drpai->drpai_output_buf.size());
 }
 
 void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *value) {
@@ -248,9 +250,28 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_SMOOTH_VIDEO_RATE:
             video_rate.set_smooth_rate(g_value_get_uint(value));
             break;
-        case PROP_MODEL:
-            open_drpai_model(g_value_get_string(value));
+        case PROP_MODEL: {
+            auto prefix = std::string(g_value_get_string(value));
+            drpai = new BaseDRPAI(prefix);
+            open_post_processor_library(prefix);
             break;
+        }
+        case PROP_LOG_DETECTS:
+            postprocessor->log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_PP_PROPERTIES: {
+            auto ss = std::stringstream(g_value_get_string(value));
+            while (ss.good()) {
+                std::string key, val;
+                getline(ss, key, '=');
+                getline(ss, val, ';');
+                auto r = postprocessor->set_property(key, val);
+                if (!r) {
+                    throw std::runtime_error("Can't find the property '" + key + "' for post processor.");
+                }
+            }
+            break;
+        }
         default:
             drpai->set_property(prop, value);
             break;
@@ -274,6 +295,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_SMOOTH_VIDEO_RATE:
             g_value_set_uint(value, video_rate.get_max_smooth_rate());
             break;
+        case PROP_LOG_DETECTS:
+            g_value_set_boolean(value, postprocessor->log_detects);
+            break;
         default:
             drpai->get_property(prop, value);
             break;
@@ -284,6 +308,12 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_MODEL, g_param_spec_string("model", "Model",
                                                 "The name of the pretrained model and the directory prefix.",
                                                 nullptr, G_PARAM_READWRITE));
+    params.emplace(PROP_PP_PROPERTIES, g_param_spec_string("post_process_properties", "Post-Process Properties",
+                                                   "Semi-colon seperated properties used in post-processor library.",
+                                                   "", G_PARAM_READWRITE));
+    params.emplace(PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
+                                                          "Print detected objects in standard output.",
+                                                          FALSE, G_PARAM_READWRITE));
     params.emplace(PROP_MULTITHREAD, g_param_spec_boolean("multithread", "MultiThread",
                                                        "Use a separate thread for object detection.",
                                                        TRUE, G_PARAM_READWRITE));
@@ -302,5 +332,5 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_LOG_SERVER, g_param_spec_string("log_server", "Log Server",
                                                      "Send UDP messages in JSON about detected objects to the mentioned host:port.",
                                                      nullptr, G_PARAM_WRITABLE));
-    DRPAI_Base::install_properties(params);
+    BaseDRPAI::install_properties(params);
 }

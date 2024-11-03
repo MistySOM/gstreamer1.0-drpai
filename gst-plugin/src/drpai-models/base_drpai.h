@@ -2,8 +2,8 @@
 // Created by matin on 01/12/23.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_DRPAI_BASE_H
-#define GSTREAMER1_0_DRPAI_DRPAI_BASE_H
+#ifndef GSTREAMER1_0_DRPAI_BASE_DRPAI_H
+#define GSTREAMER1_0_DRPAI_BASE_DRPAI_H
 
 #include "rate_controller.h"
 #include "box.h"
@@ -40,11 +40,22 @@ typedef struct
     unsigned long weight_size;
 } st_addr_t;
 
-class DRPAI_Base {
+class BaseDRPAI {
 
 public:
-    std::list<detection> last_det {};
-    std::vector<std::string> corner_text {};
+    explicit BaseDRPAI(const std::string &prefix);
+
+    virtual void run_inference();
+    virtual void open_resource(uint32_t data_in_address);
+    virtual void release_resource();
+
+    [[nodiscard]] virtual std::string get_status() const;
+    [[nodiscard]] virtual json_object get_json();
+
+    virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
+    virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;
+    static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
+
     rate_controller rate {};
 
     /*DRP-AI Input image information*/
@@ -52,47 +63,22 @@ public:
     int32_t IN_HEIGHT = 0;
     int32_t IN_CHANNEL = 0;
     IMAGE_FORMAT IN_FORMAT = BGR_DATA;
-
-    virtual void run_inference();
-    virtual void open_resource(uint32_t data_in_address);
-    virtual void release_resource();
-
-    virtual void render_detections_on_image(Image& img);
-    virtual void render_text_on_image(Image& img);
-
-    virtual void add_corner_text();
-    virtual void extract_detections() = 0;
-    [[nodiscard]] virtual json_array get_detections_json();
-    [[nodiscard]] virtual json_object get_json();
-
-    virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
-    virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;
-    static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
-    [[nodiscard]] static std::string get_param(const std::string& params_file_name,
-                                               const std::string& param,
-                                               bool error_not_found);
+    std::vector<float> drpai_output_buf {};
 
 protected:
-    bool log_detects = false;
     const std::string prefix;
-    const std::string params_file_name;
 
     int32_t drpai_fd = 0;
     st_addr_t drpai_address {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
-    std::vector<float> drpai_output_buf {};
-    std::mutex mutex;
 
-    explicit DRPAI_Base(const std::string& class_name, const std::string &prefix);
-    virtual ~DRPAI_Base() = default;
+    virtual ~BaseDRPAI() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
     void get_result();
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
-    [[nodiscard]] std::string get_param(const std::string& param, bool error_not_found = true) const
-    { return get_param(params_file_name, param, error_not_found); }
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;
@@ -108,8 +94,5 @@ private:
     void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
 };
 
-extern "C" DRPAI_Base* create_DRPAI_instance(const char* prefix);
-typedef DRPAI_Base* (*create_DRPAI_instance_def)(const char* prefix);
 
-
-#endif //GSTREAMER1_0_DRPAI_DRPAI_BASE_H
+#endif //GSTREAMER1_0_DRPAI_BASE_DRPAI_H

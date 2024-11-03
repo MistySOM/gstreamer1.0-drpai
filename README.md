@@ -31,21 +31,23 @@ The plugin also provides you with the following parameters:
 
 ### General Parameters
 
-| Name                     | Type                 | Default | Description                                                                                               |
-|--------------------------|----------------------|--------:|-----------------------------------------------------------------------------------------------------------|
-| **model**                | String               |     --- | (Required) The name of the pre-trained model and the directory prefix.                                    |
-| **multithread**          | Boolean              |    true | Use a separate thread for object detection.                                                               |
-| **log-detects**          | Boolean              |   false | Print detected objects in standard output.                                                                |
-| **log-server**           | Host:Port (String)   |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
-| **show-fps**             | Boolean              |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
-| **stop-error**           | Boolean              |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
-| **max-video-rate**       | Float [0.001 - 120]  |     120 | Force maximum video frame rate using thread sleeps.                                                       |
-| **max-drpai-rate**       | Float [0 - 120]      |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |
-| **smooth-video-rate**    | Float [1 - 1000]     |       1 | Number of last video frame rates to average for a more smooth value.                                      |
-| **smooth-drpai-rate**    | Float [1 - 1000]     |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
-| **smooth-bbox-rate**     | Float [1 - 1000]     |       1 | Number of last bounding-box updates to average. (requires tracking)                                       |
+| Name                        | Type                | Default | Description                                                                                               |
+|-----------------------------|---------------------|--------:|-----------------------------------------------------------------------------------------------------------|
+| **model**                   | String              |     --- | (Required) The name of the pre-trained model and the directory prefix.                                    |
+| **multithread**             | Boolean             |    true | Use a separate thread for object detection.                                                               |
+| **log-detects**             | Boolean             |   false | Print detected objects in standard output.                                                                |
+| **log-server**              | Host:Port (String)  |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
+| **show-fps**                | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
+| **stop-error**              | Boolean             |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
+| **max-video-rate**          | Float [0.001 - 120] |     120 | Force maximum video frame rate using thread sleeps.                                                       |
+| **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |
+| **smooth-video-rate**       | Float [1 - 1000]    |       1 | Number of last video frame rates to average for a more smooth value.                                      |
+| **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
+| **post-process-properties** | String              |     --- | Semi-colon seperated properties used in post-processor library.                                           |
 
-### Tracking Parameters (YOLO specific)
+### Acceptable items in 'post-process-properties' :
+
+#### Tracking Parameters (YOLO specific)
 
 | Name                     | Type                 | Default | Description                                                                                                                                                                  |
 |--------------------------|----------------------|--------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -54,8 +56,9 @@ The plugin also provides you with the following parameters:
 | **track-seconds**        | Float [0.001 - 100]  |       2 | Number of seconds to wait for a tracked undetected object to forget it.                                                                                                      |
 | **track-doa-thresh**     | Float [0.001 - 1000] |    2.25 | The threshold of Distance Over Areas (DOA) for tracking bounding-boxes.                                                                                                      |
 | **track-history-length** | Integer [0 - 1440]   |      60 | Minutes to keep the tracking history.                                                                                                                                        |
+| **smooth-bbox-rate**     | Float [1 - 1000]     |       1 | Number of last bounding-box updates to average. (requires tracking)                                                                                                          |
 
-### Filtering Parameters (YOLO specific)
+#### Filtering Parameters (YOLO specific)
 
 | Name                     | Type              |  Default | Description                                                                       |
 |--------------------------|-------------------|---------:|-----------------------------------------------------------------------------------|
@@ -95,23 +98,27 @@ libgstdrpai-yolo.so
 The plugin already includes a dynamic library that supports `yolov2`, `yolov3`, `tinyyolov2`, 
 and `tinyyolov3` models. This dynamic library leverages many similarities between these models and
 switches its behaviour based on other parameters that are mentioned in `{model}/{model}_process_params.txt` 
-file such as the `[best_class_prediction_algorithm]` and `[anchor_divide_size]`. 
+file such as the `[yolo_version]`. 
 
 The library also loads the list of all class labels in `{model}/{model}_labels.txt` and the list of all 
 box anchors in `{model}/{model}_anchors.txt`. This means these 3 files need to be manually included 
-alongside the output of the DRPAI TVM translator.
+alongside the output of the DRPAI translator and TVM.
 
 #### Make your own Dynamic Model Library
 
-If you want to use a model that is not following the output layer format for Yolo models, you can write 
-your own dynamic library which derives and overrides functions of `DRPAI_Base` class in 
-`src/models/drpai_base.h` include file. 
+If you want to use a model that is not following the output layer format for YOLO models, you can write 
+your own dynamic library which derives and overrides functions of `BasePostProcessor` class in 
+`src/drpai-models/base_post_processor.h` include file. 
 
 Additionally, you need to define the function below to allow your library to be dynamically loaded at runtime:
 
 ```C++
-DRPAI_Base* create_DRPAI_instance(const char* prefix) {
-    return new YOUR_DRPAI_CLASS(prefix);
+BasePostProcessor* create_post_processor_instance(const char* prefix,
+                                                  uint32_t img_width, 
+                                                  uint32_t img_height,
+                                                  uint32_t inference_output_size)
+{
+    return new YOUR_POST_PROCESSOR(prefix, img_width, img_height, inference_output_size);
 }
 ```
 
@@ -140,33 +147,38 @@ directory (best to specify an absolute path though).
 
 You can also check if it has been built correctly with:
 
-    gst-inspect-1.0 builddir/gst-plugins/src/libgstdrpai.so
+```bash
+gst-inspect-1.0 builddir/gst-plugins/src/libgstdrpai.so
+```
 
 ## Some examples of running the plugin
 
 ### Read Camera and Show on Screen
 
-```
+```bash
 gst-launch-1.0 v4l2src device=/dev/video0 \
     ! videoconvert \
-    ! drpai model=yolov3 show-fps=true log-detects=true smooth-video-rate=30 \
+    ! drpai model=yolov3 log-detects=true smooth-video-rate=30 post-process-properties="show-fps=true" \
     ! videoconvert \
     ! autovideosink
 ```
+
 If your camera supports the BGR format (such as the coral camera), you can modify the camera size in 
 `~/v4l2init.sh` and skip the first `videoconvert` element like this:
-```
+
+```bash
 gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, format=BGR \
-    ! drpai model=yolov3 show-fps=true log-detects=true smooth-video-rate=30 \
+    ! drpai model=yolov3 log-detects=true smooth-video-rate=30 post-process-properties="show-fps=true" \
     ! videoconvert \
     ! autovideosink
 ```
+
 ### Read Camera and Stream on Network
 
 In case you already have the streaming working based on [here](StreamingVideo.md), you can 
 add the drpai element to the `stream.sh` file like this:
 
-````
+```bash
 #!/bin/bash
 [ $1 ] || { echo  "Please specify the destination IP address: ./stream.sh ip" >&2; exit 1; }
 
@@ -174,9 +186,9 @@ add the drpai element to the `stream.sh` file like this:
 echo "Streaming to ${1} with DRPAI..."
 
 gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, format=BGR \
-    ! drpai model=yolov3 show-fps=true log-detects=true smooth-video-rate=30 \
+    ! drpai model=yolov3 log-detects=true smooth-video-rate=30 post-process-properties="show-fps=true" \
     ! vspmfilter dmabuf-use=true ! video/x-raw, format=NV12 \
     ! omxh264enc control-rate=2 target-bitrate=10485760 interval_intraframes=14 periodicty-idr=2 \
     ! video/x-h264,profile=\(string\)high,level=\(string\)4.2 \
     ! rtph264pay ! udpsink host=$1 port=51372
-````
+```
