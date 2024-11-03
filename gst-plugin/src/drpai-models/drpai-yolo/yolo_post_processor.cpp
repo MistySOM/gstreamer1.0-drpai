@@ -2,9 +2,10 @@
 // Created by matin on 01/12/23.
 //
 
-#include "drpai_yolo.h"
+#include "yolo_post_processor.h"
 #include <iostream>
 #include <fstream>
+#include <mutex>
 
 /*****************************************
 * Function Name : print_box
@@ -13,7 +14,7 @@
 *                 i = result number
 * Return value  : -
 ******************************************/
-void DRPAI_Yolo::print_box(detection d, int32_t i)
+void YOLO_PostProcessor::print_box(detection d, int32_t i)
 {
     std::cout << "Result " << i << " -----------------------------------------*" << std::endl;
     std::cout << "\x1b[1m";
@@ -33,7 +34,7 @@ void DRPAI_Yolo::print_box(detection d, int32_t i)
 *                 x = Number to indicate which region [0~13]
 * Return value  : offset to access the bounding box attributes.
 ******************************************/
-uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x) const
+uint32_t YOLO_PostProcessor::yolo_offset(const uint8_t n, const uint32_t b, const uint32_t y, const uint32_t x) const
 {
     const uint8_t& num = num_grids.at(n);
     uint32_t prev_layer_num = 0;
@@ -51,7 +52,7 @@ uint32_t DRPAI_Yolo::yolo_offset(const uint8_t n, const uint32_t b, const uint32
 * Arguments     : val[] = array to be computed softmax
 * Return value  : -
 ******************************************/
-void DRPAI_Yolo::softmax(std::vector<float>& val)
+void YOLO_PostProcessor::softmax(std::vector<float>& val)
 {
     float max_num = -std::numeric_limits<float>::max();
     for (const auto& v: val)
@@ -75,7 +76,7 @@ void DRPAI_Yolo::softmax(std::vector<float>& val)
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void DRPAI_Yolo::extract_detections()
+void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_output_buf)
 {
     std::unique_lock lock (mutex);
 
@@ -93,12 +94,12 @@ void DRPAI_Yolo::extract_detections()
                 for (int32_t x = 0;x<num_grid;x++)
                 {
                     const uint32_t offs = yolo_offset(n, b, y, x);
-                    const float& tc = drpai_output_buf.at(yolo_index(num_grid, offs, 4));
+                    const float& tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
 
                     /* Get the class prediction */
                     for (uint32_t i = 0; i < classes.size(); i++)
                     {
-                        classes.at(i) = drpai_output_buf.at(yolo_index(num_grid, offs, 5+i));
+                        classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5+i));
                     }
 
                     switch (yolo_version) {
@@ -119,10 +120,10 @@ void DRPAI_Yolo::extract_detections()
                     if ( probability > TH_PROB)
                     {
                         const uint32_t pred_class = max_pred - classes.begin();
-                        const float& tx = drpai_output_buf.at(offs);
-                        const float& ty = drpai_output_buf.at(yolo_index(num_grid, offs, 1));
-                        const float& tw = drpai_output_buf.at(yolo_index(num_grid, offs, 2));
-                        const float& th = drpai_output_buf.at(yolo_index(num_grid, offs, 3));
+                        const float& tx = inference_output_buf.at(offs);
+                        const float& ty = inference_output_buf.at(yolo_index(num_grid, offs, 1));
+                        const float& tw = inference_output_buf.at(yolo_index(num_grid, offs, 2));
+                        const float& th = inference_output_buf.at(yolo_index(num_grid, offs, 3));
 
                         /* Compute the bounding box */
                         /*get_yolo_box/get_region_box in paper implementation*/
@@ -152,10 +153,10 @@ void DRPAI_Yolo::extract_detections()
                             default:
                                 break;
                         }
-                        box.x = std::round(box.x * static_cast<float>(IN_WIDTH));
-                        box.y = std::round(box.y * static_cast<float>(IN_HEIGHT));
-                        box.w = std::round(box.w * static_cast<float>(IN_WIDTH));
-                        box.h = std::round(box.h * static_cast<float>(IN_HEIGHT));
+                        box.x = std::round(box.x * static_cast<float>(img_width));
+                        box.y = std::round(box.y * static_cast<float>(img_height));
+                        box.w = std::round(box.w * static_cast<float>(img_width));
+                        box.h = std::round(box.h * static_cast<float>(img_height));
 
                         last_det.emplace_back(
                                 box,
@@ -194,13 +195,12 @@ void DRPAI_Yolo::extract_detections()
     }
 }
 
-void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
-    DRPAI_Base::open_resource(data_in_address);
+void YOLO_PostProcessor::open_resource() {
     if (filterer.is_filter_region_active())
         std::cout << "Option : Filtering region of interest to " << filterer.get_filter_region_json().to_string() << std::endl;
     else {
-        filterer.set_filter_region_width(static_cast<float>(IN_WIDTH));
-        filterer.set_filter_region_height(static_cast<float>(IN_HEIGHT));
+        filterer.set_filter_region_width(static_cast<float>(img_width));
+        filterer.set_filter_region_height(static_cast<float>(img_height));
     }
 }
 
@@ -211,7 +211,7 @@ void DRPAI_Yolo::open_resource(const uint32_t data_in_address) {
 * Return value      : 0 if succeeded
 *                     not 0 if error occurred
 ******************************************/
-void DRPAI_Yolo::load_label_file(const std::string& label_file_name)
+void YOLO_PostProcessor::load_label_file(const std::string& label_file_name)
 {
     std::ifstream infile(label_file_name);
     if (!infile.is_open())
@@ -236,7 +236,7 @@ void DRPAI_Yolo::load_label_file(const std::string& label_file_name)
 * Return value      : 0 if succeeded
 *                     not 0 if error occurred
 ******************************************/
-void DRPAI_Yolo::load_anchors_file(const std::string& anchors_file_name)
+void YOLO_PostProcessor::load_anchors_file(const std::string& anchors_file_name)
 {
     std::ifstream infile(anchors_file_name);
     if (!infile.is_open())
@@ -261,7 +261,7 @@ void DRPAI_Yolo::load_anchors_file(const std::string& anchors_file_name)
 * Return value      : 0 if succeeded
 *                     not 0 if error occurred
 ******************************************/
-void DRPAI_Yolo::load_num_grids(const std::string& data_out_list_file_name)
+void YOLO_PostProcessor::load_num_grids(const std::string& data_out_list_file_name)
 {
     std::ifstream infile(data_out_list_file_name);
     if (!infile.is_open())
@@ -281,7 +281,7 @@ void DRPAI_Yolo::load_num_grids(const std::string& data_out_list_file_name)
     infile.close();
 }
 
-void DRPAI_Yolo::render_detections_on_image(Image &img) {
+void YOLO_PostProcessor::render_detections_on_image(Image &img) {
     if (show_filter)
         filterer.render_filter_region(img);
     if (det_tracker.active)
@@ -290,27 +290,26 @@ void DRPAI_Yolo::render_detections_on_image(Image &img) {
             img.draw_rect(tracked->smooth_bbox.mix, tracked->to_string_hr(show_track_id));
         }
     else
-        DRPAI_Base::render_detections_on_image(img);
+        BasePostProcessor::render_detections_on_image(img);
 }
 
-void DRPAI_Yolo::add_corner_text() {
-    DRPAI_Base::add_corner_text();
+std::string YOLO_PostProcessor::get_status() const {
     if (det_tracker.active) {
-        corner_text.push_back(
-                "Tracked/" + std::to_string(det_tracker.history_length/60) + "min: " +
-                std::to_string(det_tracker.count()));
+        return "Tracked/" + std::to_string(det_tracker.history_length/60) + "min: " +
+               std::to_string(det_tracker.count());
     }
+    return "";
 }
 
-json_array DRPAI_Yolo::get_detections_json() {
+json_array YOLO_PostProcessor::get_detections_json() {
     if (det_tracker.active)
         return det_tracker.get_detections_json();
     else
-        return DRPAI_Base::get_detections_json();
+        return BasePostProcessor::get_detections_json();
 }
 
-json_object DRPAI_Yolo::get_json() {
-    json_object j = DRPAI_Base::get_json();
+json_object YOLO_PostProcessor::get_json() {
+    json_object j = BasePostProcessor::get_json();
     if (filterer.is_active())
         j.add("filter", filterer.get_json());
     if(det_tracker.active)
@@ -318,100 +317,44 @@ json_object DRPAI_Yolo::get_json() {
     return j;
 }
 
-void DRPAI_Yolo::set_property(GstDRPAI_Properties prop, const GValue *value) {
-    switch (prop) {
-        case PROP_TRACKING:
-            det_tracker.active = g_value_get_boolean(value);
-            if (det_tracker.active)
-                std::cout << "Option : Detection Tracking is Active!" << std::endl;
-            break;
-        case PROP_TRACK_SHOW_ID:
-            show_track_id = g_value_get_boolean(value);
-            break;
-        case PROP_SMOOTH_BBOX_RATE:
-            det_tracker.bbox_smooth_rate = g_value_get_uint(value);
-            break;
-        case PROP_TRACK_HISTORY_LENGTH:
-            det_tracker.history_length = g_value_get_uint(value)*60;
-            break;
-        case PROP_TRACK_SECONDS:
-            det_tracker.time_threshold = g_value_get_float(value);
-            break;
-        case PROP_TRACK_DOA_THRESHOLD:
-            det_tracker.doa_threshold = g_value_get_float(value);
-            break;
-        case PROP_FILTER_SHOW:
-            show_filter = g_value_get_boolean(value);
-            break;
-        case PROP_FILTER_CLASS:
-            filterer.set_filter_classes(g_value_get_string(value));
-            break;
-        case PROP_FILTER_LEFT:
-            filterer.set_filter_region_left(static_cast<float>(g_value_get_uint(value)));
-            break;
-        case PROP_FILTER_TOP:
-            filterer.set_filter_region_top(static_cast<float>(g_value_get_uint(value)));
-            break;
-        case PROP_FILTER_WIDTH:
-            filterer.set_filter_region_width(static_cast<float>(g_value_get_uint(value)));
-            break;
-        case PROP_FILTER_HEIGHT:
-            filterer.set_filter_region_height(static_cast<float>(g_value_get_uint(value)));
-            break;
-        default:
-            DRPAI_Base::set_property(prop, value);
-            break;
+bool YOLO_PostProcessor::set_property(const std::string& key, const std::string& value) {
+    if (key == "tracking") {
+        det_tracker.active = to_bool(value);
+        if (det_tracker.active)
+            std::cout << "Option : Detection Tracking is Active!" << std::endl;
+    } else if (key == "show_track_id") {
+        show_track_id = to_bool(value);
+    } else if (key == "smooth_bbox_rate") {
+        det_tracker.bbox_smooth_rate = std::stoul(value);
+    } else if (key == "history_length") {
+        det_tracker.history_length = std::stoul(value)*60;
+    } else if (key == "track_seconds") {
+        det_tracker.time_threshold = std::stof(value);
+    } else if (key == "doa_threshold") {
+        det_tracker.doa_threshold = std::stof(value);
+    } else if (key == "filter_show") {
+        show_filter = to_bool(value);
+    } else if (key == "filter_class") {
+        filterer.set_filter_classes(value);
+    } else if (key == "filter_left") {
+        filterer.set_filter_region_left(std::stof(value));
+    } else if (key == "filter_top") {
+        filterer.set_filter_region_top(std::stof(value));
+    } else if (key == "filter_width") {
+        filterer.set_filter_region_width(std::stof(value));
+    } else if (key == "filter_height") {
+        filterer.set_filter_region_height(std::stof(value));
+    } else {
+        return BasePostProcessor::set_property(key, value);
     }
+    return true;
 }
 
-void DRPAI_Yolo::get_property(GstDRPAI_Properties prop, GValue *value) const {
-    switch (prop) {
-        case PROP_TRACKING:
-            g_value_set_boolean(value, det_tracker.active);
-            break;
-        case PROP_TRACK_SHOW_ID:
-            g_value_set_boolean(value, show_track_id);
-            break;
-        case PROP_SMOOTH_BBOX_RATE:
-            g_value_set_uint(value, det_tracker.bbox_smooth_rate);
-            break;
-        case PROP_TRACK_HISTORY_LENGTH:
-            g_value_set_uint(value, det_tracker.history_length/60);
-            break;
-        case PROP_TRACK_SECONDS:
-            g_value_set_float(value, det_tracker.time_threshold);
-            break;
-        case PROP_TRACK_DOA_THRESHOLD:
-            g_value_set_float(value, det_tracker.doa_threshold);
-            break;
-        case PROP_FILTER_SHOW:
-            g_value_set_boolean(value, show_filter);
-            break;
-        case PROP_FILTER_CLASS:
-            g_value_set_string(value,filterer.get_filter_classes_string().c_str());
-            break;
-        case PROP_FILTER_LEFT:
-            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_left()));
-            break;
-        case PROP_FILTER_TOP:
-            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_top()));
-            break;
-        case PROP_FILTER_WIDTH:
-            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_width()));
-            break;
-        case PROP_FILTER_HEIGHT:
-            g_value_set_uint(value, static_cast<uint>(filterer.get_filter_region_height()));
-            break;
-        default:
-            DRPAI_Base::get_property(prop, value);
-            break;
-    }
-}
-
-DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
-        DRPAI_Base("Darknet YOLO", prefix),
+YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix,
+                                       uint32_t img_width, uint32_t img_height, uint32_t inference_output_size) :
+        BasePostProcessor(prefix, img_width, img_height, inference_output_size),
         det_tracker(true, 2, 2.25, 1),
-        filterer(static_cast<float>(IN_WIDTH), static_cast<float>(IN_HEIGHT), labels)
+        filterer(static_cast<float>(img_width), static_cast<float>(img_height), labels)
 {
     /*Load Label from label_list file*/
     const std::string label_list = prefix + "/" + prefix + "_labels.txt";
@@ -434,7 +377,7 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
     uint32_t sum_grids = 0;
     for (const auto& n: num_grids)
         sum_grids += n*n;
-    num_bb = drpai_output_buf.size() / ((labels.size()+5)*sum_grids);
+    num_bb = inference_output_size / ((labels.size()+5)*sum_grids);
     std::cout << " & num BB: " << num_bb << std::endl;
 
     auto value = get_param("[yolo_version]");
@@ -466,6 +409,8 @@ DRPAI_Yolo::DRPAI_Yolo(const std::string &prefix) :
         }
 }
 
-DRPAI_Base* create_DRPAI_instance(const char* prefix) {
-    return new DRPAI_Yolo(prefix);
+BasePostProcessor* create_post_processor_instance(const char* prefix,
+                                                  uint32_t img_width, uint32_t img_height,
+                                                  uint32_t inference_output_size) {
+    return new YOLO_PostProcessor(prefix, img_width, img_height, inference_output_size);
 }
