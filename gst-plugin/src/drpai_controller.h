@@ -39,7 +39,7 @@ private:
     bool show_time = false;
     rate_controller video_rate{};
 
-    BaseDRPAI* drpai;
+    BaseDRPAI* drpai = nullptr;
     BasePostProcessor* postprocessor = nullptr;
     void* dynamic_library_handle = nullptr;
     std::unique_ptr<Image> image_mapped_udma = nullptr;

@@ -13,9 +13,9 @@ class YOLO_PostProcessor: public BasePostProcessor {
 
 public:
     explicit YOLO_PostProcessor(const std::string& prefix,
-                                uint32_t img_width, uint32_t img_height, uint32_t inference_output_size);
+                                uint32_t img_width, uint32_t img_height);
 
-    void open_resource() override;
+    void open_resource(uint32_t inference_output_size) override;
     void extract_detections(const std::vector<float>& inference_output_buf) override;
     void render_detections_on_image(Image &img) override;
     [[nodiscard]] std::string get_status() const override;

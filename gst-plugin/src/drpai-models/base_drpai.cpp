@@ -249,6 +249,15 @@ void BaseDRPAI::wait() const {
 }
 
 void BaseDRPAI::open_resource(const uint32_t data_in_address) {
+
+    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
+    read_addrmap_txt(drpai_address_file);
+    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+
+    /*Load pixel format from data_in_list file*/
+    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
+    read_data_in_list(data_in_list);
+
     /* Open DRP-AI Driver */
     errno = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
@@ -361,9 +370,6 @@ void DRPAI_Base::run_inference(uint8_t* img_buffer) {
 
         /* Get the output data from memory */
         get_result();
-
-        /* fill the last_dect array */
-//        extract_detections();
     }
 }
 
@@ -460,12 +466,4 @@ BaseDRPAI::BaseDRPAI(const std::string &prefix) :
         prefix(prefix)
 {
     std::cout << "Model : " << prefix << std::endl;
-
-    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
-    read_addrmap_txt(drpai_address_file);
-    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
-
-    /*Load pixel format from data_in_list file*/
-    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
-    read_data_in_list(data_in_list);
 }
