@@ -350,7 +350,7 @@ json_object BaseDRPAI::get_json() {
     return j;
 }
 
-void DRPAI_Base::run_inference(uint8_t* img_buffer) {
+void BaseDRPAI::run_inference(uint8_t* img_buffer) {
     if(drpai_fd) {
         rate.inform_frame();
 

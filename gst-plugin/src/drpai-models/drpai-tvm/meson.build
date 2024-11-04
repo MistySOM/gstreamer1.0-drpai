@@ -18,7 +18,7 @@ libtvm_runtime_dep = declare_dependency(
         include_directories('rzv_drp-ai_tvm/tvm/3rdparty/dlpack/include', is_system: true),
         include_directories('rzv_drp-ai_tvm/tvm/3rdparty/dmlc-core/include', is_system: true),
         include_directories('rzv_drp-ai_tvm/tvm/3rdparty/compiler-rt', is_system: true),
-        include_directories('rzv_drp-ai_tvm/tvm', is_system: true),
+        include_directories('rzv_drp-ai_tvm/tvm/include', is_system: true),
         include_directories('rzv_drp-ai_tvm/apps', is_system: true),
     ]
 )

@@ -4,6 +4,7 @@
 
 #include "drpai_controller.h"
 #include "drpai-models/drpai-yolo/yolo_post_processor.h"
+#include "drpai-models/drpai-tvm/tvm_drpai.h"
 #include <memory>
 #include <iostream>
 #include <netdb.h>
@@ -252,7 +253,10 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             break;
         case PROP_MODEL: {
             auto prefix = std::string(g_value_get_string(value));
-            drpai = new BaseDRPAI(prefix);
+            if (std::ifstream(prefix + "/deploy.so").good())
+                drpai = new TVM_DRPAI(prefix);
+            else
+                drpai = new BaseDRPAI(prefix);
             open_post_processor_library(prefix);
             break;
         }

@@ -57,11 +57,11 @@ void TVM_DRPAI::open_resource(uint32_t data_in_address) {
     std::string pre_dir = prefix + "/preprocess";
 
     /*Load pre_dir object to DRP-AI */
-    if (preruntime->Load(pre_dir) != 0)
+    if (preruntime->Load(pre_dir, data_in_address) != 0)
         throw std::runtime_error("[ERROR] Failed to run Pre-processing Runtime Load().");
 
     /*Load model_dir structure and its weight to runtime object */
-    runtime->LoadModel(prefix);
+    runtime->LoadModel(prefix, data_in_address+0x38E0000);
 
     input_data_type = runtime->GetInputDataType(0);
 }
@@ -72,7 +72,7 @@ void TVM_DRPAI::run_inference(uint8_t* img_buffer) {
     in_param.pre_in_addr    = reinterpret_cast<uint64_t>(img_buffer);
 
     /*Output variables for Pre-processing Runtime */
-    float *output_ptr;
+    void *output_ptr;
     uint32_t pre_out_size;
 
     if (preruntime->Pre(&in_param, &output_ptr, &pre_out_size) != 0)
