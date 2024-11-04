@@ -195,7 +195,59 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
     }
 }
 
-void YOLO_PostProcessor::open_resource() {
+void YOLO_PostProcessor::open_resource(uint32_t inference_output_size) {
+    /*Load Label from label_list file*/
+    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
+    std::cout << "Loading : " << label_list << std::flush;
+    load_label_file(label_list);
+    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
+
+    /*Load anchors from anchors file*/
+    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
+    std::cout << "Loading : " << anchors_list << std::flush;
+    load_anchors_file(anchors_list);
+    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+
+    /*Load grids from data_out_list file*/
+    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
+    std::cout << "Loading : " << data_out_list << std::flush;
+    load_num_grids(data_out_list);
+    std::cout << "\t\tFound num grids: " << num_grids.size();
+
+    uint32_t sum_grids = 0;
+    for (const auto& n: num_grids)
+        sum_grids += n*n;
+    num_bb = inference_output_size / ((labels.size()+5)*sum_grids);
+    std::cout << " & num BB: " << num_bb << std::endl;
+
+    auto value = get_param("[yolo_version]");
+    if (value.empty())
+        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
+    switch (const uint8_t version = value.at(0) - '0') {
+        case 2:
+        case 3:
+            yolo_version = version;
+            MODEL_IN_W = MODEL_IN_H = 416;
+            break;
+        case 5:
+            yolo_version = version;
+            MODEL_IN_W = MODEL_IN_H = 640;
+            break;
+        default:
+            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
+    }
+    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
+
+    value = get_param("[iou_threshold]", false);
+    if (!value.empty())
+        try {
+            filterer.TH_NMS = std::stof(value);
+            std::cout << "Option: IOU Threshold: " << filterer.TH_NMS << std::endl;
+        }
+        catch (...) {
+            throw std::runtime_error("[ERROR] Failed to read value for param [iou_threshold]: " + value);
+        }
+
     if (filterer.is_filter_region_active())
         std::cout << "Option : Filtering region of interest to " << filterer.get_filter_region_json().to_string() << std::endl;
     else {
@@ -350,67 +402,12 @@ bool YOLO_PostProcessor::set_property(const std::string& key, const std::string&
     return true;
 }
 
-YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix,
-                                       uint32_t img_width, uint32_t img_height, uint32_t inference_output_size) :
-        BasePostProcessor(prefix, img_width, img_height, inference_output_size),
+YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix, uint32_t img_width, uint32_t img_height) :
+        BasePostProcessor(prefix, img_width, img_height),
         det_tracker(true, 2, 2.25, 1),
         filterer(static_cast<float>(img_width), static_cast<float>(img_height), labels)
-{
-    /*Load Label from label_list file*/
-    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "Loading : " << label_list << std::flush;
-    load_label_file(label_list);
-    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
+{}
 
-    /*Load anchors from anchors file*/
-    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
-    std::cout << "Loading : " << anchors_list << std::flush;
-    load_anchors_file(anchors_list);
-    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
-
-    /*Load grids from data_out_list file*/
-    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "Loading : " << data_out_list << std::flush;
-    load_num_grids(data_out_list);
-    std::cout << "\t\tFound num grids: " << num_grids.size();
-
-    uint32_t sum_grids = 0;
-    for (const auto& n: num_grids)
-        sum_grids += n*n;
-    num_bb = inference_output_size / ((labels.size()+5)*sum_grids);
-    std::cout << " & num BB: " << num_bb << std::endl;
-
-    auto value = get_param("[yolo_version]");
-    if (value.empty())
-        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
-    switch (const uint8_t version = value.at(0) - '0') {
-        case 2:
-        case 3:
-            yolo_version = version;
-            MODEL_IN_W = MODEL_IN_H = 416;
-            break;
-        case 5:
-            yolo_version = version;
-            MODEL_IN_W = MODEL_IN_H = 640;
-            break;
-        default:
-            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
-    }
-    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
-
-    value = get_param("[iou_threshold]", false);
-    if (!value.empty())
-        try {
-            filterer.TH_NMS = std::stof(value);
-            std::cout << "Option: IOU Threshold: " << filterer.TH_NMS << std::endl;
-        }
-        catch (...) {
-            throw std::runtime_error("[ERROR] Failed to read value for param [iou_threshold]: " + value);
-        }
-}
-
-BasePostProcessor* create_post_processor_instance(const char* prefix,
-                                                  uint32_t img_width, uint32_t img_height,
-                                                  uint32_t inference_output_size) {
-    return new YOLO_PostProcessor(prefix, img_width, img_height, inference_output_size);
+BasePostProcessor* create_post_processor_instance(const char* prefix, uint32_t img_width, uint32_t img_height) {
+    return new YOLO_PostProcessor(prefix, img_width, img_height);
 }

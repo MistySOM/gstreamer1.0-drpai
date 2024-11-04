@@ -66,9 +66,8 @@ std::string BasePostProcessor::get_param(const std::string& params_file_name, co
         return "";
 }
 
-BasePostProcessor::BasePostProcessor(const std::string &prefix,
-                                     uint32_t img_width, uint32_t img_height,
-                                     uint32_t inference_output_size) :
+BasePostProcessor::BasePostProcessor(const std::string &prefix, uint32_t img_width, uint32_t img_height) :
+    prefix(prefix),
     params_file_name(prefix + "/" + prefix + "_post_process_params.txt"),
     img_width(img_width), img_height(img_height)
 { }

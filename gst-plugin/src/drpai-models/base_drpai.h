@@ -52,8 +52,8 @@ public:
     [[nodiscard]] virtual std::string get_status() const;
     [[nodiscard]] virtual json_object get_json();
 
-    virtual void set_property(GstDRPAI_Properties prop, const GValue* value);
-    virtual void get_property(GstDRPAI_Properties prop, GValue* value) const;
+    void set_property(GstDRPAI_Properties prop, const GValue* value);
+    void get_property(GstDRPAI_Properties prop, GValue* value) const;
     static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
 
     rate_controller rate {};
