@@ -46,7 +46,7 @@ void DRPAI_Controller::open_resources() {
     /**********************************************************************/
 
     /* Read DRP-AI Object files address and size */
-    drpai->open_resource(0x80000000);
+    drpai->open_resource(0x80000000, udmabuf_address);
     postprocessor->open_resource(drpai->drpai_output_buf.size());
 
     image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);

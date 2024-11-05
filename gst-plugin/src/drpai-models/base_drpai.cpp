@@ -20,7 +20,7 @@
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void BaseDRPAI::read_addrmap_txt(const std::string& addr_file)
+void BaseDRPAI::read_addrmap_txt(const std::string& addr_file, const uint32_t start_address)
 {
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
@@ -35,6 +35,8 @@ void BaseDRPAI::read_addrmap_txt(const std::string& addr_file)
         iss >> element >> a >> s;
         uint32_t l_addr = std::stol(a, nullptr, 16);
         uint32_t l_size = std::stol(s, nullptr, 16);
+        if (l_addr < start_address)
+            l_addr += start_address;
 
         if ("drp_config" == element)
         {
@@ -147,11 +149,11 @@ void BaseDRPAI::load_drpai_data() const
 {
     const std::string drpai_file_path[5] =
     {
-        prefix + "/drp_desc.bin",
-        prefix + "/" + prefix + "_drpcfg.mem",
-        prefix + "/drp_param.bin",
-        prefix + "/aimac_desc.bin",
-        prefix + "/" + prefix + "_weight.dat",
+        directory + "/drp_desc.bin",
+        directory + "/" + prefix + "_drpcfg.mem",
+        directory + "/drp_param.bin",
+        directory + "/aimac_desc.bin",
+        directory + "/" + prefix + "_weight.dat",
     };
 
     uint32_t addr = 0;
@@ -248,15 +250,17 @@ void BaseDRPAI::wait() const {
     }
 }
 
-void BaseDRPAI::open_resource(const uint32_t data_in_address) {
+void BaseDRPAI::open_resource(const uint32_t start_address, const uint32_t data_in_address) {
 
-    const std::string drpai_address_file = prefix + "/" + prefix + "_addrmap_intm.txt";
-    read_addrmap_txt(drpai_address_file);
+    const std::string drpai_address_file = directory + "/" + prefix + "_addrmap_intm.txt";
+    read_addrmap_txt(drpai_address_file, start_address);
     drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
 
     /*Load pixel format from data_in_list file*/
-    const static std::string data_in_list = prefix + "/" + prefix + "_data_in_list.txt";
-    read_data_in_list(data_in_list);
+    if (IN_WIDTH == 0) {
+        const static std::string data_in_list = directory + "/" + prefix + "_data_in_list.txt";
+        read_data_in_list(data_in_list);
+    }
 
     /* Open DRP-AI Driver */
     errno = 0;
@@ -283,7 +287,7 @@ void BaseDRPAI::open_resource(const uint32_t data_in_address) {
     proc[DRPAI_INDEX_OUTPUT].address      = drpai_address.data_out_addr;
     proc[DRPAI_INDEX_OUTPUT].size         = drpai_address.data_out_size;
 
-    const auto drpai_param_file = prefix + "/drp_param_info.txt";
+    const auto drpai_param_file = directory + "/drp_param_info.txt";
     /*Load DRPAI Parameter for Cropping later*/
     load_drpai_param_file(proc[DRPAI_INDEX_DRP_PARAM], drpai_param_file);
 }
@@ -462,8 +466,9 @@ void BaseDRPAI::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *> 
                                                           1, 1000, 1, G_PARAM_READWRITE));
 }
 
-BaseDRPAI::BaseDRPAI(const std::string &prefix) :
-        prefix(prefix)
+BaseDRPAI::BaseDRPAI(const std::string& prefix, const std::string& directory) :
+    prefix(prefix),
+    directory(directory.empty() ? prefix: directory)
 {
-    std::cout << "Model : " << prefix << std::endl;
+    std::cout << "Model : " << directory << std::endl;
 }
