@@ -12,9 +12,7 @@
 #include <linux/drpai.h>
 #include <glib-object.h>
 #include <vector>
-#include <list>
 #include <array>
-#include <mutex>
 #include <map>
 
 /* For DRP-AI Address List */
@@ -43,10 +41,11 @@ typedef struct
 class BaseDRPAI {
 
 public:
-    explicit BaseDRPAI(const std::string &prefix);
+    explicit BaseDRPAI(const std::string &prefix, const std::string& directory = "");
+    virtual ~BaseDRPAI() = default;
 
-    virtual void run_inference(uint8_t* img_buffer);
-    virtual void open_resource(uint32_t data_in_address);
+    virtual void run_inference();
+    virtual void open_resource(uint32_t start_address, uint32_t data_in_address);
     virtual void release_resource();
 
     [[nodiscard]] virtual std::string get_status() const;
@@ -67,12 +66,11 @@ public:
 
 protected:
     const std::string prefix;
+    const std::string directory;
 
     int32_t drpai_fd = 0;
     st_addr_t drpai_address {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
-
-    virtual ~BaseDRPAI() = default;
 
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
     void get_result();
@@ -88,7 +86,7 @@ private:
         INDEX_D=0, INDEX_C, INDEX_P, INDEX_A, INDEX_W
     };
 
-    void read_addrmap_txt(const std::string& addr_file);
+    void read_addrmap_txt(const std::string& addr_file, uint32_t start_address);
     void read_data_in_list(const std::string &data_in_list);
     void load_drpai_data() const;
     void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
