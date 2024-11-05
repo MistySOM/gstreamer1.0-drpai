@@ -4,7 +4,7 @@
 
 #include "tvm_drpai.h"
 #include "MeraDrpRuntimeWrapper.h"
-#include "PreRuntime.h"
+#include <builtin_fp16.h>
 
 /*****************************************
 * Function Name     : float16_to_float32
@@ -17,69 +17,42 @@ float float16_to_float32(const uint16_t a)
     return __extendXfYf2__<uint16_t, uint16_t, 10, float, uint32_t, 23>(a);
 }
 
-/*****************************************
-* Function Name : get_drpai_start_addr
-* Description   : Function to get the start address of DRPAImem.
-* Arguments     : -
-* Return value  : uint32_t = DRPAImem start address in 32-bit.
-******************************************/
-uint32_t get_drpai_start_addr()
-{
-    int fd  = 0;
-    int ret = 0;
-    drpai_data_t drpai_data;
+void TVM_DRPAI::open_resource(const uint32_t start_address, const uint32_t data_in_address) {
 
-    errno = 0;
-
-    fd = open("/dev/drpai0", O_RDWR);
-    if (0 > fd )
-    {
-        LOG(FATAL) << "[ERROR] Failed to open DRP-AI Driver : errno=" << errno;
-        return (uint32_t)NULL;
-    }
-
-    /* Get DRP-AI Memory Area Address via DRP-AI Driver */
-    ret = ioctl(fd , DRPAI_GET_DRPAI_AREA, &drpai_data);
-    if (-1 == ret)
-    {
-        LOG(FATAL) << "[ERROR] Failed to get DRP-AI Memory Area : errno=" << errno ;
-        return (uint32_t)NULL;
-    }
-
-    return drpai_data.address;
-}
-
-void TVM_DRPAI::open_resource(uint32_t data_in_address) {
-    preruntime = new PreRuntime();
     runtime = new MeraDrpRuntimeWrapper();
 
-    /* Pre-processing Runtime Object */
-    std::string pre_dir = prefix + "/preprocess";
-
     /*Load pre_dir object to DRP-AI */
-    if (preruntime->Load(pre_dir, data_in_address) != 0)
-        throw std::runtime_error("[ERROR] Failed to run Pre-processing Runtime Load().");
+    preruntime.Load(prefix + "/preprocess", start_address);
 
     /*Load model_dir structure and its weight to runtime object */
-    runtime->LoadModel(prefix, data_in_address+0x38E0000);
+    runtime->LoadModel(prefix);
 
     input_data_type = runtime->GetInputDataType(0);
+    const auto output = runtime->GetOutput(0);
+    const auto output_size = std::get<2>(output);
+    drpai_output_buf.resize(output_size);
+
+    in_param.pre_in_addr    = data_in_address;
+    in_param.pre_in_shape_w = IN_WIDTH;
+    in_param.pre_in_shape_h = IN_HEIGHT;
+    in_param.pre_in_format  = FORMAT_BGR;
+    in_param.pre_out_format = FORMAT_RGB;
 }
 
-void TVM_DRPAI::run_inference(uint8_t* img_buffer) {
+void TVM_DRPAI::run_inference() {
+    void* preprocess_output_ptr = nullptr;
+    uint32_t preprocess_out_size = 0;
+
     /* Pre-processing */
-    s_preproc_param_t in_param;
-    in_param.pre_in_addr    = reinterpret_cast<uint64_t>(img_buffer);
-
-    /*Output variables for Pre-processing Runtime */
-    void *output_ptr;
-    uint32_t pre_out_size;
-
-    if (preruntime->Pre(&in_param, &output_ptr, &pre_out_size) != 0)
-        throw std::runtime_error("[ERROR] Failed to run Pre-processing Runtime Pre().");
+    auto ret = preruntime.Pre(&in_param, &preprocess_output_ptr, &preprocess_out_size);
+    if (0 < ret)
+    {
+        std::cerr << "[ERROR] Failed to run Pre-processing Runtime Pre()." << std::endl;
+        throw;
+    }
 
     /*Set Pre-processing output to be inference input. */
-    runtime->SetInput(0, static_cast<float *>(output_ptr));
+    runtime->SetInput(0, static_cast<float *>(preprocess_output_ptr));
 
     runtime->Run();
 
@@ -136,15 +109,15 @@ void TVM_DRPAI::run_inference(uint8_t* img_buffer) {
 TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
     BaseDRPAI(prefix),
     input_data_type(InOutDataType::OTHER)
-{}
+{
+    IN_WIDTH = 640;
+    IN_HEIGHT = 480;
+    IN_CHANNEL = 3;
+}
 
 void TVM_DRPAI::release_resource() {
     if (runtime) {
         delete runtime;
         runtime = nullptr;
-    }
-    if (preruntime) {
-        delete preruntime;
-        preruntime = nullptr;
     }
 }
