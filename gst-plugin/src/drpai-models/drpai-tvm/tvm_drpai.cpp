@@ -17,15 +17,56 @@ float float16_to_float32(const uint16_t a)
     return __extendXfYf2__<uint16_t, uint16_t, 10, float, uint32_t, 23>(a);
 }
 
+/*****************************************
+* Function Name : get_drpai_start_addr
+* Description   : Function to get the start address of DRPAImem.
+* Arguments     : -
+* Return value  : uint32_t = DRPAImem start address in 32-bit.
+******************************************/
+uint64_t get_drpai_start_addr()
+{
+    int fd  = 0;
+    int ret = 0;
+    drpai_data_t drpai_data;
+
+    errno = 0;
+
+    fd = open("/dev/drpai0", O_RDWR);
+    if (0 > fd)
+    {
+        LOG(FATAL) << "[ERROR] Failed to open DRP-AI Driver : errno=" << errno;
+        return (uint64_t)NULL;
+    }
+
+    /* Get DRP-AI Memory Area Address via DRP-AI Driver */
+    ret = ioctl(fd, DRPAI_GET_DRPAI_AREA, &drpai_data);
+    if (-1 == ret)
+    {
+        LOG(FATAL) << "[ERROR] Failed to get DRP-AI Memory Area : errno=" << errno ;
+        return (uint64_t)NULL;
+    }
+    close(fd);
+
+    return drpai_data.address;
+}
+
 void TVM_DRPAI::open_resource(const uint32_t start_address, const uint32_t data_in_address) {
 
     runtime = new MeraDrpRuntimeWrapper();
 
     /*Load pre_dir object to DRP-AI */
-    preruntime.Load(prefix + "/preprocess", start_address);
+    auto ret = preruntime.Load(prefix + "/preprocess", start_address);
+    if (0 < ret)
+    {
+        std::cerr << "[ERROR] Failed to run Pre-processing Runtime Load()." << std::endl;
+        throw;
+    }
 
     /*Load model_dir structure and its weight to runtime object */
-    runtime->LoadModel(prefix);
+    auto drpaimem_addr_start = get_drpai_start_addr();
+    if (drpaimem_addr_start == (uint64_t)NULL) throw;
+    /* Currently, the start address can only use the head of the area managed by the DRP-AI. */
+    runtime->LoadModel(prefix, drpaimem_addr_start);
 
     input_data_type = runtime->GetInputDataType(0);
     const auto output = runtime->GetOutput(0);
@@ -33,10 +74,6 @@ void TVM_DRPAI::open_resource(const uint32_t start_address, const uint32_t data_
     drpai_output_buf.resize(output_size);
 
     in_param.pre_in_addr    = data_in_address;
-    in_param.pre_in_shape_w = IN_WIDTH;
-    in_param.pre_in_shape_h = IN_HEIGHT;
-    in_param.pre_in_format  = FORMAT_BGR;
-    in_param.pre_out_format = FORMAT_RGB;
 }
 
 void TVM_DRPAI::run_inference() {

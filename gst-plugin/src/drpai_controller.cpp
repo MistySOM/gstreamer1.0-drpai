@@ -195,7 +195,7 @@ void DRPAI_Controller::thread_function_single() {
     }
 
     image_mapped_udma->prepare();
-    drpai->run_inference(image_mapped_udma->img_buffer);
+    drpai->run_inference();
     postprocessor->extract_detections(drpai->drpai_output_buf);
 
     if(socket_fd) {
