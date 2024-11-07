@@ -18,7 +18,7 @@ public:
     ~TVM_DRPAI() override = default;
 
     void run_inference() override;
-    void open_resource(uint32_t start_address, uint32_t data_in_address) override;
+    void open_resource(uint32_t data_in_address, bool open_files) override;
     void release_resource() override;
 
 
