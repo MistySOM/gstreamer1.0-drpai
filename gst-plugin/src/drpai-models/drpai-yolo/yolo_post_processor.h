@@ -12,10 +12,10 @@
 class YOLO_PostProcessor: public BasePostProcessor {
 
 public:
-    explicit YOLO_PostProcessor(const std::string& prefix,
-                                uint32_t img_width, uint32_t img_height);
+    explicit YOLO_PostProcessor(const std::string& prefix);
+    ~YOLO_PostProcessor() override = default;
 
-    void open_resource(uint32_t inference_output_size) override;
+    void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height) override;
     void extract_detections(const std::vector<float>& inference_output_buf) override;
     void render_detections_on_image(Image &img) override;
     [[nodiscard]] std::string get_status() const override;
@@ -36,10 +36,11 @@ private:
     bool show_filter = false;
     detection_filterer filterer;
 
-    float MODEL_IN_W;
-    float MODEL_IN_H;
+    float MODEL_IN_W = 0;
+    float MODEL_IN_H = 0;
     uint8_t yolo_version = 0;
     uint32_t num_bb = 0;
+    uint8_t item_size = 0;
     std::vector<uint32_t> num_grids {};
     std::vector<float> anchors {};
     std::vector<std::string> labels {};

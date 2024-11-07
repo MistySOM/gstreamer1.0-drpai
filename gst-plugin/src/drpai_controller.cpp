@@ -46,8 +46,8 @@ void DRPAI_Controller::open_resources() {
     /**********************************************************************/
 
     /* Read DRP-AI Object files address and size */
-    drpai->open_resource(0x80000000, udmabuf_address);
-    postprocessor->open_resource(drpai->drpai_output_buf.size());
+    drpai->open_resource(udmabuf_address, true);
+    postprocessor->open_resource(drpai->drpai_output_buf.size(), drpai->IN_WIDTH, drpai->IN_HEIGHT);
 
     image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
     image_mapped_udma->map_udmabuf();
@@ -227,7 +227,7 @@ void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefi
     if ((error = dlerror()) != nullptr)
         throw std::runtime_error("[ERROR] Failed to locate function in " + model_library_path + ": error=" + error);
 
-    postprocessor = (*create_post_processor_instance_dl)(modelPrefix.c_str(), drpai->IN_WIDTH, drpai->IN_HEIGHT);
+    postprocessor = (*create_post_processor_instance_dl)(modelPrefix.c_str());
 }
 
 void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *value) {
