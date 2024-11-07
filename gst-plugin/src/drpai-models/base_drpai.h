@@ -45,7 +45,7 @@ public:
     virtual ~BaseDRPAI() = default;
 
     virtual void run_inference();
-    virtual void open_resource(uint32_t start_address, uint32_t data_in_address);
+    virtual void open_resource(uint32_t data_in_address, bool open_files);
     virtual void release_resource();
 
     [[nodiscard]] virtual std::string get_status() const;
@@ -77,6 +77,7 @@ protected:
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
+    [[nodiscard]] uint32_t get_drpai_start_addr() const;
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;
@@ -86,7 +87,7 @@ private:
         INDEX_D=0, INDEX_C, INDEX_P, INDEX_A, INDEX_W
     };
 
-    void read_addrmap_txt(const std::string& addr_file, uint32_t start_address);
+    void read_addrmap_txt(const std::string& addr_file);
     void read_data_in_list(const std::string &data_in_list);
     void load_drpai_data() const;
     void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;

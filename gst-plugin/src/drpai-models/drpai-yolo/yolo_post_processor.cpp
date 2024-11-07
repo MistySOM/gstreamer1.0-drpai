@@ -41,9 +41,9 @@ uint32_t YOLO_PostProcessor::yolo_offset(const uint8_t n, const uint32_t b, cons
 
     for (int32_t i = 0 ; i < n; i++)
     {
-        prev_layer_num += num_bb *(labels.size() + 5)* num_grids.at(i) * num_grids.at(i);
+        prev_layer_num += num_bb * item_size * num_grids.at(i) * num_grids.at(i);
     }
-    return prev_layer_num + b *(labels.size()+ 5)* num * num + y * num + x;
+    return prev_layer_num + b * item_size * num * num + y * num + x;
 }
 
 /*****************************************
@@ -94,12 +94,32 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                 for (int32_t x = 0;x<num_grid;x++)
                 {
                     const uint32_t offs = yolo_offset(n, b, y, x);
-                    const float& tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
+                    float objectness = 1;
 
-                    /* Get the class prediction */
-                    for (uint32_t i = 0; i < classes.size(); i++)
-                    {
-                        classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5+i));
+                    switch (yolo_version) {
+                        case 8: {
+                            /* Get the class prediction */
+                            for (uint32_t i = 0; i < classes.size(); i++)
+                            {
+                                classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 4+i));
+                            }
+                            break;
+                        }
+                        case 5:
+                        case 3:
+                        case 2: {
+                            const float& tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
+
+                            /* Get the class prediction */
+                            for (uint32_t i = 0; i < classes.size(); i++)
+                            {
+                                classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5+i));
+                            }
+                            objectness = sigmoid(tc);
+                            break;
+                        }
+                        default:
+                            break;
                     }
 
                     switch (yolo_version) {
@@ -108,19 +128,19 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                             sigmoid(classes); break;
                         case 2:
                             softmax(classes); break;
+                        case 8:
                         default:
                             break;
                     }
 
                     const auto max_pred = std::max_element(classes.begin(), classes.end());
-                    const float objectness = sigmoid(tc);
                     const float probability = *max_pred * objectness;
 
                     /* Store the result into the list if the probability is more than the threshold */
                     if ( probability > TH_PROB)
                     {
                         const uint32_t pred_class = max_pred - classes.begin();
-                        const float& tx = inference_output_buf.at(offs);
+                        const float& tx = inference_output_buf.at(yolo_index(num_grid, offs, 0));
                         const float& ty = inference_output_buf.at(yolo_index(num_grid, offs, 1));
                         const float& tw = inference_output_buf.at(yolo_index(num_grid, offs, 2));
                         const float& th = inference_output_buf.at(yolo_index(num_grid, offs, 3));
@@ -129,6 +149,13 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                         /*get_yolo_box/get_region_box in paper implementation*/
                         Box box {};
                         switch (yolo_version) {
+                            case 8: {
+                                box.x = tx / MODEL_IN_W;
+                                box.y = ty / MODEL_IN_H;
+                                box.w = tw / MODEL_IN_W;
+                                box.h = th / MODEL_IN_H;
+                                break;
+                            }
                             case 5: {
                                 box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
                                 box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
@@ -195,7 +222,27 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
     }
 }
 
-void YOLO_PostProcessor::open_resource(uint32_t inference_output_size) {
+void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, const uint32_t img_width, uint32_t const img_height) {
+    BasePostProcessor::open_resource(inference_output_size, img_width, img_height);
+
+    auto value = get_param("[yolo_version]");
+    if (value.empty())
+        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
+    yolo_version = value.at(0) - '0';
+    switch (yolo_version) {
+        case 2:
+        case 3:
+            MODEL_IN_W = MODEL_IN_H = 416;
+            break;
+        case 8:
+        case 5:
+            MODEL_IN_W = MODEL_IN_H = 640;
+            break;
+        default:
+            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
+    }
+    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
+
     /*Load Label from label_list file*/
     const std::string label_list = prefix + "/" + prefix + "_labels.txt";
     std::cout << "Loading : " << label_list << std::flush;
@@ -217,26 +264,12 @@ void YOLO_PostProcessor::open_resource(uint32_t inference_output_size) {
     uint32_t sum_grids = 0;
     for (const auto& n: num_grids)
         sum_grids += n*n;
-    num_bb = inference_output_size / ((labels.size()+5)*sum_grids);
-    std::cout << " & num BB: " << num_bb << std::endl;
 
-    auto value = get_param("[yolo_version]");
-    if (value.empty())
-        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
-    switch (const uint8_t version = value.at(0) - '0') {
-        case 2:
-        case 3:
-            yolo_version = version;
-            MODEL_IN_W = MODEL_IN_H = 416;
-            break;
-        case 5:
-            yolo_version = version;
-            MODEL_IN_W = MODEL_IN_H = 640;
-            break;
-        default:
-            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
-    }
-    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
+    item_size = yolo_version == 8? labels.size()+4: labels.size()+5;
+    num_bb = inference_output_size / (item_size*sum_grids);
+    std::cout << " & num BB: " << num_bb << std::endl;
+    if (num_bb == 0)
+        throw std::runtime_error("[ERROR] Either classes or grids are not matching with the model output.");
 
     value = get_param("[iou_threshold]", false);
     if (!value.empty())
@@ -402,12 +435,12 @@ bool YOLO_PostProcessor::set_property(const std::string& key, const std::string&
     return true;
 }
 
-YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix, uint32_t img_width, uint32_t img_height) :
-        BasePostProcessor(prefix, img_width, img_height),
+YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix) :
+        BasePostProcessor(prefix),
         det_tracker(true, 2, 2.25, 1),
-        filterer(static_cast<float>(img_width), static_cast<float>(img_height), labels)
+        filterer(labels)
 {}
 
-BasePostProcessor* create_post_processor_instance(const char* prefix, uint32_t img_width, uint32_t img_height) {
-    return new YOLO_PostProcessor(prefix, img_width, img_height);
+BasePostProcessor* create_post_processor_instance(const char* prefix) {
+    return new YOLO_PostProcessor(prefix);
 }

@@ -13,9 +13,10 @@
 class BasePostProcessor
 {
 public:
-    explicit BasePostProcessor(const std::string& prefix, uint32_t img_width, uint32_t img_height);
+    explicit BasePostProcessor(const std::string& prefix);
+    virtual ~BasePostProcessor() = default;
 
-    virtual void open_resource(uint32_t inference_output_size) = 0;
+    virtual void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height);
     virtual void extract_detections(const std::vector<float>& inference_output_buf) = 0;
     virtual void render_detections_on_image(Image &img);
     virtual void render_text_on_image(Image& img);
@@ -43,14 +44,12 @@ protected:
     const std::string prefix;
     const std::string params_file_name;
 
-    uint32_t img_width;
-    uint32_t img_height;
+    uint32_t img_width = 0;
+    uint32_t img_height = 0;
 };
 
-extern "C" BasePostProcessor* create_post_processor_instance(const char* prefix,
-                                                             uint32_t img_width, uint32_t img_height);
-typedef BasePostProcessor* (*create_post_processor_instance_def)(const char* prefix,
-                                                                 uint32_t img_width, uint32_t img_height);
+extern "C" BasePostProcessor* create_post_processor_instance(const char* prefix);
+typedef BasePostProcessor* (*create_post_processor_instance_def)(const char* prefix);
 
 
 #endif //GSTREAMER1_0_DRPAI_BASE_POST_PROCESSOR_H

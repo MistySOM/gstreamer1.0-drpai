@@ -20,8 +20,10 @@
 * Return value  : 0 if succeeded
 *                 not 0 otherwise
 ******************************************/
-void BaseDRPAI::read_addrmap_txt(const std::string& addr_file, const uint32_t start_address)
+void BaseDRPAI::read_addrmap_txt(const std::string& addr_file)
 {
+    auto start_address = get_drpai_start_addr();
+
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
     if (ifs.fail())
@@ -216,6 +218,22 @@ void BaseDRPAI::get_result()
         throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
 }
 
+/*****************************************
+* Function Name : get_drpai_start_addr
+* Description   : Function to get the start address of DRPAImem.
+* Arguments     : -
+* Return value  : uint32_t = DRPAImem start address in 32-bit.
+******************************************/
+uint32_t BaseDRPAI::get_drpai_start_addr() const
+{
+    drpai_data_t drpai_data;
+    errno = 0;
+    if (const auto ret = ioctl(drpai_fd, DRPAI_GET_DRPAI_AREA, &drpai_data); 0 != ret)
+        throw std::runtime_error("[ERROR] Failed to get DRP-AI Memory Area : errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+
+    return drpai_data.address;
+}
+
 void BaseDRPAI::start() {
     errno = 0;
     if (const int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]); 0 != ret)
@@ -250,23 +268,24 @@ void BaseDRPAI::wait() const {
     }
 }
 
-void BaseDRPAI::open_resource(const uint32_t start_address, const uint32_t data_in_address) {
-
-    const std::string drpai_address_file = directory + "/" + prefix + "_addrmap_intm.txt";
-    read_addrmap_txt(drpai_address_file, start_address);
-    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
-
-    /*Load pixel format from data_in_list file*/
-    if (IN_WIDTH == 0) {
-        const static std::string data_in_list = directory + "/" + prefix + "_data_in_list.txt";
-        read_data_in_list(data_in_list);
-    }
+void BaseDRPAI::open_resource(const uint32_t data_in_address, const bool open_files) {
 
     /* Open DRP-AI Driver */
     errno = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
     if (0 > drpai_fd)
         throw std::runtime_error("[ERROR] Failed to open DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
+
+    if (!open_files)
+        return;
+
+    const std::string drpai_address_file = directory + "/" + prefix + "_addrmap_intm.txt";
+    read_addrmap_txt(drpai_address_file);
+    drpai_output_buf.resize(drpai_address.data_out_size/sizeof(float));
+
+    /*Load pixel format from data_in_list file*/
+    const static std::string data_in_list = directory + "/" + prefix + "_data_in_list.txt";
+    read_data_in_list(data_in_list);
 
     /* Load DRP-AI Data from Filesystem to Memory via DRP-AI Driver */
     load_drpai_data();

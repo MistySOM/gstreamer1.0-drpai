@@ -18,8 +18,8 @@ class detection_filterer {
 public:
     float TH_NMS = 0.5f;
 
-    explicit detection_filterer(float width, float height, const std::vector<std::string>& labels):
-        width(width), height(height), labels(labels)
+    explicit detection_filterer(const std::vector<std::string>& labels):
+        labels(labels)
     {};
 
     void apply(std::list<detection>& det);
@@ -39,14 +39,13 @@ public:
     [[nodiscard]] json_array get_filter_classes_json() const;
 
     [[nodiscard]] json_object get_filter_region_json() const { return filter_region.get_json(false); }
-    [[nodiscard]] constexpr bool is_filter_region_active() const { auto a = filter_region.area(); return a > 0 && a < width * height; }
+    [[nodiscard]] constexpr bool is_filter_region_active() const { return filter_region.area() > 0; }
     [[nodiscard]] constexpr float get_filter_region_left() const { return filter_region.getLeft(); }
     [[nodiscard]] constexpr float get_filter_region_top() const { return filter_region.getTop(); }
     [[nodiscard]] constexpr float get_filter_region_width() const { return filter_region.w; }
     [[nodiscard]] constexpr float get_filter_region_height() const { return filter_region.h; }
 
 private:
-    const float width, height;
     const std::vector<std::string>& labels;
 
     Box filter_region {0,0,0,0, YELLOW_DATA};
