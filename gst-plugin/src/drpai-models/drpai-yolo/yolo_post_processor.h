@@ -42,6 +42,7 @@ private:
     uint32_t num_bb = 0;
     uint8_t item_size = 0;
     std::vector<uint32_t> num_grids {};
+    uint32_t sum_grids = 0;
     std::vector<float> anchors {};
     std::vector<std::string> labels {};
 

@@ -44,21 +44,26 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
 }
 
 void TVM_DRPAI::run_inference() {
+    rate.inform_frame();
+
     void* preprocess_output_ptr = nullptr;
     uint32_t preprocess_out_size = 0;
 
     /* Pre-processing */
+    auto t1 = std::chrono::high_resolution_clock::now();
     auto ret = preruntime.Pre(&in_param, &preprocess_output_ptr, &preprocess_out_size);
     if (0 < ret)
     {
         std::cerr << "[ERROR] Failed to run Pre-processing Runtime Pre()." << std::endl;
         throw;
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
 
     /*Set Pre-processing output to be inference input. */
     runtime->SetInput(0, static_cast<float *>(preprocess_output_ptr));
 
     runtime->Run();
+    auto t3 = std::chrono::high_resolution_clock::now();
 
     /* Get the number of output of the target model. For ResNet, 1 output. */
     auto output_num = runtime->GetNumOutput();
@@ -78,8 +83,6 @@ void TVM_DRPAI::run_inference() {
     auto output_buffer = runtime->GetOutput(0);
     int64_t out_size = std::get<2>(output_buffer);
     /* Array to store the FP32 output data from inference. */
-    drpai_output_buf.clear();
-
     if (InOutDataType::FLOAT16 == std::get<0>(output_buffer))
     {
         /* Extract data in FP16 <uint16_t>. */
@@ -89,7 +92,7 @@ void TVM_DRPAI::run_inference() {
         /* Cast FP16 output data to FP32. */
         for (int n = 0; n < out_size; n++)
         {
-            drpai_output_buf.push_back(float16_to_float32(data_ptr[n]));
+            drpai_output_buf.at(n) = float16_to_float32(data_ptr[n]);
         }
     }
     else if (InOutDataType::FLOAT32 == std::get<0>(output_buffer))
@@ -97,10 +100,7 @@ void TVM_DRPAI::run_inference() {
         /* Extract data in FP32 <float>. */
         const auto *data_ptr = static_cast<float *>(std::get<1>(output_buffer));
         /*Copy output data to buffer for post-processing. */
-        for (int n = 0; n < out_size; n++)
-        {
-            drpai_output_buf.push_back(data_ptr[n]);
-        }
+        drpai_output_buf.assign(data_ptr, data_ptr + out_size);
     }
     else
     {
@@ -108,6 +108,11 @@ void TVM_DRPAI::run_inference() {
         /*End application*/
         return;
     }
+    auto t4 = std::chrono::high_resolution_clock::now();
+
+    ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+    ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
 }
 
 TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
@@ -125,4 +130,11 @@ void TVM_DRPAI::release_resource() {
         delete runtime;
         runtime = nullptr;
     }
+}
+
+std::string TVM_DRPAI::get_log_exec_time() const {
+    return "PreRuntime: " + std::to_string(ms_int1)
+          + "ms\tRuntimeTVM: " + std::to_string(ms_int2)
+          + "ms\tF16 to F32: " + std::to_string(ms_int3)
+          + "ms";
 }

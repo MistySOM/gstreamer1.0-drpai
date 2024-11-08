@@ -49,6 +49,7 @@ public:
     virtual void release_resource();
 
     [[nodiscard]] virtual std::string get_status() const;
+    [[nodiscard]] virtual std::string get_log_exec_time() const { return get_status(); }
     [[nodiscard]] virtual json_object get_json();
 
     void set_property(GstDRPAI_Properties prop, const GValue* value);

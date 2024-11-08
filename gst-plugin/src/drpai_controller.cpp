@@ -194,9 +194,26 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
+    auto t1 = std::chrono::high_resolution_clock::now();
     image_mapped_udma->prepare();
+    auto t2 = std::chrono::high_resolution_clock::now();
+
     drpai->run_inference();
+    auto t3 = std::chrono::high_resolution_clock::now();
+
     postprocessor->extract_detections(drpai->drpai_output_buf);
+    auto t4 = std::chrono::high_resolution_clock::now();
+
+    if (log_exec_time) {
+        auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+        auto ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+        std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
+        std::cout << "Execution Time - UDMA prepare: " << ms_int1
+                  << "ms\tInference: " << ms_int2
+                  << "ms\tPostProcess: " << ms_int3
+                  << "ms" << std::endl;
+    }
 
     if(socket_fd) {
         json_object j;
@@ -263,6 +280,9 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_LOG_DETECTS:
             postprocessor->log_detects = g_value_get_boolean(value);
             break;
+        case PROP_LOG_EXEC_TIME:
+            log_exec_time = g_value_get_boolean(value);
+            break;
         case PROP_PP_PROPERTIES: {
             auto ss = std::stringstream(g_value_get_string(value));
             while (ss.good()) {
@@ -302,6 +322,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_LOG_DETECTS:
             g_value_set_boolean(value, postprocessor->log_detects);
             break;
+        case PROP_LOG_EXEC_TIME:
+            g_value_set_boolean(value, log_exec_time);
+            break;
         default:
             drpai->get_property(prop, value);
             break;
@@ -317,6 +340,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
                                                    "", G_PARAM_READWRITE));
     params.emplace(PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
                                                           "Print detected objects in standard output.",
+                                                          FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_LOG_EXEC_TIME, g_param_spec_boolean("log_exec_time", "Log Execution Time",
+                                                          "Print execution time into the standard output.",
                                                           FALSE, G_PARAM_READWRITE));
     params.emplace(PROP_MULTITHREAD, g_param_spec_boolean("multithread", "MultiThread",
                                                        "Use a separate thread for object detection.",
