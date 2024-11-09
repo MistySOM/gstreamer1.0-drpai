@@ -7,9 +7,7 @@
 
 #include "drpai-models/base_drpai.h"
 #include "PreRuntime.h"
-
-class MeraDrpRuntimeWrapper;
-enum class InOutDataType;
+#include "MeraDrpRuntimeWrapper.h"
 
 class TVM_DRPAI final : public BaseDRPAI {
 
@@ -19,12 +17,11 @@ public:
 
     void run_inference() override;
     void open_resource(uint32_t data_in_address, bool open_files) override;
-    void release_resource() override;
 
     [[nodiscard]] std::string get_log_exec_time() const override;
 
 private:
-    MeraDrpRuntimeWrapper* runtime = nullptr;
+    MeraDrpRuntimeWrapper runtime;
     /* Pre-processing Runtime Object */
     PreRuntime preruntime;
     InOutDataType input_data_type;

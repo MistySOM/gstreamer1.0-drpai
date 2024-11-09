@@ -4,7 +4,9 @@
 
 #include "drpai_controller.h"
 #include "drpai-models/drpai-yolo/yolo_post_processor.h"
+#ifdef ENABLE_TVM
 #include "drpai-models/drpai-tvm/tvm_drpai.h"
+#endif
 #include <memory>
 #include <iostream>
 #include <netdb.h>
@@ -211,8 +213,7 @@ void DRPAI_Controller::thread_function_single() {
         std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
         std::cout << "Execution Time - UDMA prepare: " << ms_int1
                   << "ms\tInference: " << ms_int2
-                  << "ms\tPostProcess: " << ms_int3
-                  << "ms" << std::endl;
+                  << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
     }
 
     if(socket_fd) {
@@ -269,9 +270,13 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             video_rate.set_smooth_rate(g_value_get_uint(value));
             break;
         case PROP_MODEL: {
-            auto prefix = std::string(g_value_get_string(value));
+            const auto prefix = std::string(g_value_get_string(value));
             if (std::ifstream(prefix + "/deploy.so").good())
+#ifdef ENABLE_TVM
                 drpai = new TVM_DRPAI(prefix);
+#else
+                throw std::runtime_error("This built of gstreamer1.0-drpai plugin doesn't support TVM deployment models.");
+#endif
             else
                 drpai = new BaseDRPAI(prefix);
             open_post_processor_library(prefix);
