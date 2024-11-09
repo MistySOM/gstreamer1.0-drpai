@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     
     - name: Install Dependencies
       run: sudo apt update && sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev libunwind-dev
@@ -43,11 +45,12 @@ jobs:
         repository: MistySOM/rzv2l
         path: rzv2l
         ref: master
-        submodules: true
+        submodules: recursive
 
     - uses: actions/checkout@v4
       with:
         path: gstreamer1.0-drpai
+        submodules: recursive
 
     - name: Replace the RZV2L gstreamer1.0-drpai with the current one.
       run: |
