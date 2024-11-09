@@ -113,12 +113,9 @@ your own dynamic library which derives and overrides functions of `BasePostProce
 Additionally, you need to define the function below to allow your library to be dynamically loaded at runtime:
 
 ```C++
-BasePostProcessor* create_post_processor_instance(const char* prefix,
-                                                  uint32_t img_width, 
-                                                  uint32_t img_height,
-                                                  uint32_t inference_output_size)
+BasePostProcessor* create_post_processor_instance(const char* prefix)
 {
-    return new YOUR_POST_PROCESSOR(prefix, img_width, img_height, inference_output_size);
+    return new YOUR_POST_PROCESSOR(prefix);
 }
 ```
 
