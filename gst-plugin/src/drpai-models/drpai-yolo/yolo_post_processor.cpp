@@ -407,27 +407,29 @@ bool YOLO_PostProcessor::set_property(const std::string& key, const std::string&
         det_tracker.active = to_bool(value);
         if (det_tracker.active)
             std::cout << "Option : Detection Tracking is Active!" << std::endl;
-    } else if (key == "show_track_id") {
+    } else if (key == "show-track-id") {
         show_track_id = to_bool(value);
-    } else if (key == "smooth_bbox_rate") {
+    } else if (key == "smooth-bbox-rate") {
         det_tracker.bbox_smooth_rate = std::stoul(value);
-    } else if (key == "history_length") {
+    } else if (key == "history-length") {
         det_tracker.history_length = std::stoul(value)*60;
-    } else if (key == "track_seconds") {
+    } else if (key == "track-seconds") {
         det_tracker.time_threshold = std::stof(value);
-    } else if (key == "doa_threshold") {
+    } else if (key == "doa-threshold") {
         det_tracker.doa_threshold = std::stof(value);
-    } else if (key == "filter_show") {
+    } else if (key == "filter-prob") {
+        TH_PROB = std::stof(value) / 100.f;
+    } else if (key == "filter-show") {
         show_filter = to_bool(value);
-    } else if (key == "filter_class") {
+    } else if (key == "filter-class") {
         filterer.set_filter_classes(value);
-    } else if (key == "filter_left") {
+    } else if (key == "filter-left") {
         filterer.set_filter_region_left(std::stof(value));
-    } else if (key == "filter_top") {
+    } else if (key == "filter-top") {
         filterer.set_filter_region_top(std::stof(value));
-    } else if (key == "filter_width") {
+    } else if (key == "filter-width") {
         filterer.set_filter_region_width(std::stof(value));
-    } else if (key == "filter_height") {
+    } else if (key == "filter-height") {
         filterer.set_filter_region_height(std::stof(value));
     } else {
         return BasePostProcessor::set_property(key, value);

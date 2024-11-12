@@ -60,14 +60,15 @@ The plugin also provides you with the following parameters:
 
 #### Filtering Parameters (YOLO specific)
 
-| Name                     | Type              |  Default | Description                                                                       |
-|--------------------------|-------------------|---------:|-----------------------------------------------------------------------------------|
-| **filter-show**          | Boolean           |    false | Show a yellow box where the filter is applied.                                    |
-| **filter-class**         | String            |      --- | A comma-separated list of classes to filter the detection.<br>Shows all if empty. |
-| **filter-left**          | Integer [0 - 639] |        0 | The left edge of the region of interest to filter the detection.                  |
-| **filter-top**           | Integer [0 - 479] |        0 | The top edge of the region of interest to filter the detection.                   |
-| **filter-width**         | Integer [1 - 640] |      640 | The left edge of the region of interest to filter the detection.                  |
-| **filter-height**        | Integer [1 - 480] |      480 | The left edge of the region of interest to filter the detection.                  |
+| Name                     | Type              | Default | Description                                                                       |
+|--------------------------|-------------------|--------:|-----------------------------------------------------------------------------------|
+| **filter-prob**          | Integer [0 - 100] |     50  | The probability of detection to consider as valid.                                |
+| **filter-show**          | Boolean           |   false | Show a yellow box where the filter is applied.                                    |
+| **filter-class**         | String            |     --- | A comma-separated list of classes to filter the detection.<br>Shows all if empty. |
+| **filter-left**          | Integer [0 - 639] |       0 | The left edge of the region of interest to filter the detection.                  |
+| **filter-top**           | Integer [0 - 479] |       0 | The top edge of the region of interest to filter the detection.                   |
+| **filter-width**         | Integer [1 - 640] |     640 | The left edge of the region of interest to filter the detection.                  |
+| **filter-height**        | Integer [1 - 480] |     480 | The left edge of the region of interest to filter the detection.                  |
 
 ## AI Model
 
