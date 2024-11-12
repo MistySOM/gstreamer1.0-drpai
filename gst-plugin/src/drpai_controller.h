@@ -37,6 +37,7 @@ private:
     bool multithread = true;
     bool show_fps = false;
     bool show_time = false;
+    bool show_bbox = true;
     bool log_exec_time = false;
     rate_controller video_rate{};
 

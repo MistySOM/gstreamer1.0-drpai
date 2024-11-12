@@ -109,7 +109,9 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
         postprocessor->corner_text.push_back(drpai->get_status());
         postprocessor->corner_text.push_back(postprocessor->get_status());
     }
-    postprocessor->render_detections_on_image(img);
+    if (show_bbox) {
+        postprocessor->render_detections_on_image(img);
+    }
     postprocessor->render_text_on_image(img);
 }
 
@@ -253,6 +255,9 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_SHOW_TIME:
             show_time = g_value_get_boolean(value);
             break;
+        case PROP_SHOW_BBOX:
+            show_bbox = g_value_get_boolean(value);
+            break;
         case PROP_MAX_VIDEO_RATE:
             video_rate.set_max_rate(g_value_get_float(value));
             break;
@@ -317,6 +322,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_SHOW_TIME:
             g_value_set_boolean(value, show_time);
             break;
+        case PROP_SHOW_BBOX:
+            g_value_set_boolean(value, show_bbox);
+            break;
         case PROP_MAX_VIDEO_RATE:
             g_value_set_float(value, video_rate.get_max_rate());
             break;
@@ -366,6 +374,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_SHOW_TIME, g_param_spec_boolean("show_time", "Show Current Time",
                                                      "Render current time at the corner of the video.",
                                                      FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_SHOW_BBOX, g_param_spec_boolean("show_bbox", "Show Bounding Boxes",
+                                                        "Render the latest detection bounding boxes on the video.",
+                                                        TRUE, G_PARAM_READWRITE));
     params.emplace(PROP_MAX_VIDEO_RATE, g_param_spec_float("max_video_rate", "Max Video Framerate",
                                                         "Force maximum video frame rate using thread sleeps.",
                                                         0.001f, 120.f, 120.f, G_PARAM_READWRITE));
