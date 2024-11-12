@@ -47,7 +47,7 @@ The plugin also provides you with the following parameters:
 | **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
 | **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
 | **bitmap-save-minutes**     | Integer [1 - 1000]  |       5 | Minutes between each bitmap save for fewer probability detections.                                        |
-| **bitmap-save-probability** | Float [0 - 1]       |       0 | The probability that triggers the bitmap saving for detections.                                           |
+| **bitmap-save-probability** | Integer [0 - 100]   |       0 | The maximum detection probability that triggers the bitmap saving for detections.                         |
 | **post-process-properties** | String              |     --- | Semi-colon seperated properties used in post-processor library.                                           |
 
 ### Acceptable items in 'post-process-properties' :
@@ -178,7 +178,7 @@ gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, 
 
 ### Read Camera and Stream on Network
 
-In case you already have the streaming working based on [here](StreamingVideo.md), you can 
+In case you already have the streaming working based on [here](https://wiki.mistysom.com/content/StreamingVideo.html), you can 
 add the drpai element to the `stream.sh` file like this:
 
 ```bash

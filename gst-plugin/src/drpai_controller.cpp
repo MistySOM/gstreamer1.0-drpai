@@ -303,7 +303,7 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             bitmap_save_time_between = g_value_get_uint(value);
             break;
         case PROP_BITMAP_SAVE_PROB:
-            bitmap_save_class_probability = g_value_get_float(value);
+            bitmap_save_class_probability = static_cast<float>(g_value_get_uint(value))/100.f;
             break;
         default:
             drpai->set_property(prop, value);
@@ -344,7 +344,7 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
             g_value_set_uint(value, bitmap_save_time_between);
             break;
         case PROP_BITMAP_SAVE_PROB:
-            g_value_set_float(value, bitmap_save_class_probability);
+            g_value_set_uint(value, static_cast<guint>(bitmap_save_class_probability*100));
             break;
         default:
             drpai->get_property(prop, value);
@@ -392,9 +392,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_BITMAP_SAVE_MINUTES, g_param_spec_uint("bitmap_save_minutes", "Bitmap Save Minutes",
                                                                "Minutes between each bitmap save for fewer probability detections.",
                                                                1, 1000, 5, G_PARAM_READWRITE));
-    params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_float("bitmap_save_probability", "Bitmap Save Class Probability",
-                                                             "The probability that triggers the bitmap saving for detections.",
-                                                             0.f, 1.0f, 0.f, G_PARAM_READWRITE));
+    params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_uint("bitmap_save_probability", "Bitmap Save Class Probability",
+                                                            "The maximum detection probability that triggers the bitmap saving for detections.",
+                                                            0, 100, 0, G_PARAM_READWRITE));
     BaseDRPAI::install_properties(params);
 }
 
