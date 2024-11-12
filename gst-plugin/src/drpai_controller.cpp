@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <fstream>
+#include <chrono>
 
 
 void DRPAI_Controller::open_resources() {
@@ -216,19 +217,8 @@ void DRPAI_Controller::thread_function_single() {
                   << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
     }
 
-    if(socket_fd) {
-        json_object j;
-        j.add("timestamp", elapsed_time::to_string(std::chrono::system_clock::now()));
-        j.add("video_rate", video_rate.get_smooth_rate(), 1);
-        j.concatenate(drpai->get_json());
-        const auto str = j.to_string() + "\n";
-        auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
-                        reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
-        
-        if (r < static_cast<ssize_t>(str.size())) {
-            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
-        }
-    }
+    check_save_bmp();
+    send_socket_data();
 }
 
 void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefix) {
@@ -301,6 +291,15 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             }
             break;
         }
+        case PROP_BITMAP_SAVE_DIR:
+            bitmap_save_directory = g_value_get_string(value);
+            break;
+        case PROP_BITMAP_SAVE_MINUTES:
+            bitmap_save_time_between = g_value_get_uint(value);
+            break;
+        case PROP_BITMAP_SAVE_PROB:
+            bitmap_save_class_probability = g_value_get_float(value);
+            break;
         default:
             drpai->set_property(prop, value);
             break;
@@ -329,6 +328,15 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
             break;
         case PROP_LOG_EXEC_TIME:
             g_value_set_boolean(value, log_exec_time);
+            break;
+        case PROP_BITMAP_SAVE_DIR:
+            g_value_set_string(value, bitmap_save_directory.c_str());
+            break;
+        case PROP_BITMAP_SAVE_MINUTES:
+            g_value_set_uint(value, bitmap_save_time_between);
+            break;
+        case PROP_BITMAP_SAVE_PROB:
+            g_value_set_float(value, bitmap_save_class_probability);
             break;
         default:
             drpai->get_property(prop, value);
@@ -367,5 +375,53 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_LOG_SERVER, g_param_spec_string("log_server", "Log Server",
                                                      "Send UDP messages in JSON about detected objects to the mentioned host:port.",
                                                      nullptr, G_PARAM_WRITABLE));
+    params.emplace(PROP_BITMAP_SAVE_DIR, g_param_spec_string("bitmap_save_dir", "Bitmap Save Directory",
+                                                            "The directory path to save bitmap images for fewer probability detections.",
+                                                            "", G_PARAM_READWRITE));
+    params.emplace(PROP_BITMAP_SAVE_MINUTES, g_param_spec_uint("bitmap_save_minutes", "Bitmap Save Minutes",
+                                                               "Minutes between each bitmap save for fewer probability detections.",
+                                                               1, 1000, 5, G_PARAM_READWRITE));
+    params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_float("bitmap_save_probability", "Bitmap Save Class Probability",
+                                                             "The probability that triggers the bitmap saving for detections.",
+                                                             0.f, 1.0f, 0.f, G_PARAM_READWRITE));
     BaseDRPAI::install_properties(params);
+}
+
+void DRPAI_Controller::check_save_bmp() {
+    // Skip frequent saves
+    const auto now = std::chrono::system_clock::now();
+    const auto time_duration = std::chrono::duration_cast<std::chrono::minutes>(now-last_bmp_save).count();
+    if (time_duration < bitmap_save_time_between)
+        return;
+
+    /* Bitmap saving for fewer probabilities */
+    for (auto det : postprocessor->last_det) {
+        if (det.prob < bitmap_save_class_probability) {
+            const auto path = bitmap_save_directory + "./image_" +
+                              det.name + "_" + std::to_string(static_cast<int>(det.prob*100)) + "_at_" +
+                              std::to_string(det.bbox.x) + "_" + std::to_string(det.bbox.y) + ".bmp";
+            image_mapped_udma->save_bmp(path);
+            det.saved_image = true;
+            last_bmp_save = now;
+            break;
+        }
+    }
+}
+
+void DRPAI_Controller::send_socket_data() {
+    if (!socket_fd)
+        return;
+
+    json_object j;
+    j.add("timestamp", elapsed_time::to_string(std::chrono::system_clock::now()));
+    j.add("video_rate", video_rate.get_smooth_rate(), 1);
+    j.concatenate(drpai->get_json());
+    j.concatenate(postprocessor->get_json());
+    const auto str = j.to_string() + "\n";
+    auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
+                    reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
+
+    if (r < static_cast<ssize_t>(str.size())) {
+        std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+    }
 }

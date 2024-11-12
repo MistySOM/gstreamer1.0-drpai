@@ -44,6 +44,9 @@ The plugin also provides you with the following parameters:
 | **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |
 | **smooth-video-rate**       | Float [1 - 1000]    |       1 | Number of last video frame rates to average for a more smooth value.                                      |
 | **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
+| **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
+| **bitmap-save-minutes**     | Integer [1 - 1000]  |       5 | Minutes between each bitmap save for fewer probability detections.                                        |
+| **bitmap-save-probability** | Float [0 - 1]       |       0 | The probability that triggers the bitmap saving for detections.                                           |
 | **post-process-properties** | String              |     --- | Semi-colon seperated properties used in post-processor library.                                           |
 
 ### Acceptable items in 'post-process-properties' :
@@ -114,12 +117,9 @@ your own dynamic library which derives and overrides functions of `BasePostProce
 Additionally, you need to define the function below to allow your library to be dynamically loaded at runtime:
 
 ```C++
-BasePostProcessor* create_post_processor_instance(const char* prefix,
-                                                  uint32_t img_width, 
-                                                  uint32_t img_height,
-                                                  uint32_t inference_output_size)
+BasePostProcessor* create_post_processor_instance(const char* prefix)
 {
-    return new YOUR_POST_PROCESSOR(prefix, img_width, img_height, inference_output_size);
+    return new YOUR_POST_PROCESSOR(prefix);
 }
 ```
 

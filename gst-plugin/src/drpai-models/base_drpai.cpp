@@ -22,8 +22,6 @@
 ******************************************/
 void BaseDRPAI::read_addrmap_txt(const std::string& addr_file)
 {
-    auto start_address = get_drpai_start_addr();
-
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
     if (ifs.fail())
@@ -37,8 +35,6 @@ void BaseDRPAI::read_addrmap_txt(const std::string& addr_file)
         iss >> element >> a >> s;
         uint32_t l_addr = std::stol(a, nullptr, 16);
         uint32_t l_size = std::stol(s, nullptr, 16);
-        if (l_addr < start_address)
-            l_addr += start_address;
 
         if ("drp_config" == element)
         {
@@ -216,22 +212,6 @@ void BaseDRPAI::get_result()
     /* Read the memory via DRP-AI Driver and store the output to buffer */
     if ( read(drpai_fd, drpai_output_buf.data(), drpai_data.size) == -1 )
         throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-}
-
-/*****************************************
-* Function Name : get_drpai_start_addr
-* Description   : Function to get the start address of DRPAImem.
-* Arguments     : -
-* Return value  : uint32_t = DRPAImem start address in 32-bit.
-******************************************/
-uint32_t BaseDRPAI::get_drpai_start_addr() const
-{
-    drpai_data_t drpai_data;
-    errno = 0;
-    if (const auto ret = ioctl(drpai_fd, DRPAI_GET_DRPAI_AREA, &drpai_data); 0 != ret)
-        throw std::runtime_error("[ERROR] Failed to get DRP-AI Memory Area : errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno)));
-
-    return drpai_data.address;
 }
 
 void BaseDRPAI::start() {
