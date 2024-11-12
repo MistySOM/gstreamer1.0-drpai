@@ -83,7 +83,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
                 "seen_first": "2023-12-22T23:20:56.484Z", 
                 "seen_last": "2023-12-22T23:21:46.484Z", 
                 "class": "person", 
-                "probability": 0.91, 
+                "probability": 0.91,
+                "saved": false,
                 "box": {
                     "center_x": 425, 
                     "center_y": 325, 
@@ -96,7 +97,8 @@ Here is a sample of JSON output of Yolo models when the tracking is **on**:
                 "seen_first": "2023-12-22T23:25:53.484Z", 
                 "seen_last": "2023-12-22T23:26:07.484Z", 
                 "class": "wine glass", 
-                "probability": 0.52, 
+                "probability": 0.52,
+                "saved": false,
                 "box": {
                     "center_x": 87, 
                     "center_y": 133, 

@@ -348,7 +348,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
                                                                1, 1000, 5, G_PARAM_READWRITE));
     params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_float("bitmap_save_probability", "Bitmap Save Class Probability",
                                                              "The probability that triggers the bitmap saving for detections.",
-                                                             0.001f, 1.0f, 0.5f, G_PARAM_READWRITE));
+                                                             0.f, 1.0f, 0.f, G_PARAM_READWRITE));
     BaseDRPAI::install_properties(params);
 }
 
