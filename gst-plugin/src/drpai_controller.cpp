@@ -197,19 +197,7 @@ void DRPAI_Controller::thread_function_single() {
     drpai->run_inference();
     postprocessor->extract_detections(drpai->drpai_output_buf);
 
-    if(socket_fd) {
-        json_object j;
-        j.add("timestamp", elapsed_time::to_string(std::chrono::system_clock::now()));
-        j.add("video_rate", video_rate.get_smooth_rate(), 1);
-        j.concatenate(drpai->get_json());
-        const auto str = j.to_string() + "\n";
-        auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
-                        reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
-        
-        if (r < static_cast<ssize_t>(str.size())) {
-            std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
-        }
-    }
+    send_socket_data();
 }
 
 void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefix) {
@@ -333,4 +321,22 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
                                                      "Send UDP messages in JSON about detected objects to the mentioned host:port.",
                                                      nullptr, G_PARAM_WRITABLE));
     BaseDRPAI::install_properties(params);
+}
+
+void DRPAI_Controller::send_socket_data() {
+    if (!socket_fd)
+        return;
+
+    json_object j;
+    j.add("timestamp", elapsed_time::to_string(std::chrono::system_clock::now()));
+    j.add("video_rate", video_rate.get_smooth_rate(), 1);
+    j.concatenate(drpai->get_json());
+    j.concatenate(postprocessor->get_json());
+    const auto str = j.to_string() + "\n";
+    auto r = sendto(socket_fd, str.c_str(), str.size(), 0,
+                    reinterpret_cast<const sockaddr *>(&socket_address), sizeof(socket_address));
+
+    if (r < static_cast<ssize_t>(str.size())) {
+        std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+    }
 }

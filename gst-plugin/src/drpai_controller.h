@@ -48,6 +48,7 @@ private:
     int socket_fd = 0;
     sockaddr_storage socket_address {};
     void set_socket_address(const std::string& address);
+    void send_socket_data();
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
