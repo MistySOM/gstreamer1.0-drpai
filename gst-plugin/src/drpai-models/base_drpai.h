@@ -78,6 +78,7 @@ protected:
     void start();
     void wait() const;
     void crop(const Box& crop_region) const;
+    [[nodiscard]] uint32_t get_drpai_start_addr() const;
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;
