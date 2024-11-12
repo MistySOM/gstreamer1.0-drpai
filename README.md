@@ -38,6 +38,7 @@ The plugin also provides you with the following parameters:
 | **log-detects**             | Boolean             |   false | Print detected objects in standard output.                                                                |
 | **log-server**              | Host:Port (String)  |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
 | **show-fps**                | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
+| **show-bbox**               | Boolean             |    true | Render the latest detection bounding boxes on the video.                                                  |
 | **stop-error**              | Boolean             |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
 | **max-video-rate**          | Float [0.001 - 120] |     120 | Force maximum video frame rate using thread sleeps.                                                       |
 | **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |

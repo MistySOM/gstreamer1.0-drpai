@@ -37,6 +37,7 @@ private:
     bool multithread = true;
     bool show_fps = false;
     bool show_time = false;
+    bool show_bbox = true;
     rate_controller video_rate{};
 
     BaseDRPAI* drpai = nullptr;
