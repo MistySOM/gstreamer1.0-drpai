@@ -28,7 +28,7 @@ public:
     void print_box(detection d, int32_t i);
 
 private:
-    static constexpr float TH_PROB = 0.5f;
+    float TH_PROB = 0.5f;
 
     bool show_track_id = false;
     tracker det_tracker;
