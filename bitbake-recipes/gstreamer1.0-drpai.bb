@@ -1,19 +1,43 @@
-SUMMARY = "GStreamer DRP-AI plugin"
+SECTION = "multimedia"
+LICENSE = "MIT"
+SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master"
+SRCREV = "${AUTOREV}"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
+DEPENDS = "gstreamer1.0 drpai"
 
-require gstreamer1.0-drpai.inc
+inherit meson
+MESON_BUILDTYPE = "release"
 
-MESON_TARGET = "gstdrpai"
+S = "${WORKDIR}/git"
+PV = "1.0"
+
+PACKAGES = "${PN} ${PN}-dbg"
+
 MESONOPTS += " -Dtvm=enabled"
-DEPENDS += " gstreamer1.0-plugins-base"
+DEPENDS = "gstreamer1.0-plugins-base"
 RDEPENDS_${PN} = "\
   gstreamer1.0 \
   gstreamer1.0-plugins-base \
   kernel-module-udmabuf \
-  libtvm_runtime.so()(64bit) \
+  libtvm_runtime \
 "
 FILES_${PN} = "\
   ${libdir}/gstreamer-1.0/libgstdrpai.so \
   ${libdir}/libtvm_runtime.so \
 "
 FILES_${PN}-dbg = "${libdir}/gstreamer-1.0/.debug/libgstdrpai.so"
-RPROVIDES_${PN} += " libtvm_runtime.so()(64bit)"
+RPROVIDES_${PN} += " libtvm_runtime"
+
+
+PACKAGES += " ${PN}-yolo ${PN}-yolo-dbg"
+PROVIDES += " ${PN}-yolo"
+RDEPENDS_${PN}-yolo = "${PN}"
+FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
+FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
+
+
+PACKAGES += " gst-launch-split gst-launch-split-dbg"
+PROVIDES += " gst-launch-split"
+RDEPENDS_gst-launch-split = "gstreamer1.0 gstreamer1.0-plugins-bad"
+FILES_gst-launch-split = "${bindir}/gst-launch-split"
+FILES_gst-launch-split-dbg = "${bindir}/.debug/gst-launch-split"

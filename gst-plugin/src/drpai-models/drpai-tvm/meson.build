@@ -10,7 +10,10 @@ libtvm_runtime_lib = cxx.find_library(
 )
 
 if (enable_tvm.enabled())
-    install_subdir(libtvm_runtime_dir, install_dir: '/usr/lib64')
+    install_data(
+        libtvm_runtime_dir / 'libtvm_runtime.so',
+        install_dir: get_option('prefix') / 'lib64'
+    )
 
     message('Merging TVM include files with DRPAI extensions...')
     run_command('bash', '-c', 'cp -r ' +
