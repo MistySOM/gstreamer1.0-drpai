@@ -408,9 +408,10 @@ void DRPAI_Controller::check_save_bmp() {
     /* Bitmap saving for fewer probabilities */
     for (auto det : postprocessor->last_det) {
         if (det.prob < bitmap_save_class_probability) {
-            const auto path = bitmap_save_directory + "/image_" +
-                              det.name + "_" + std::to_string(static_cast<int>(det.prob*100)) + "_at_" +
-                              std::to_string(det.bbox.x) + "_" + std::to_string(det.bbox.y) + ".bmp";
+            const auto path = bitmap_save_directory + "/image_" + det.name +
+                              "_" + std::to_string(static_cast<int>(det.prob*100)) +
+                              "_at_" + std::to_string(static_cast<int>(det.bbox.x)) +
+                              "_" + std::to_string(static_cast<int>(det.bbox.y)) + ".bmp";
             image_mapped_udma->save_bmp(path);
             det.saved_image = true;
             last_bmp_save = now;
