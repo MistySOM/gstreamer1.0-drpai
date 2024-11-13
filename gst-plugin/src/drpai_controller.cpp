@@ -420,7 +420,7 @@ void DRPAI_Controller::check_save_bmp() {
     }
 }
 
-void DRPAI_Controller::send_socket_data() {
+void DRPAI_Controller::send_socket_data() const {
     if (!socket_fd)
         return;
 
@@ -437,6 +437,8 @@ void DRPAI_Controller::send_socket_data() {
         std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
         if (errno == EMSGSIZE) {
             std::cerr << "\tMessage Length: " << str.size() << " - Message sent: " << r << std::endl;
+            std::cerr << "\tMessage Content: " << std::endl;
+            std::cerr << str << std::endl;
         }
     }
 }
