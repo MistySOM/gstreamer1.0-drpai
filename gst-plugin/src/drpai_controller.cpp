@@ -435,5 +435,8 @@ void DRPAI_Controller::send_socket_data() {
 
     if (r < static_cast<ssize_t>(str.size())) {
         std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+        if (errno == EMSGSIZE) {
+            std::cerr << "\tMessage Length: " << str.size() << " - Message sent: " << r << std::endl;
+        }
     }
 }

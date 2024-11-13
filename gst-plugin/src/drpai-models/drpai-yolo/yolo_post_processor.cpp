@@ -425,7 +425,8 @@ json_array YOLO_PostProcessor::get_detections_json() {
 
 json_object YOLO_PostProcessor::get_json() {
     json_object j = BasePostProcessor::get_json();
-    if (filterer.is_active())
+    if (filterer.is_active() && (filterer.get_filter_region_width() < static_cast<float>(img_width) ||
+                                 filterer.get_filter_region_height() < static_cast<float>(img_width)))
         j.add("filter", filterer.get_json());
     if(det_tracker.active)
         j.add("track_history", det_tracker.get_json());
