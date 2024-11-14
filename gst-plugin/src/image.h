@@ -45,6 +45,7 @@ class Image
 
         void map_udmabuf();
         void copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT format);
+        void save_bmp(const std::string& filename) const;
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;

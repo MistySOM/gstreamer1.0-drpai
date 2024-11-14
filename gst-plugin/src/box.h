@@ -95,6 +95,7 @@ struct detection
     const classID c;
     const float prob;
     const char* name;
+    bool saved_image = false;
 
     detection(const detection& det) = default;
     explicit detection(Box box, classID c, float prob, const char* name = nullptr):
@@ -111,6 +112,7 @@ struct detection
         j.add("class", std::string(name));
         j.add("probability", prob, 2);
         j.add("box", bbox.get_json(true));
+        j.add("saved_image", saved_image);
         return j;
     }
 };

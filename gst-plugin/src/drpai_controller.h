@@ -37,6 +37,7 @@ private:
     bool multithread = true;
     bool show_fps = false;
     bool show_time = false;
+    bool show_bbox = true;
     rate_controller video_rate{};
 
     BaseDRPAI* drpai = nullptr;
@@ -58,6 +59,13 @@ private:
     std::condition_variable v;
     void thread_function_loop();
     void thread_function_single();
+
+    /* Bitmap saving for fewer probabilities */
+    std::chrono::system_clock::time_point last_bmp_save;
+    float bitmap_save_class_probability = 0;
+    uint32_t bitmap_save_time_between = 5;
+    std::string bitmap_save_directory = ".";
+    void check_save_bmp();
 };
 
 #endif //GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H

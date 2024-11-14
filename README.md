@@ -38,11 +38,15 @@ The plugin also provides you with the following parameters:
 | **log-detects**             | Boolean             |   false | Print detected objects in standard output.                                                                |
 | **log-server**              | Host:Port (String)  |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
 | **show-fps**                | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
+| **show-bbox**               | Boolean             |    true | Render the latest detection bounding boxes on the video.                                                  |
 | **stop-error**              | Boolean             |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
 | **max-video-rate**          | Float [0.001 - 120] |     120 | Force maximum video frame rate using thread sleeps.                                                       |
 | **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |
 | **smooth-video-rate**       | Float [1 - 1000]    |       1 | Number of last video frame rates to average for a more smooth value.                                      |
 | **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
+| **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
+| **bitmap-save-minutes**     | Integer [1 - 1000]  |       5 | Minutes between each bitmap save for fewer probability detections.                                        |
+| **bitmap-save-probability** | Integer [0 - 100]   |       0 | The maximum detection probability that triggers the bitmap saving for detections.                         |
 | **post-process-properties** | String              |     --- | Semi-colon seperated properties used in post-processor library.                                           |
 
 ### Acceptable items in 'post-process-properties' :
@@ -173,7 +177,7 @@ gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=640, height=480, 
 
 ### Read Camera and Stream on Network
 
-In case you already have the streaming working based on [here](StreamingVideo.md), you can 
+In case you already have the streaming working based on [here](https://wiki.mistysom.com/content/StreamingVideo.html), you can 
 add the drpai element to the `stream.sh` file like this:
 
 ```bash

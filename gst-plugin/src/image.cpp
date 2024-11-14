@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
+#include <cstring>
 
 Image::~Image()
 {
@@ -384,4 +385,77 @@ void Image::render_text_at_corner(const std::vector<std::string>& corner_text) c
     for(std::size_t i=0; i<corner_text.size(); i++) {
         write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
     }
+}
+
+constexpr void assign_u16(uint8_t* array, uint8_t offset, uint16_t value) {
+    array[offset + 0] = 0xff & (value >> 0);
+    array[offset + 1] = 0xff & (value >> 8);
+}
+constexpr void assign_u32(uint8_t* array, uint8_t offset, uint32_t value) {
+    array[offset + 0] = 0xff & (value >> 0);
+    array[offset + 1] = 0xff & (value >> 8);
+    array[offset + 2] = 0xff & (value >> 16);
+    array[offset + 3] = 0xff & (value >> 24);
+}
+
+/*****************************************
+* Function Name : save_bmp
+* Description   : Save the image in img_buffer into Windows Bitmap v3 file.
+*                 This function uses the bmp_header,
+*                  which read_bmp() stored the input image header information
+* Arguments     : filename = name of output image file
+******************************************/
+void Image::save_bmp(const std::string& filename) const
+{
+    constexpr uint8_t FILEHEADERSIZE = 14;
+    constexpr uint8_t INFOHEADERSIZE_W_V3 = 40;
+    constexpr uint8_t header_size = FILEHEADERSIZE+INFOHEADERSIZE_W_V3;
+    const uint32_t bi_height = ~img_h + 1;
+    const uint32_t padding = img_w % 4;
+    const uint64_t bf_size = ((uint64_t)img_w * 3 + padding) * img_h + 54;
+
+    uint8_t bmp_header[FILEHEADERSIZE+INFOHEADERSIZE_W_V3] = {'B', 'M'};
+    assign_u32(bmp_header, 2, bf_size);    // bf_size
+    assign_u32(bmp_header, 10, 54);        // bf_off_bits
+    assign_u32(bmp_header, 14, 40);        // bi_size
+    assign_u32(bmp_header, 18, img_w);     // bi_width
+    assign_u32(bmp_header, 22, bi_height); // bi_height
+    assign_u16(bmp_header, 26, 1);         // bi_planes
+    assign_u16(bmp_header, 28, 24);        // bi_bit_count
+    assign_u32(bmp_header, 38, 2835);      // bi_x_pels_per_meter
+    assign_u32(bmp_header, 42, 2835);      // bi_y_pels_per_meter
+
+    /* Number of byte in single row */
+    uint32_t line_width = img_w * img_c + img_w % 4;
+
+    printf ("Output Image File : %s\n", filename.c_str() );
+
+    FILE* fp = fopen(filename.c_str(), "wb");
+    if (nullptr == fp)
+        throw std::runtime_error("[ERROR] Could not open the file " + filename + "for writing.");
+
+    /* Write header for Windows Bitmap v3 file. */
+    fwrite(bmp_header, sizeof(uint8_t), header_size, fp);
+
+    auto bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
+    if (nullptr == bmp_line_data)
+    {
+        free(bmp_line_data);
+        fclose(fp);
+        throw std::runtime_error("[ERROR] Could not allocate buffer for writing bitmap image.");
+    }
+
+    for (auto i = static_cast<int32_t>(img_h - 1); i >= 0; i--)
+    {
+        std::memcpy(bmp_line_data, img_buffer + i*img_w*img_c, sizeof(uint8_t)*img_w*img_c);
+        auto ret = fwrite(bmp_line_data, sizeof(uint8_t), line_width, fp);
+        if (!ret)
+        {
+            free(bmp_line_data);
+            fclose(fp);
+            throw std::runtime_error("[ERROR] Could not write into the file " + filename);
+        }
+    }
+    free(bmp_line_data);
+    fclose(fp);
 }
