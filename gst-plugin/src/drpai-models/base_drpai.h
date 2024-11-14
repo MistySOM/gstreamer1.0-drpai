@@ -15,44 +15,47 @@
 #include <array>
 #include <map>
 
-/* For DRP-AI Address List */
-typedef struct
-{
-    unsigned long desc_aimac_addr;
-    unsigned long desc_aimac_size;
-    unsigned long desc_drp_addr;
-    unsigned long desc_drp_size;
-    unsigned long drp_param_addr;
-    unsigned long drp_param_size;
-    unsigned long data_in_addr;
-    unsigned long data_in_size;
-    unsigned long data_addr;
-    unsigned long data_size;
-    unsigned long work_addr;
-    unsigned long work_size;
-    unsigned long data_out_addr;
-    unsigned long data_out_size;
-    unsigned long drp_config_addr;
-    unsigned long drp_config_size;
-    unsigned long weight_addr;
-    unsigned long weight_size;
-} st_addr_t;
-
 class BaseDRPAI {
 
 public:
+    /// Class constructor, capturing the DRP-AI object files prefix and directories.
+    /// @param [in] prefix The prefix of the DRP-AI object files.
+    /// @param [in] directory The directory containing DRP-AI object files.
+    ///                       If empty, it would assume the prefix.
     explicit BaseDRPAI(const std::string &prefix, const std::string& directory = "");
     virtual ~BaseDRPAI() = default;
 
+    /// Runs the inference on DRP-AI driver by calling start, wait, and get_result instructions.
     virtual void run_inference();
+
+    /// Allocate resources for the DRP-AI Driver.
+    /// @param [in] data_in_address The address of UDMA memory to read input images.
+    /// @param [in] open_files To open other files in addition to the DRP-AI driver.
     virtual void open_resource(uint32_t data_in_address, bool open_files);
+
+    /// Release resources for the DRP-AI Driver.
     virtual void release_resource();
 
+    /// Get status to be shown at the corner of the image
+    /// @returns A string containing the DRPAI rate
     [[nodiscard]] virtual std::string get_status() const;
+
+    /// Get a json to be used in UDP packets.
+    /// @returns A json_object containing the DRPAI rate
     [[nodiscard]] virtual json_object get_json();
 
+    /// Sets the property of the class, used by the Gstreamer
+    /// @param [in] prop The property enumerator
+    /// @param [in] value The value of the property to be set.
     void set_property(GstDRPAI_Properties prop, const GValue* value);
+
+    /// Gets the property of the class, used by the Gstreamer
+    /// @param [in] prop The property enumerator
+    /// @param [out] value The value of the property to be written into.
     void get_property(GstDRPAI_Properties prop, GValue* value) const;
+
+    /// Registers properties of the class to used by the Gstreamer
+    /// @param [in,out] params The map of properties containing the property enumerator and property spec.
     static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
 
     rate_controller rate {};
@@ -62,34 +65,57 @@ public:
     int32_t IN_HEIGHT = 0;
     int32_t IN_CHANNEL = 0;
     IMAGE_FORMAT IN_FORMAT = BGR_DATA;
+
+    /// The float array which needs to be post-processed to extract meaningful information
     std::vector<float> drpai_output_buf {};
 
 protected:
-    const std::string prefix;
-    const std::string directory;
+    const std::string prefix; /// The prefix of the DRP-AI object files.
+    const std::string directory; /// The directory containing DRP-AI object files.
 
-    int32_t drpai_fd = 0;
-    st_addr_t drpai_address {};
+    int32_t drpai_fd = 0; /// DRP-AI device handle
+
+    /// DRP-AI Address List
+    // std::map<std::string, drpai_data_t> drpai_address {};
     std::array<drpai_data_t, DRPAI_INDEX_NUM> proc {};
 
+    /// Loads DRP-AI Parameter File to memory via DRP-AI Driver.
+    /// @param [in] _proc drpai data structure
+    /// @param [in] param_file drpai parameter file to load
     void load_drpai_param_file(const drpai_data_t& _proc, const std::string& param_file) const;
+
+    /// Get DRP-AI Output from memory via DRP-AI Driver
     void get_result();
+
+    /// Start the DRP-AI Driver
     void start();
+
+    /// Wait for the DRP-AI Driver to finish working.
     void wait() const;
+
+    /// Runs DRP-AI crop instruction for preprocessing
+    /// @param [in] crop_region The region to be cropped.
     void crop(const Box& crop_region) const;
 
 private:
-    constexpr static uint32_t DRPAI_TIMEOUT = 5;
-    constexpr static uint32_t BUF_SIZE      = 1024; /*Buffer size for writing data to memory via DRP-AI Driver.*/
-    /*Index to access drpai_file_path[]*/
-    enum DRPAI_INDEX {
-        INDEX_D=0, INDEX_C, INDEX_P, INDEX_A, INDEX_W
-    };
+    constexpr static uint32_t DRPAI_TIMEOUT = 5;    /// Seconds to wait until DRP-AI Driver generates the output.
+    constexpr static uint32_t BUF_SIZE      = 1024; /// Buffer size for writing data to memory via DRP-AI Driver.
 
+    /// Loads address and size of DRP-AI Object files into struct addr.
+    /// @param [in] addr_file Filename of addressmap file (from DRP-AI Object files)
     void read_addrmap_txt(const std::string& addr_file);
+
+    /// Loads the input format for DRP-AI Object files.
+    /// @param [in] data_in_list Filename of data_in_list file (from DRP-AI Object files)
     void read_data_in_list(const std::string &data_in_list);
-    void load_drpai_data() const;
-    void load_data_to_mem(const std::string& data, uint32_t from, uint32_t size) const;
+
+    /// Loads all DRP-AI Object files to memory via DRP-AI Driver.
+    void load_data_to_mem() const;
+
+    /// Loads a file to memory via DRP-AI Driver.
+    /// @param [in] file Filename to be written to memory.
+    /// @param [in] data Memory start address and size where the data is written.
+    void load_data_to_mem(const std::string& file, const drpai_data_t& data) const;
 };
 
 
