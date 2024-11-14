@@ -278,6 +278,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
             std::cout << "Loading : " << anchors_list << std::flush;
             load_anchors_file(anchors_list);
             std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+            break;
         }
         case 8:
             item_size = labels.size()+4;
