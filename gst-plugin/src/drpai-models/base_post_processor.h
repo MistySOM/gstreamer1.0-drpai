@@ -30,15 +30,11 @@ public:
     /// @param [in] inference_output_buf Array of floats containing the output layer of the running ML model.
     virtual void extract_detections(const std::vector<float>& inference_output_buf) = 0;
 
-    /// Renders bounding boxes on the image using the latest detections.
+    /// Renders bounding boxes on the image using the latest detections
+    /// in `BasePostProcessor::last_det` array filled by the `BasePostProcessor::extract_detections` function.
     /// This function usually gets overridden by the child class. But it is not a must.
     /// @param [in] img Reference to the image to be rendered on.
     virtual void render_detections_on_image(Image &img);
-
-    /// Renders texts at the corner of the image using the list of corner texts.
-    /// This function usually gets overridden by the child class. But it is not a must.
-    /// @param [in] img Reference to the image to be rendered on.
-    virtual void render_text_on_image(Image& img);
 
     /// Get status to be shown at the corner of the image.
     /// This function usually gets overridden by the child class. But it is not a must.
@@ -53,7 +49,8 @@ public:
     [[nodiscard]] virtual bool set_property(const std::string& key, const std::string& value) { return false; }
 
     /// Get a json object containing detections to be used in UDP packets.
-    /// This function can get overridden by the child class to add extra info.
+    /// It uses the function `BasePostProcessor::get_detections_json` and places it in the key `detections`.
+    /// This function can get overridden by the child class to add extra info to the json object.
     /// @returns A json_object containing detections
     [[nodiscard]] virtual json_object get_json();
 
@@ -73,11 +70,11 @@ public:
     { return get_param(params_file_name, param, error_not_found); }
 
     std::list<detection> last_det {}; /// List of latest detections, filled by `extract_detections` function
-    std::vector<std::string> corner_text {}; /// List of status texts to be rendered at the corner of the image.
     bool log_detects = false; /// Log detections in the standard output.
 
 protected:
-    /// Get a json array containing detections to be used in the get_json function.
+    /// Get a json array containing detections in `BasePostProcessor::last_det` array
+    /// filled by the `BasePostProcessor::extract_detections` function.
     /// This function can get overridden by the child class to add extra info for each detection.
     /// @returns A json_array containing detections
     [[nodiscard]] virtual json_array get_detections_json();
