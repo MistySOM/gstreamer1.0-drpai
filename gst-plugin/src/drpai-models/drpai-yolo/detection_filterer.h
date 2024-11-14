@@ -22,14 +22,14 @@ public:
         labels(labels)
     {};
 
-    void apply(std::list<detection>& det);
-    void render_filter_region(Image& img) const;
+    void apply(std::list<detection>& det) const;
+    void render_filter_region(const Image& img) const;
 
     void set_filter_classes(const std::string& s);
-    constexpr void set_filter_region_left(float f) { filter_region.setLeft(f); }
-    constexpr void set_filter_region_top(float f) { filter_region.setTop(f); }
-    constexpr void set_filter_region_width(float f) { filter_region.w = f; filter_region.setLeft(filter_region.x); }
-    constexpr void set_filter_region_height(float f) { filter_region.h = f; filter_region.setTop(filter_region.y); }
+    constexpr void set_filter_region_left(const float f) { filter_region.setLeft(f); }
+    constexpr void set_filter_region_top(const float f) { filter_region.setTop(f); }
+    constexpr void set_filter_region_width(const float f) { filter_region.w = f; filter_region.setLeft(filter_region.x); }
+    constexpr void set_filter_region_height(const float f) { filter_region.h = f; filter_region.setTop(filter_region.y); }
 
     [[nodiscard]] json_object get_json() const;
 
@@ -52,7 +52,7 @@ private:
 
     std::map<classID, colorBGR> filter_classes {};
 
-    void filter_boxes_nms(std::list<detection>& det);
+    void filter_boxes_nms(std::list<detection>& det) const;
 };
 
 

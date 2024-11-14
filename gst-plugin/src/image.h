@@ -52,6 +52,10 @@ class Image
         void write_string(const std::string& pcode, int32_t x, int32_t y,
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
+        /// Renders texts at the corner of the image using the list of corner texts
+        /// @param [in] corner_text Reference to the array of strings to be rendered at the corner of the image.
+        void render_text_at_corner(const std::vector<std::string>& corner_text) const;
+
     private:
         uint8_t udmabuf_fd = 0;
         uint32_t img_w;
