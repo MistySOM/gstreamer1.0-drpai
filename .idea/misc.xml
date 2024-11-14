@@ -12,6 +12,14 @@
         </option>
         <option name="profiles">
           <MesonProfile>
+            <option name="setupOptions">
+              <list>
+                <option value="--cross-file" />
+                <option value="meson-aarch64-poky.cross" />
+                <option value="--buildtype" />
+                <option value="debug" />
+              </list>
+            </option>
             <option name="toolchainName" value="Poky aarch64" />
           </MesonProfile>
         </option>

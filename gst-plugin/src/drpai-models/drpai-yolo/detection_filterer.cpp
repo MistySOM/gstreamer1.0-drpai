@@ -13,7 +13,7 @@
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void detection_filterer::filter_boxes_nms(std::list<detection>& det)
+void detection_filterer::filter_boxes_nms(std::list<detection>& det) const
 {
     for (auto i = det.begin(); i != det.end(); ++i)
     {
@@ -45,7 +45,7 @@ void detection_filterer::filter_boxes_nms(std::list<detection>& det)
     }
 }
 
-void detection_filterer::apply(std::list<detection> &d) {
+void detection_filterer::apply(std::list<detection> &d) const {
     if (d.empty())
         return;
 
@@ -66,7 +66,7 @@ void detection_filterer::apply(std::list<detection> &d) {
     }
 }
 
-void detection_filterer::render_filter_region(Image &img) const {
+void detection_filterer::render_filter_region(const Image &img) const {
     if (is_filter_region_active())
         img.draw_rect(filter_region);
 }

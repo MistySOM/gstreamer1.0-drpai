@@ -8,7 +8,8 @@
 /*Definition of Macros & other variables*/
 #include "image.h"
 #include "rate_controller.h"
-#include "drpai-models/drpai_base.h"
+#include "drpai-models/base_drpai.h"
+#include "drpai-models/base_post_processor.h"
 
 #include <thread>
 #include <mutex>
@@ -16,14 +17,14 @@
 #include <netdb.h>
 #include <map>
 
-class DRPAI_Base;
+class BaseDRPAI;
 
 class DRPAI_Controller {
 
 public:
     explicit DRPAI_Controller() = default;
 
-    void open_drpai_model(const std::string& modelPrefix);
+    void open_post_processor_library(const std::string& modelPrefix);
     void open_resources();
     void release_resources();
     void process_image(uint8_t* img_data, uint32_t img_data_len);
@@ -38,7 +39,8 @@ private:
     bool show_time = false;
     rate_controller video_rate{};
 
-    DRPAI_Base* drpai = nullptr;
+    BaseDRPAI* drpai = nullptr;
+    BasePostProcessor* postprocessor = nullptr;
     void* dynamic_library_handle = nullptr;
     std::unique_ptr<Image> image_mapped_udma = nullptr;
 
@@ -46,6 +48,7 @@ private:
     int socket_fd = 0;
     sockaddr_storage socket_address {};
     void set_socket_address(const std::string& address);
+    void send_socket_data();
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };
