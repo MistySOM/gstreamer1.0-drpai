@@ -5,7 +5,8 @@
 #include "base_post_processor.h"
 #include <fstream>
 
-/// Renders bounding boxes on the image using the latest detections.
+/// Renders bounding boxes on the image using the latest detections
+/// in `BasePostProcessor::last_det` array filled by the `BasePostProcessor::extract_detections` function.
 /// This function usually gets overridden by the child class. But it is not a must.
 /// @param [in] img Reference to the image to be rendered on.
 void BasePostProcessor::render_detections_on_image(Image &img) {
@@ -17,16 +18,8 @@ void BasePostProcessor::render_detections_on_image(Image &img) {
     }
 }
 
-/// Renders texts at the corner of the image using the list of corner texts.
-/// This function usually gets overridden by the child class. But it is not a must.
-/// @param [in] img Reference to the image to be rendered on.
-void BasePostProcessor::render_text_on_image(Image &img) {
-    for(std::size_t i=0; i<corner_text.size(); i++) {
-        img.write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
-    }
-}
-
-/// Get a json array containing detections to be used in the get_json function.
+/// Get a json array containing detections in `BasePostProcessor::last_det` array
+/// filled by the `BasePostProcessor::extract_detections` function.
 /// This function can get overridden by the child class to add extra info for each detection.
 /// @returns A json_array containing detections
 json_array BasePostProcessor::get_detections_json() {
@@ -88,8 +81,9 @@ void BasePostProcessor::open_resource(uint32_t inference_output_size, const uint
     BasePostProcessor::img_height = img_height;
 }
 
-/// Get a json containing detections to be used in UDP packets.
-/// This function can get overridden by the child class to add extra info.
+/// Get a json object containing detections to be used in UDP packets.
+/// It uses the function `BasePostProcessor::get_detections_json` and places it in the key `detections`.
+/// This function can get overridden by the child class to add extra info to the json object.
 /// @returns A json_object containing detections
 json_object BasePostProcessor::get_json() {
     json_object j;
@@ -101,6 +95,8 @@ json_object BasePostProcessor::get_json() {
 /// @param [in] str A string containing either variation of "true", "false", or "1", "0" to be changed to a boolean.
 /// @returns A boolean
 bool BasePostProcessor::to_bool(std::string str) {
+    str.erase(str.find_last_not_of("\t\n\v\f\r ") + 1); // right trim
+    str.erase(0, str.find_first_not_of("\t\n\v\f\r ")); // left trim
     if (str == "1")
         return true;
     if (str == "0")

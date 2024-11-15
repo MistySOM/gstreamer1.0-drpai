@@ -95,24 +95,24 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
     video_rate.inform_frame();
 
     /* Compute the result, draw the result on img and display it on console */
-    postprocessor->corner_text.clear();
+    std::vector<std::string> corner_text {};
     if (show_time) {
         const auto now = std::chrono::system_clock::now();
         const auto now_t = std::chrono::system_clock::to_time_t(now);
         const auto now_l = std::localtime(&now_t);
         char now_str[25];
         snprintf( now_str, 25, "Current Time: %02d:%02d:%02d", now_l->tm_hour, now_l->tm_min, now_l->tm_sec);
-        postprocessor->corner_text.emplace_back(now_str);
+        corner_text.emplace_back(now_str);
     }
     if (show_fps) {
-        postprocessor->corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
-        postprocessor->corner_text.push_back(drpai->get_status());
-        postprocessor->corner_text.push_back(postprocessor->get_status());
+        corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) + " fps");
+        corner_text.push_back(drpai->get_status());
+        corner_text.push_back(postprocessor->get_status());
     }
     if (show_bbox) {
         postprocessor->render_detections_on_image(img);
     }
-    postprocessor->render_text_on_image(img);
+    img.render_text_at_corner(corner_text);
 }
 
 void DRPAI_Controller::set_socket_address(const std::string& address) {
