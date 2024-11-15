@@ -38,6 +38,7 @@ private:
     bool show_fps = false;
     bool show_time = false;
     bool show_bbox = true;
+    bool log_exec_time = false;
     rate_controller video_rate{};
 
     BaseDRPAI* drpai = nullptr;
@@ -49,7 +50,7 @@ private:
     int socket_fd = 0;
     sockaddr_storage socket_address {};
     void set_socket_address(const std::string& address);
-    void send_socket_data();
+    void send_socket_data() const;
 
     /* Thread Section */
     enum ThreadState { Unknown, Ready, Processing, Failed, Closing };

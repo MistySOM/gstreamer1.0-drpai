@@ -4,6 +4,9 @@
 
 #include "drpai_controller.h"
 #include "drpai-models/drpai-yolo/yolo_post_processor.h"
+#ifdef ENABLE_TVM
+#include "drpai-models/drpai-tvm/tvm_drpai.h"
+#endif
 #include <memory>
 #include <iostream>
 #include <netdb.h>
@@ -196,9 +199,25 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
+    auto t1 = std::chrono::high_resolution_clock::now();
     image_mapped_udma->prepare();
+    auto t2 = std::chrono::high_resolution_clock::now();
+
     drpai->run_inference();
+    auto t3 = std::chrono::high_resolution_clock::now();
+
     postprocessor->extract_detections(drpai->drpai_output_buf);
+    auto t4 = std::chrono::high_resolution_clock::now();
+
+    if (log_exec_time) {
+        auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+        auto ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+        std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
+        std::cout << "Execution Time - UDMA prepare: " << ms_int1
+                  << "ms\tInference: " << ms_int2
+                  << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
+    }
 
     check_save_bmp();
     send_socket_data();
@@ -246,13 +265,23 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             video_rate.set_smooth_rate(g_value_get_uint(value));
             break;
         case PROP_MODEL: {
-            auto prefix = std::string(g_value_get_string(value));
-            drpai = new BaseDRPAI(prefix);
+            const auto prefix = std::string(g_value_get_string(value));
+            if (std::ifstream(prefix + "/deploy.so").good())
+#ifdef ENABLE_TVM
+                drpai = new TVM_DRPAI(prefix);
+#else
+                throw std::runtime_error("This built of gstreamer1.0-drpai plugin doesn't support TVM deployment models.");
+#endif
+            else
+                drpai = new BaseDRPAI(prefix);
             open_post_processor_library(prefix);
             break;
         }
         case PROP_LOG_DETECTS:
             postprocessor->log_detects = g_value_get_boolean(value);
+            break;
+        case PROP_LOG_EXEC_TIME:
+            log_exec_time = g_value_get_boolean(value);
             break;
         case PROP_PP_PROPERTIES: {
             auto ss = std::stringstream(g_value_get_string(value));
@@ -305,6 +334,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_LOG_DETECTS:
             g_value_set_boolean(value, postprocessor->log_detects);
             break;
+        case PROP_LOG_EXEC_TIME:
+            g_value_set_boolean(value, log_exec_time);
+            break;
         case PROP_BITMAP_SAVE_DIR:
             g_value_set_string(value, bitmap_save_directory.c_str());
             break;
@@ -329,6 +361,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
                                                    "", G_PARAM_READWRITE));
     params.emplace(PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
                                                           "Print detected objects in standard output.",
+                                                          FALSE, G_PARAM_READWRITE));
+    params.emplace(PROP_LOG_EXEC_TIME, g_param_spec_boolean("log_exec_time", "Log Execution Time",
+                                                          "Print execution time into the standard output.",
                                                           FALSE, G_PARAM_READWRITE));
     params.emplace(PROP_MULTITHREAD, g_param_spec_boolean("multithread", "MultiThread",
                                                        "Use a separate thread for object detection.",
@@ -385,7 +420,7 @@ void DRPAI_Controller::check_save_bmp() {
     }
 }
 
-void DRPAI_Controller::send_socket_data() {
+void DRPAI_Controller::send_socket_data() const {
     if (!socket_fd)
         return;
 
@@ -400,5 +435,8 @@ void DRPAI_Controller::send_socket_data() {
 
     if (r < static_cast<ssize_t>(str.size())) {
         std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+        if (errno == EMSGSIZE) {
+            std::cerr << "\tMessage Length: " << str.size() << " - Message sent: " << r << std::endl;
+        }
     }
 }

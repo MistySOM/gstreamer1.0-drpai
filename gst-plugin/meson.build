@@ -20,11 +20,17 @@ plugin_sources = [
   'src/box.cpp'
  ]
 
+plugin_dependencies = [
+  gst_dep, thread_dep, dl_dep
+]
+
+subdir('src/drpai-models/drpai-tvm')
+
 gstplugindrpai = library('gstdrpai',
   plugin_sources,
   c_args: plugin_c_args,
   cpp_args: plugin_c_args,
-  dependencies : [gst_dep, thread_dep, dl_dep],
+  dependencies : plugin_dependencies,
   install : true,
   include_directories: incdir,
   install_dir : join_paths(get_option('libdir'), 'gstreamer-1.0'),

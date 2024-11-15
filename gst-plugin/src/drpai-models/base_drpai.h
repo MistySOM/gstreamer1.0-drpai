@@ -40,6 +40,10 @@ public:
     /// @returns A string containing the DRPAI rate
     [[nodiscard]] virtual std::string get_status() const;
 
+    /// Get execution time status to be written into standard output for debug purposes.
+    /// @returns A string containing the execution times of inference.
+    [[nodiscard]] virtual std::string get_log_exec_time() const { return get_status(); }
+
     /// Get a json to be used in UDP packets.
     /// @returns A json_object containing the DRPAI rate
     [[nodiscard]] virtual json_object get_json();
@@ -96,6 +100,10 @@ protected:
     /// Runs DRP-AI crop instruction for preprocessing
     /// @param [in] crop_region The region to be cropped.
     void crop(const Box& crop_region) const;
+
+    /// Function to get the start address of DRP-AI memory.
+    /// @returns DRPAImem start address in 32-bit.
+    [[nodiscard]] uint32_t get_drpai_start_addr() const;
 
 private:
     constexpr static uint32_t DRPAI_TIMEOUT = 5;    /// Seconds to wait until DRP-AI Driver generates the output.

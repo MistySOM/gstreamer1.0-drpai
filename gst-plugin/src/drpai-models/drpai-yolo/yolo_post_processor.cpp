@@ -68,6 +68,21 @@ void YOLO_PostProcessor::softmax(std::vector<float>& val)
         v /= sum;
 }
 
+struct matrix_ref {
+    const std::vector<float>& t;
+    uint32_t x_len, y_len;
+
+    explicit matrix_ref(const std::vector<float>& t, uint32_t x_len, uint32_t y_len):
+            t(t), x_len(x_len), y_len(y_len)
+    {
+        if (t.size() != x_len*y_len)
+            throw std::runtime_error("[Error] The source vector size does not match the matrix sizes.");
+    }
+
+    [[nodiscard]] inline const float& get(uint32_t x,uint32_t y) const
+    { return t.at(y*x_len + x); }
+};
+
 /*****************************************
 * Function Name : extract_detections
 * Description   : Process CPU post-processing for YOLO (drawing bounding boxes) and print the result on console.
@@ -82,32 +97,45 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
 
     std::vector<float> classes (labels.size());
     last_det.clear();
-    for (uint32_t n = 0; n<num_grids.size(); n++)
-    {
-        const uint8_t& num_grid = num_grids.at(n);
-        const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
-        for (uint32_t b = 0;b<num_bb;b++)
-        {
-            for (int32_t y = 0;y<num_grid;y++)
+    switch (yolo_version) {
+        case 8: {
+            matrix_ref m(inference_output_buf, sum_grids, item_size);
+            for (uint32_t item = 0; item<sum_grids; item++) {
+                for (uint32_t i = 0; i < classes.size(); i++) {
+                    classes.at(i) = m.get(item, 4+i);
+                }
+                const auto max_pred = std::max_element(classes.begin(), classes.end());
+                if (*max_pred > 0.3) {
+                    const uint32_t pred_class = max_pred - classes.begin();
+                    float x = m.get(item, 0) * static_cast<float>(img_width) / MODEL_IN_W;
+                    float y = m.get(item, 1) * static_cast<float>(img_height) / MODEL_IN_H;
+                    float w = m.get(item, 2) * static_cast<float>(img_width) / MODEL_IN_W;
+                    float h = m.get(item, 3) * static_cast<float>(img_height) / MODEL_IN_H;
+                    last_det.emplace_back(
+                            Box{ x,y,w,h },
+                            pred_class, *max_pred, labels.at(pred_class).c_str()
+                    );
+                }
+            }
+            break;
+        }
+        case 5:
+        case 3:
+        case 2: {
+            for (uint32_t n = 0; n<num_grids.size(); n++)
             {
-                for (int32_t x = 0;x<num_grid;x++)
-                {
-                    const uint32_t offs = yolo_offset(n, b, y, x);
-                    float objectness = 1;
+                const uint8_t& num_grid = num_grids.at(n);
+                const uint8_t anchor_offset = 2 * num_bb * (num_grids.size() - (n + 1));
 
-                    switch (yolo_version) {
-                        case 8: {
-                            /* Get the class prediction */
-                            for (uint32_t i = 0; i < classes.size(); i++)
-                            {
-                                classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 4+i));
-                            }
-                            break;
-                        }
-                        case 5:
-                        case 3:
-                        case 2: {
+                for (uint32_t b = 0;b<num_bb;b++)
+                {
+                    for (int32_t y = 0;y<num_grid;y++)
+                    {
+                        for (int32_t x = 0;x<num_grid;x++)
+                        {
+                            const uint32_t offs = yolo_offset(n, b, y, x);
+
                             const float& tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
 
                             /* Get the class prediction */
@@ -115,83 +143,73 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                             {
                                 classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5+i));
                             }
-                            objectness = sigmoid(tc);
-                            break;
+                            auto objectness = sigmoid(tc);
+
+                            switch (yolo_version) {
+                                case 5:
+                                case 3:
+                                    sigmoid(classes); break;
+                                case 2:
+                                    softmax(classes); break;
+                                default:
+                                    break;
+                            }
+
+                            const auto max_pred = std::max_element(classes.begin(), classes.end());
+                            const float probability = *max_pred * objectness;
+
+                            /* Store the result into the list if the probability is more than the threshold */
+                            if ( probability > TH_PROB)
+                            {
+                                const uint32_t pred_class = max_pred - classes.begin();
+                                const float& tx = inference_output_buf.at(yolo_index(num_grid, offs, 0));
+                                const float& ty = inference_output_buf.at(yolo_index(num_grid, offs, 1));
+                                const float& tw = inference_output_buf.at(yolo_index(num_grid, offs, 2));
+                                const float& th = inference_output_buf.at(yolo_index(num_grid, offs, 3));
+
+                                /* Compute the bounding box */
+                                /*get_yolo_box/get_region_box in paper implementation*/
+                                Box box {};
+                                switch (yolo_version) {
+                                    case 5: {
+                                        box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
+                                        box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
+                                        box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                        box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                        break;
+                                    }
+                                    case 3: {
+                                        box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
+                                        box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
+                                        box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
+                                        box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
+                                        break;
+                                    }
+                                    case 2: {
+                                        box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
+                                        box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
+                                        box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / static_cast<float>(num_grid);
+                                        box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / static_cast<float>(num_grid);
+                                        break;
+                                    }
+                                    default:
+                                        break;
+                                }
+                                box.x = std::round(box.x * static_cast<float>(img_width));
+                                box.y = std::round(box.y * static_cast<float>(img_height));
+                                box.w = std::round(box.w * static_cast<float>(img_width));
+                                box.h = std::round(box.h * static_cast<float>(img_height));
+
+                                last_det.emplace_back(
+                                        box,
+                                        pred_class, probability, labels.at(pred_class).c_str()
+                                );
+                            }
                         }
-                        default:
-                            break;
-                    }
-
-                    switch (yolo_version) {
-                        case 5:
-                        case 3:
-                            sigmoid(classes); break;
-                        case 2:
-                            softmax(classes); break;
-                        case 8:
-                        default:
-                            break;
-                    }
-
-                    const auto max_pred = std::max_element(classes.begin(), classes.end());
-                    const float probability = *max_pred * objectness;
-
-                    /* Store the result into the list if the probability is more than the threshold */
-                    if ( probability > TH_PROB)
-                    {
-                        const uint32_t pred_class = max_pred - classes.begin();
-                        const float& tx = inference_output_buf.at(yolo_index(num_grid, offs, 0));
-                        const float& ty = inference_output_buf.at(yolo_index(num_grid, offs, 1));
-                        const float& tw = inference_output_buf.at(yolo_index(num_grid, offs, 2));
-                        const float& th = inference_output_buf.at(yolo_index(num_grid, offs, 3));
-
-                        /* Compute the bounding box */
-                        /*get_yolo_box/get_region_box in paper implementation*/
-                        Box box {};
-                        switch (yolo_version) {
-                            case 8: {
-                                box.x = tx / MODEL_IN_W;
-                                box.y = ty / MODEL_IN_H;
-                                box.w = tw / MODEL_IN_W;
-                                box.h = th / MODEL_IN_H;
-                                break;
-                            }
-                            case 5: {
-                                box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
-                                box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
-                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
-                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
-                                break;
-                            }
-                            case 3: {
-                                box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
-                                box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
-                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
-                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
-                                break;
-                            }
-                            case 2: {
-                                box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
-                                box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
-                                box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / static_cast<float>(num_grid);
-                                box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / static_cast<float>(num_grid);
-                                break;
-                            }
-                            default:
-                                break;
-                        }
-                        box.x = std::round(box.x * static_cast<float>(img_width));
-                        box.y = std::round(box.y * static_cast<float>(img_height));
-                        box.w = std::round(box.w * static_cast<float>(img_width));
-                        box.h = std::round(box.h * static_cast<float>(img_height));
-
-                        last_det.emplace_back(
-                                box,
-                                pred_class, probability, labels.at(pred_class).c_str()
-                        );
                     }
                 }
             }
+            break;
         }
     }
 
@@ -249,11 +267,25 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
     load_label_file(label_list);
     std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
 
-    /*Load anchors from anchors file*/
-    const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
-    std::cout << "Loading : " << anchors_list << std::flush;
-    load_anchors_file(anchors_list);
-    std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+    switch (yolo_version) {
+        case 5:
+        case 3:
+        case 2: {
+            item_size = labels.size()+5;
+
+            /*Load anchors from anchors file*/
+            const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
+            std::cout << "Loading : " << anchors_list << std::flush;
+            load_anchors_file(anchors_list);
+            std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+            break;
+        }
+        case 8:
+            item_size = labels.size()+4;
+            break;
+        default:
+            break;
+    }
 
     /*Load grids from data_out_list file*/
     const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
@@ -261,11 +293,10 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
     load_num_grids(data_out_list);
     std::cout << "\t\tFound num grids: " << num_grids.size();
 
-    uint32_t sum_grids = 0;
+    sum_grids = 0;
     for (const auto& n: num_grids)
         sum_grids += n*n;
 
-    item_size = yolo_version == 8? labels.size()+4: labels.size()+5;
     num_bb = inference_output_size / (item_size*sum_grids);
     std::cout << " & num BB: " << num_bb << std::endl;
     if (num_bb == 0)
@@ -395,7 +426,8 @@ json_array YOLO_PostProcessor::get_detections_json() {
 
 json_object YOLO_PostProcessor::get_json() {
     json_object j = BasePostProcessor::get_json();
-    if (filterer.is_active())
+    if (filterer.is_active() && (filterer.get_filter_region_width() < static_cast<float>(img_width) ||
+                                 filterer.get_filter_region_height() < static_cast<float>(img_width)))
         j.add("filter", filterer.get_json());
     if(det_tracker.active)
         j.add("track_history", det_tracker.get_json());

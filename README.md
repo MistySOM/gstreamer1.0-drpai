@@ -36,6 +36,7 @@ The plugin also provides you with the following parameters:
 | **model**                   | String              |     --- | (Required) The name of the pre-trained model and the directory prefix.                                    |
 | **multithread**             | Boolean             |    true | Use a separate thread for object detection.                                                               |
 | **log-detects**             | Boolean             |   false | Print detected objects in standard output.                                                                |
+| **log-exec-time**           | Boolean             |   false | Print execution time into the standard output.                                                            |
 | **log-server**              | Host:Port (String)  |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
 | **show-fps**                | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
 | **show-bbox**               | Boolean             |    true | Render the latest detection bounding boxes on the video.                                                  |
