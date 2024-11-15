@@ -211,6 +211,8 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
             }
             break;
         }
+        default:
+            break;
     }
 
     filterer.apply(last_det);
