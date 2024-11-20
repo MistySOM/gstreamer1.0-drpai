@@ -280,29 +280,32 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
             std::cout << "Loading : " << anchors_list << std::flush;
             load_anchors_file(anchors_list);
             std::cout << "\t\t\tFound anchors: " << anchors.size() << std::endl;
+
+            /*Load grids from data_out_list file*/
+            const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
+            std::cout << "Loading : " << data_out_list << std::flush;
+            load_num_grids(data_out_list);
+            std::cout << "\t\tFound num grids: " << num_grids.size();
+
+            sum_grids = 0;
+            for (const auto& n: num_grids)
+                sum_grids += n*n;
+
+            num_bb = inference_output_size / (item_size*sum_grids);
+            std::cout << " & num BB: " << num_bb << std::endl;
+            if (num_bb == 0)
+                throw std::runtime_error("[ERROR] Either classes or grids are not matching with the model output.");
+
             break;
         }
         case 8:
             item_size = labels.size()+4;
+            sum_grids = inference_output_size/item_size;
+            num_bb = 1;
             break;
         default:
             break;
     }
-
-    /*Load grids from data_out_list file*/
-    const static std::string data_out_list = prefix + "/" + prefix + "_data_out_list.txt";
-    std::cout << "Loading : " << data_out_list << std::flush;
-    load_num_grids(data_out_list);
-    std::cout << "\t\tFound num grids: " << num_grids.size();
-
-    sum_grids = 0;
-    for (const auto& n: num_grids)
-        sum_grids += n*n;
-
-    num_bb = inference_output_size / (item_size*sum_grids);
-    std::cout << " & num BB: " << num_bb << std::endl;
-    if (num_bb == 0)
-        throw std::runtime_error("[ERROR] Either classes or grids are not matching with the model output.");
 
     value = get_param("[iou_threshold]", false);
     if (!value.empty())
