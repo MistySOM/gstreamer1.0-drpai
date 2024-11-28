@@ -51,11 +51,6 @@ void DRPAI_Controller::open_resources() {
 
     /* Read DRP-AI Object files address and size */
     drpai->open_resource(udmabuf_address, true);
-    postprocessor->open_resource(drpai->drpai_output_buf.size(), drpai->IN_WIDTH, drpai->IN_HEIGHT);
-
-    image_mapped_udma = std::make_unique<Image>(drpai->IN_WIDTH, drpai->IN_HEIGHT, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf();
-
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
@@ -150,6 +145,17 @@ void DRPAI_Controller::set_socket_address(const std::string& address) {
     freeaddrinfo(result);
 
     std::cout << "Option: Sending UDP packets to " << address << std::endl;
+}
+
+void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint16_t image_height) {
+
+    if (drpai->IN_WIDTH != image_width || drpai->IN_HEIGHT != image_height)
+        throw std::runtime_error(std::string("[ERROR] The model only supports image input with resolution ") +
+            std::to_string(drpai->IN_WIDTH) + "x" + std::to_string(drpai->IN_HEIGHT));
+
+    image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
+    image_mapped_udma->map_udmabuf();
+    postprocessor->open_resource(drpai->drpai_output_buf.size(), image_width, image_height);
 }
 
 void DRPAI_Controller::release_resources() {

@@ -26,6 +26,10 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
         std::cerr << "[ERROR] Failed to run Pre-processing Runtime Load()." << std::endl;
         throw;
     }
+    IN_WIDTH = preruntime.internal_param_val.pre_in_shape_w;
+    IN_HEIGHT = preruntime.internal_param_val.pre_in_shape_h;
+    IN_CHANNEL = 3;
+    in_param.pre_in_addr = data_in_address;
 
     /*Load model_dir structure and its weight to runtime object */
     auto drpaimem_addr_start = get_drpai_start_addr();
@@ -36,8 +40,6 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
     const auto output = runtime.GetOutput(0);
     const auto output_size = std::get<2>(output);
     drpai_output_buf.resize(output_size);
-
-    in_param.pre_in_addr    = data_in_address;
 }
 
 void TVM_DRPAI::run_inference() {
@@ -113,9 +115,6 @@ TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
     BaseDRPAI(prefix),
     input_data_type(InOutDataType::OTHER)
 {
-    IN_WIDTH = 640;
-    IN_HEIGHT = 480;
-    IN_CHANNEL = 3;
 }
 
 std::string TVM_DRPAI::get_log_exec_time() const {

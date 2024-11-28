@@ -26,6 +26,8 @@ public:
 
     void open_post_processor_library(const std::string& modelPrefix);
     void open_resources();
+    void open_resources_with_image_size(uint16_t image_width, uint16_t image_height);
+
     void release_resources();
     void process_image(uint8_t* img_data, uint32_t img_data_len);
 

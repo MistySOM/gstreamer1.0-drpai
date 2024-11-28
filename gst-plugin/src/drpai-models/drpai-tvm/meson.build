@@ -36,7 +36,7 @@ if (enable_tvm.enabled())
 
     plugin_sources += files(
         'tvm_drpai.cpp',
-        'rzv_drp-ai_tvm/apps/PreRuntime.cpp',
+        'PreRuntime.cpp',
         'rzv_drp-ai_tvm/apps/MeraDrpRuntimeWrapper.cpp',
     )
 
