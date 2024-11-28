@@ -80,9 +80,8 @@ enum {
  *
  * describe the real formats here.
  */
-#define CAP_WIDTH (640)
-#define CAP_HEIGHT (480)
-constexpr auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
+
+constexpr auto pad_caps = "video/x-raw, format = (string) BGR";
 static GstStaticPadTemplate sink_factory =
         GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 static GstStaticPadTemplate src_factory =

@@ -437,7 +437,7 @@ void Image::save_bmp(const std::string& filename) const
     /* Write header for Windows Bitmap v3 file. */
     fwrite(bmp_header, sizeof(uint8_t), header_size, fp);
 
-    auto bmp_line_data = (uint8_t *) malloc(sizeof(uint8_t) * line_width);
+    const auto bmp_line_data = static_cast<uint8_t *>(malloc(sizeof(uint8_t) * line_width));
     if (nullptr == bmp_line_data)
     {
         free(bmp_line_data);
@@ -445,11 +445,10 @@ void Image::save_bmp(const std::string& filename) const
         throw std::runtime_error("[ERROR] Could not allocate buffer for writing bitmap image.");
     }
 
-    for (auto i = static_cast<int32_t>(img_h - 1); i >= 0; i--)
+    for (uint32_t i = 0; i < img_h; i++)
     {
         std::memcpy(bmp_line_data, img_buffer + i*img_w*img_c, sizeof(uint8_t)*img_w*img_c);
-        auto ret = fwrite(bmp_line_data, sizeof(uint8_t), line_width, fp);
-        if (!ret)
+        if (!fwrite(bmp_line_data, sizeof(uint8_t), line_width, fp))
         {
             free(bmp_line_data);
             fclose(fp);
