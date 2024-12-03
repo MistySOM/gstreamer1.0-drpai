@@ -311,6 +311,15 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_BITMAP_SAVE_PROB:
             bitmap_save_class_probability = static_cast<float>(g_value_get_uint(value))/100.f;
             break;
+        case PROP_BITMAP_SAVE_CLASS: {
+            bitmap_save_classes.clear();
+            std::stringstream ss (g_value_get_string(value));
+            std::string item;
+            while (getline(ss, item, ',')) {
+                bitmap_save_classes.push_back (item);
+            }
+            break;
+        }
         default:
             drpai->set_property(prop, value);
             break;
@@ -352,6 +361,16 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
         case PROP_BITMAP_SAVE_PROB:
             g_value_set_uint(value, static_cast<guint>(bitmap_save_class_probability*100));
             break;
+        case PROP_BITMAP_SAVE_CLASS: {
+            std::string s;
+            if (!bitmap_save_classes.empty()) {
+                for (const auto& item: bitmap_save_classes)
+                    s += item + ",";
+                s.pop_back();
+            }
+            g_value_set_string(value, s.c_str());
+            break;
+        }
         default:
             drpai->get_property(prop, value);
             break;
@@ -363,7 +382,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
                                                 "The name of the pretrained model and the directory prefix.",
                                                 nullptr, G_PARAM_READWRITE));
     params.emplace(PROP_PP_PROPERTIES, g_param_spec_string("post_process_properties", "Post-Process Properties",
-                                                   "Semi-colon seperated properties used in post-processor library.",
+                                                   "A semi-colon seperated properties used in post-processor library.",
                                                    "", G_PARAM_READWRITE));
     params.emplace(PROP_LOG_DETECTS, g_param_spec_boolean("log_detects", "Log Detects",
                                                           "Print detected objects in standard output.",
@@ -401,6 +420,9 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_uint("bitmap_save_probability", "Bitmap Save Class Probability",
                                                             "The maximum detection probability that triggers the bitmap saving for detections.",
                                                             0, 100, 0, G_PARAM_READWRITE));
+    params.emplace(PROP_BITMAP_SAVE_CLASS, g_param_spec_string("bitmap_save_classes", "Bitmap Save Classes",
+                                                               "A comma seperated list of classes that triggers the bitmap saving for detections.",
+                                                               "", G_PARAM_READWRITE));
     BaseDRPAI::install_properties(params);
 }
 
@@ -414,14 +436,16 @@ void DRPAI_Controller::check_save_bmp() {
     /* Bitmap saving for fewer probabilities */
     for (auto det : postprocessor->last_det) {
         if (det.prob < bitmap_save_class_probability) {
-            const auto path = bitmap_save_directory + "/image_" + det.name +
-                              "_" + std::to_string(static_cast<int>(det.prob*100)) +
-                              "_at_" + std::to_string(static_cast<int>(det.bbox.x)) +
-                              "_" + std::to_string(static_cast<int>(det.bbox.y)) + ".bmp";
-            image_mapped_udma->save_bmp(path);
-            det.saved_image = true;
-            last_bmp_save = now;
-            break;
+            if (bitmap_save_classes.empty() || std_find(bitmap_save_classes, det.name) != bitmap_save_classes.end()) {
+                const auto path = bitmap_save_directory + "/image_" + det.name +
+                                  "_" + std::to_string(static_cast<int>(det.prob * 100)) +
+                                  "_at_" + std::to_string(static_cast<int>(det.bbox.x)) +
+                                  "_" + std::to_string(static_cast<int>(det.bbox.y)) + ".bmp";
+                image_mapped_udma->save_bmp(path);
+                det.saved_image = true;
+                last_bmp_save = now;
+                break;
+            }
         }
     }
 }
