@@ -48,7 +48,8 @@ The plugin also provides you with the following parameters:
 | **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
 | **bitmap-save-minutes**     | Integer [1 - 1000]  |       5 | Minutes between each bitmap save for fewer probability detections.                                        |
 | **bitmap-save-probability** | Integer [0 - 100]   |       0 | The maximum detection probability that triggers the bitmap saving for detections.                         |
-| **post-process-properties** | String              |     --- | Semi-colon seperated properties used in post-processor library.                                           |
+| **bitmap-save-classes**     | String              |    `""` | A comma seperated list of classes that triggers the bitmap saving for detections.                         |
+| **post-process-properties** | String              |     --- | A semi-colon seperated properties used in post-processor library.                                         |
 
 ### Acceptable items in 'post-process-properties' :
 
