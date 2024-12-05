@@ -205,28 +205,37 @@ void DRPAI_Controller::thread_function_single() {
         }
     }
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-    image_mapped_udma->prepare();
-    auto t2 = std::chrono::high_resolution_clock::now();
+    try {
+        const auto t1 = std::chrono::high_resolution_clock::now();
+        image_mapped_udma->prepare();
+        const auto t2 = std::chrono::high_resolution_clock::now();
 
-    drpai->run_inference();
-    auto t3 = std::chrono::high_resolution_clock::now();
+        drpai->run_inference();
+        const auto t3 = std::chrono::high_resolution_clock::now();
 
-    postprocessor->extract_detections(drpai->drpai_output_buf);
-    auto t4 = std::chrono::high_resolution_clock::now();
+        postprocessor->extract_detections(drpai->drpai_output_buf);
+        const auto t4 = std::chrono::high_resolution_clock::now();
 
-    if (log_exec_time) {
-        auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
-        auto ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
-        std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
-        std::cout << "Execution Time - UDMA prepare: " << ms_int1
-                  << "ms\tInference: " << ms_int2
-                  << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
+        if (log_exec_time) {
+            const auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            const auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+            const auto ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+            std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
+            std::cout << "Execution Time - UDMA prepare: " << ms_int1
+                      << "ms\tInference: " << ms_int2
+                      << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
+        }
+
+        check_save_bmp();
+        send_socket_data();
+        error_retries = 0;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        error_retries++;
+        if (error_retries >= 3) {
+            throw std::runtime_error("thread failed 3 consequent times. Letting the GStreamer know.");
+        }
     }
-
-    check_save_bmp();
-    send_socket_data();
 }
 
 void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefix) {
