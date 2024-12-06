@@ -47,6 +47,7 @@ private:
     BasePostProcessor* postprocessor = nullptr;
     void* dynamic_library_handle = nullptr;
     std::unique_ptr<Image> image_mapped_udma = nullptr;
+    uint8_t error_retries = 0;
 
     /* UDP socket section */
     int socket_fd = 0;
