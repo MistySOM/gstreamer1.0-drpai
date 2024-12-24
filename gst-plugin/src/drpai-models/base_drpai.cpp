@@ -279,7 +279,7 @@ json_object BaseDRPAI::get_json() {
 /// Runs the inference on DRP-AI driver by calling start, wait, and get_result instructions.
 void BaseDRPAI::run_inference() {
     if(!drpai_fd)
-        return
+        return;
 
     rate.inform_frame();
 
