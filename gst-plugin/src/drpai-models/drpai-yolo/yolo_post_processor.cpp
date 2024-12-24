@@ -138,12 +138,15 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
 
                             const float& tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
 
+                            auto objectness = sigmoid(tc);
+                            if (objectness < TH_PROB)
+                                continue;
+
                             /* Get the class prediction */
                             for (uint32_t i = 0; i < classes.size(); i++)
                             {
                                 classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5+i));
                             }
-                            auto objectness = sigmoid(tc);
 
                             switch (yolo_version) {
                                 case 5:
@@ -159,7 +162,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                             const float probability = *max_pred * objectness;
 
                             /* Store the result into the list if the probability is more than the threshold */
-                            if ( probability > TH_PROB)
+                            if ( probability >= TH_PROB)
                             {
                                 const uint32_t pred_class = max_pred - classes.begin();
                                 const float& tx = inference_output_buf.at(yolo_index(num_grid, offs, 0));

@@ -12,15 +12,15 @@
 class elapsed_time {
 
 private:
-        std::chrono::time_point<std::chrono::steady_clock> last_time;
+        std::chrono::time_point<std::chrono::high_resolution_clock> last_time;
 
 public:
         explicit elapsed_time():
-            last_time(std::chrono::steady_clock::now()) {}
+            last_time(std::chrono::high_resolution_clock::now()) {}
 
         float get_duration() {
-            const auto now = std::chrono::steady_clock::now();
-            auto duration = std::chrono::duration<float>(now - last_time).count();
+            const auto now = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration<float>(now - last_time).count();
             last_time = now;
             return duration;
         }

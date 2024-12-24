@@ -228,7 +228,11 @@ void DRPAI_Controller::thread_function_single() {
 
         check_save_bmp();
         send_socket_data();
-        error_retries = 0;
+
+        if (error_retries > 0) {
+            std::cout << "DRPAI recovered after retrying." << std::endl;
+            error_retries = 0;
+        }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         error_retries++;
