@@ -100,18 +100,18 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
 
     switch (yolo_version) {
         case 8: {
-            matrix_ref m(inference_output_buf, sum_grids, item_size);
+            const matrix_ref m(inference_output_buf, sum_grids, item_size);
             for (uint32_t item = 0; item<sum_grids; item++) {
                 for (uint32_t i = 0; i < classes.size(); i++) {
                     classes.at(i) = m.get(item, 4+i);
                 }
                 const auto max_pred = std::max_element(classes.begin(), classes.end());
-                if (*max_pred > 0.3) {
+                if (*max_pred > TH_PROB) {
                     const uint32_t pred_class = max_pred - classes.begin();
-                    float x = m.get(item, 0) * static_cast<float>(img_width) / MODEL_IN_W;
-                    float y = m.get(item, 1) * static_cast<float>(img_height) / MODEL_IN_H;
-                    float w = m.get(item, 2) * static_cast<float>(img_width) / MODEL_IN_W;
-                    float h = m.get(item, 3) * static_cast<float>(img_height) / MODEL_IN_H;
+                    const float x = m.get(item, 0) * static_cast<float>(img_width) / MODEL_IN_W;
+                    const float y = m.get(item, 1) * static_cast<float>(img_height) / MODEL_IN_H;
+                    const float w = m.get(item, 2) * static_cast<float>(img_width) / MODEL_IN_W;
+                    const float h = m.get(item, 3) * static_cast<float>(img_height) / MODEL_IN_H;
                     last_det.emplace_back(
                             Box{ x,y,w,h },
                             pred_class, *max_pred, labels.at(pred_class).c_str()
