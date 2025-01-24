@@ -76,7 +76,8 @@ struct matrix_ref {
             t(t), x_len(x_len), y_len(y_len)
     {
         if (t.size() != x_len*y_len)
-            throw std::runtime_error("[Error] The source vector size does not match the matrix sizes.");
+            throw std::runtime_error("[Error] The source vector size does not match the matrix sizes: " +
+                std::to_string(t.size()) + " != " + std::to_string(x_len) + "x" + std::to_string(y_len));
     }
 
     [[nodiscard]] inline const float& get(uint32_t x,uint32_t y) const
@@ -99,7 +100,9 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
     last_det.clear();
 
     switch (yolo_version) {
-        case 8: {
+        case 'x':
+        case 'X':
+        case '8': {
             const matrix_ref m(inference_output_buf, sum_grids, item_size);
             for (uint32_t item = 0; item<sum_grids; item++) {
                 for (uint32_t i = 0; i < classes.size(); i++) {
@@ -120,9 +123,9 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
             }
             break;
         }
-        case 5:
-        case 3:
-        case 2: {
+        case '5':
+        case '3':
+        case '2': {
             for (uint32_t n = 0; n<num_grids.size(); n++)
             {
                 const uint8_t& num_grid = num_grids.at(n);
@@ -149,10 +152,10 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                             }
 
                             switch (yolo_version) {
-                                case 5:
-                                case 3:
+                                case '5':
+                                case '3':
                                     sigmoid(classes); break;
-                                case 2:
+                                case '2':
                                     softmax(classes); break;
                                 default:
                                     break;
@@ -174,21 +177,21 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                                 /*get_yolo_box/get_region_box in paper implementation*/
                                 Box box {};
                                 switch (yolo_version) {
-                                    case 5: {
+                                    case '5': {
                                         box.x = (static_cast<float>(x) + 2*sigmoid(tx) - 0.5f) / static_cast<float>(num_grid);
                                         box.y = (static_cast<float>(y) + 2*sigmoid(ty) - 0.5f) / static_cast<float>(num_grid);
                                         box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
                                         box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
                                         break;
                                     }
-                                    case 3: {
+                                    case '3': {
                                         box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
                                         box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
                                         box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / MODEL_IN_W;
                                         box.h = std::exp(th) * anchors.at(anchor_offset+2*b+1) / MODEL_IN_H;
                                         break;
                                     }
-                                    case 2: {
+                                    case '2': {
                                         box.x = (static_cast<float>(x) + sigmoid(tx)) / static_cast<float>(num_grid);
                                         box.y = (static_cast<float>(y) + sigmoid(ty)) / static_cast<float>(num_grid);
                                         box.w = std::exp(tw) * anchors.at(anchor_offset+2*b+0) / static_cast<float>(num_grid);
@@ -251,20 +254,22 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
     auto value = get_param("[yolo_version]");
     if (value.empty())
         throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
-    yolo_version = value.at(0) - '0';
+    yolo_version = value.at(0);
     switch (yolo_version) {
-        case 2:
-        case 3:
+        case '2':
+        case '3':
             MODEL_IN_W = MODEL_IN_H = 416;
             break;
-        case 8:
-        case 5:
+        case 'x':
+        case 'X':
+        case '8':
+        case '5':
             MODEL_IN_W = MODEL_IN_H = 640;
             break;
         default:
             throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
     }
-    std::cout << "YOLO Version: " << static_cast<int>(yolo_version) << std::endl;
+    std::cout << "YOLO Version: " << yolo_version << std::endl;
 
     /*Load Label from label_list file*/
     const std::string label_list = prefix + "/" + prefix + "_labels.txt";
@@ -273,9 +278,9 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
     std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
 
     switch (yolo_version) {
-        case 5:
-        case 3:
-        case 2: {
+        case '5':
+        case '3':
+        case '2': {
             item_size = labels.size()+5;
 
             /*Load anchors from anchors file*/
@@ -301,7 +306,9 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
 
             break;
         }
-        case 8:
+        case 'x':
+        case 'X':
+        case '8':
             item_size = labels.size()+4;
             sum_grids = inference_output_size/item_size;
             num_bb = 1;
