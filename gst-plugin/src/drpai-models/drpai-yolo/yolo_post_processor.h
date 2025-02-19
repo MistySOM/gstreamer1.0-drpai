@@ -38,7 +38,7 @@ private:
 
     float MODEL_IN_W = 0;
     float MODEL_IN_H = 0;
-    uint8_t yolo_version = 0;
+    char yolo_version = 0;
     uint32_t num_bb = 0;
     uint8_t item_size = 0;
     std::vector<uint32_t> num_grids {};
