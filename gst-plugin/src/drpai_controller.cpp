@@ -319,10 +319,10 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
             bitmap_save_directory = g_value_get_string(value);
             break;
         case PROP_BITMAP_SAVE_MINUTES:
-            bitmap_save_time_between = g_value_get_uint(value);
+            bitmap_save_time_between = g_value_get_float(value);
             break;
         case PROP_BITMAP_SAVE_PROB:
-            bitmap_save_class_probability = static_cast<float>(g_value_get_uint(value))/100.f;
+            bitmap_save_class_probability = g_value_get_float(value)/100.f;
             break;
         case PROP_BITMAP_SAVE_CLASS: {
             bitmap_save_classes.clear();
@@ -369,10 +369,10 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
             g_value_set_string(value, bitmap_save_directory.c_str());
             break;
         case PROP_BITMAP_SAVE_MINUTES:
-            g_value_set_uint(value, bitmap_save_time_between);
+            g_value_set_float(value, bitmap_save_time_between);
             break;
         case PROP_BITMAP_SAVE_PROB:
-            g_value_set_uint(value, static_cast<guint>(bitmap_save_class_probability*100));
+            g_value_set_float(value, bitmap_save_class_probability*100);
             break;
         case PROP_BITMAP_SAVE_CLASS: {
             std::string s;
@@ -427,10 +427,10 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
     params.emplace(PROP_BITMAP_SAVE_DIR, g_param_spec_string("bitmap_save_dir", "Bitmap Save Directory",
                                                             "The directory path to save bitmap images for fewer probability detections.",
                                                             "", G_PARAM_READWRITE));
-    params.emplace(PROP_BITMAP_SAVE_MINUTES, g_param_spec_uint("bitmap_save_minutes", "Bitmap Save Minutes",
+    params.emplace(PROP_BITMAP_SAVE_MINUTES, g_param_spec_float("bitmap_save_minutes", "Bitmap Save Minutes",
                                                                "Minutes between each bitmap save for fewer probability detections.",
-                                                               1, 1000, 5, G_PARAM_READWRITE));
-    params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_uint("bitmap_save_probability", "Bitmap Save Class Probability",
+                                                               0, 1000, 5, G_PARAM_READWRITE));
+    params.emplace(PROP_BITMAP_SAVE_PROB, g_param_spec_float("bitmap_save_probability", "Bitmap Save Class Probability",
                                                             "The maximum detection probability that triggers the bitmap saving for detections.",
                                                             0, 100, 0, G_PARAM_READWRITE));
     params.emplace(PROP_BITMAP_SAVE_CLASS, g_param_spec_string("bitmap_save_classes", "Bitmap Save Classes",
@@ -442,7 +442,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamS
 void DRPAI_Controller::check_save_bmp() {
     // Skip frequent saves
     const auto now = std::chrono::system_clock::now();
-    const auto time_duration = std::chrono::duration_cast<std::chrono::minutes>(now-last_bmp_save).count();
+    const auto time_duration = std::chrono::duration<float>(now-last_bmp_save).count() / 60.f;
     if (time_duration < bitmap_save_time_between)
         return;
 
