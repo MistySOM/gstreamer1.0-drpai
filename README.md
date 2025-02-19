@@ -43,12 +43,12 @@ The plugin also provides you with the following parameters:
 | **show-bbox**               | Boolean             |    true | Render the latest detection bounding boxes on the video.                                                  |
 | **stop-error**              | Boolean             |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
 | **max-video-rate**          | Float [0.001 - 120] |     120 | Force maximum video frame rate using thread sleeps.                                                       |
-| **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps.                                                       |
+| **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps. Zero means DRPAI is disabled.                         |
 | **smooth-video-rate**       | Float [1 - 1000]    |       1 | Number of last video frame rates to average for a more smooth value.                                      |
 | **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
 | **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
-| **bitmap-save-minutes**     | Integer [1 - 1000]  |       5 | Minutes between each bitmap save for fewer probability detections.                                        |
-| **bitmap-save-probability** | Integer [0 - 100]   |       0 | The maximum detection probability that triggers the bitmap saving for detections.                         |
+| **bitmap-save-minutes**     | Float [0 - 1000]    |       5 | Minutes between each bitmap save for fewer probability detections. Zero means every frame.                |
+| **bitmap-save-probability** | Float [0 - 100]     |       0 | The maximum detection probability that triggers the bitmap saving for detections. Zero means disabled.    |
 | **bitmap-save-classes**     | String              |    `""` | A comma seperated list of classes that triggers the bitmap saving for detections.                         |
 | **post-process-properties** | String              |     --- | A semi-colon seperated properties used in post-processor library.                                         |
 

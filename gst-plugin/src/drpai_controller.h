@@ -67,7 +67,7 @@ private:
     /* Bitmap saving for fewer probabilities */
     std::chrono::system_clock::time_point last_bmp_save;
     float bitmap_save_class_probability = 0;
-    uint32_t bitmap_save_time_between = 5;
+    float bitmap_save_time_between = 5;
     std::string bitmap_save_directory = ".";
     std::vector<std::string> bitmap_save_classes;
     void check_save_bmp();

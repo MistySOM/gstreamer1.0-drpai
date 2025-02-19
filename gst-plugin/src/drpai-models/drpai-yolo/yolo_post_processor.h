@@ -29,13 +29,6 @@ public:
 
 private:
     float TH_PROB = 0.5f;
-
-    bool show_track_id = false;
-    tracker det_tracker;
-
-    bool show_filter = false;
-    detection_filterer filterer;
-
     float MODEL_IN_W = 0;
     float MODEL_IN_H = 0;
     char yolo_version = 0;
@@ -45,6 +38,12 @@ private:
     uint32_t sum_grids = 0;
     std::vector<float> anchors {};
     std::vector<std::string> labels {};
+
+    bool show_track_id = false;
+    tracker det_tracker;
+
+    bool show_filter = false;
+    detection_filterer filterer;
 
     void load_label_file(const std::string& label_file_name);
     void load_anchors_file(const std::string& anchors_file_name);
