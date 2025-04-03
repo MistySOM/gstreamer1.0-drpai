@@ -194,19 +194,20 @@ void DRPAI_Controller::thread_function_loop() {
 }
 
 void DRPAI_Controller::thread_function_single() {
-    {
-        std::unique_lock lock(state_mutex);
-        if (thread_state == Closing)
-            throw std::exception();
-
-        thread_state = Ready;
-        if (multithread) {
-            v.wait(lock, [&] { return thread_state != Ready; });
-        }
-    }
-
     try {
+        const auto t0 = std::chrono::high_resolution_clock::now();
+        {
+            std::unique_lock lock(state_mutex);
+            if (thread_state == Closing)
+                throw std::exception();
+
+            thread_state = Ready;
+            if (multithread) {
+                v.wait(lock, [&] { return thread_state != Ready; });
+            }
+        }
         const auto t1 = std::chrono::high_resolution_clock::now();
+
         image_mapped_udma->prepare();
         const auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -216,18 +217,28 @@ void DRPAI_Controller::thread_function_single() {
         postprocessor->extract_detections(drpai->drpai_output_buf);
         const auto t4 = std::chrono::high_resolution_clock::now();
 
+        check_save_bmp();
+        const auto t5 = std::chrono::high_resolution_clock::now();
+
+        send_socket_data();
+        const auto t6 = std::chrono::high_resolution_clock::now();
+
         if (log_exec_time) {
+            const auto ms_int0 = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
             const auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
             const auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
             const auto ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+            const auto ms_int4 = std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count();
+            const auto ms_int5 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count();
             std::cout << "Inference Time: " << drpai->get_log_exec_time() << std::endl;
-            std::cout << "Execution Time - UDMA prepare: " << ms_int1
+            std::cout << "Execution Time - Lock: "<< ms_int0
+                      << "ms\tUDMA prepare: " << ms_int1
                       << "ms\tInference: " << ms_int2
-                      << "ms\tPostProcess: " << ms_int3 << "ms" << std::endl;
+                      << "ms\tPostProcess: " << ms_int3
+                      << "ms\tSaveBMP: " << ms_int4
+                      << "ms\tSendSocket: " << ms_int5
+                      << "ms" << std::endl;
         }
-
-        check_save_bmp();
-        send_socket_data();
 
         if (error_retries > 0) {
             std::cout << "DRPAI recovered after retrying." << std::endl;
