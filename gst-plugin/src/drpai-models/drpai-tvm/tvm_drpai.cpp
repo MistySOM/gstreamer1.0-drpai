@@ -37,8 +37,35 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
     runtime.LoadModel(prefix, drpaimem_addr_start+0x38E0000);
 
     input_data_type = runtime.GetInputDataType(0);
-    const auto output = runtime.GetOutput(0);
-    const auto output_size = std::get<2>(output);
+
+    switch (input_data_type) {
+        case InOutDataType::INT64:
+            std::cerr << "Error: Input data type INT64 is not supported." << std::endl;
+            break;
+        case InOutDataType::OTHER:
+            std::cerr << "Error: Input data type is unknown and not supported." << std::endl;
+            break;
+        default:
+            break;
+    }
+
+    const auto output_num = runtime.GetNumOutput();
+    long output_size = 0;
+    for (int i=0; i<output_num; i++) {
+        const auto output = runtime.GetOutput(i);
+
+        switch (std::get<0>(output)) {
+            case InOutDataType::INT64:
+                std::cout << "Warning: Output data type INT64 is not supported for output index " << i << std::endl;
+            break;
+            case InOutDataType::OTHER:
+                std::cout << "Warning: Output data type is unknown and not supported for output index " << i << std::endl;
+            break;
+            default:
+                output_size += std::get<2>(output);
+                break;
+        }
+    }
     drpai_output_buf.resize(output_size);
 }
 
@@ -65,44 +92,63 @@ void TVM_DRPAI::run_inference() {
             runtime.SetInput(0, static_cast<uint16_t *>(preprocess_output_ptr));
             break;
         default:
-            throw std::runtime_error("[ERROR] Non-floating point output data type is not supported.");
+            break;
     }
 
     runtime.Run();
     const auto t3 = std::chrono::high_resolution_clock::now();
 
     /* Get the number of output of the target model. For ResNet, 1 output. */
-    auto output_num = runtime.GetNumOutput();
-    if (output_num != 1)
-        throw std::runtime_error("[ERROR] Output layer count " + std::to_string(output_num) + " not supported.");
+    const auto output_num = runtime.GetNumOutput();
+    int64_t output_start_index = 0;
 
-    /* Comparing output with reference.*/
-    /* output_buffer below is tuple, which is { data type, address of output data, number of elements } */
-    const auto output_buffer = runtime.GetOutput(0);
-    const int64_t out_size = std::get<2>(output_buffer);
-    /* Array to store the FP32 output data from inference. */
-    switch (std::get<0>(output_buffer)) {
-        case InOutDataType::FLOAT16: {
-            /* Extract data in FP16 <uint16_t>. */
-            const auto *data_ptr = static_cast<uint16_t *>(std::get<1>(output_buffer));
+    for (int i=0; i<output_num; i++) {
+        /* output_buffer below is tuple, which is { data type, address of output data, number of elements } */
+        const auto output_buffer = runtime.GetOutput(i);
+        const int64_t out_size = std::get<2>(output_buffer);
+        /* Array to store the FP32 output data from inference. */
+        switch (std::get<0>(output_buffer)) {
+            case InOutDataType::FLOAT16: {
+                /* Extract data in FP16 <uint16_t>. */
+                const auto *data_ptr = static_cast<uint16_t *>(std::get<1>(output_buffer));
 
-            /* Post-processing for FP16 */
-            /* Cast FP16 output data to FP32. */
-            for (int n = 0; n < out_size; n++)
-            {
-                drpai_output_buf.at(n) = float16_to_float32(data_ptr[n]);
+                /* Post-processing for FP16 */
+                /* Cast FP16 output data to FP32. */
+                for (int n = 0; n < out_size; n++)
+                {
+                    drpai_output_buf.at(n + output_start_index) = float16_to_float32(data_ptr[n]);
+                }
+                output_start_index += out_size;
+                break;
             }
-            break;
+            case InOutDataType::FLOAT32: {
+                /* Extract data in FP32 <float>. */
+                const auto *data_ptr = static_cast<float *>(std::get<1>(output_buffer));
+                /*Copy output data to buffer for post-processing. */
+                for (int n = 0; n < out_size; n++)
+                {
+                    drpai_output_buf.at(n + output_start_index) = data_ptr[n];
+                }
+                output_start_index += out_size;
+                break;
+            }
+            case InOutDataType::INT64: {
+                /* Extract data in INT64 <float>. */
+                const auto *data_ptr = static_cast<int64_t *>(std::get<1>(output_buffer));
+
+                /* Post-processing for INT64 */
+                /* Cast INT64 output data to FP32. */
+                for (int n = 0; n < out_size; n++)
+                {
+                    drpai_output_buf.at(n + output_start_index) = static_cast<float>(data_ptr[n]);
+                }
+                output_start_index += out_size;
+                break;
+            }
+            case InOutDataType::OTHER: {
+                break;
+            }
         }
-        case InOutDataType::FLOAT32: {
-            /* Extract data in FP32 <float>. */
-            const auto *data_ptr = static_cast<float *>(std::get<1>(output_buffer));
-            /*Copy output data to buffer for post-processing. */
-            drpai_output_buf.assign(data_ptr, data_ptr + out_size);
-            break;
-        }
-        default:
-            throw std::runtime_error("[ERROR] Non-floating point output data type is not supported.");
     }
     const auto t4 = std::chrono::high_resolution_clock::now();
 

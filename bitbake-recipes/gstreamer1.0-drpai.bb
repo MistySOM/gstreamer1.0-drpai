@@ -35,6 +35,18 @@ RDEPENDS_${PN}-yolo = "${PN}"
 FILES_${PN}-yolo = "${libdir}/libgstdrpai-yolo.so"
 FILES_${PN}-yolo-dbg = "${libdir}/.debug/libgstdrpai-yolo.so"
 
+PACKAGES += " ${PN}-dummy ${PN}-dummy-dbg"
+PROVIDES += " ${PN}-dummy"
+RDEPENDS_${PN}-dummy = "${PN}"
+FILES_${PN}-dummy = "${libdir}/libgstdrpai-dummy.so"
+FILES_${PN}-dummy-dbg = "${libdir}/.debug/libgstdrpai-dummy.so"
+
+PACKAGES += " ${PN}-mobilenet ${PN}-mobilenet-dbg"
+PROVIDES += " ${PN}-mobilenet"
+RDEPENDS_${PN}-mobilenet = "${PN}"
+FILES_${PN}-mobilenet = "${libdir}/libgstdrpai-mobilenet.so"
+FILES_${PN}-mobilenet-dbg = "${libdir}/.debug/libgstdrpai-mobilenet.so"
+
 
 PACKAGES += " gst-launch-split gst-launch-split-dbg"
 PROVIDES += " gst-launch-split"
