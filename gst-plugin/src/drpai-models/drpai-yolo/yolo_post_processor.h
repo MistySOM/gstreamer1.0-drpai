@@ -9,6 +9,16 @@
 #include "tracker.h"
 #include "detection_filterer.h"
 
+enum YOLO_Version {
+    YOLO_UNKNOWN,
+    YOLO_V2,
+    YOLO_V3,
+    YOLO_V5,
+    YOLO_V5NU,
+    YOLO_V8,
+    YOLO_X,
+};
+
 class YOLO_PostProcessor: public BasePostProcessor {
 
 public:
@@ -31,7 +41,7 @@ private:
     float TH_PROB = 0.5f;
     float MODEL_IN_W = 0;
     float MODEL_IN_H = 0;
-    char yolo_version = 0;
+    YOLO_Version yolo_version = YOLO_UNKNOWN;
     uint32_t num_bb = 0;
     uint8_t item_size = 0;
     std::vector<uint32_t> num_grids {};
