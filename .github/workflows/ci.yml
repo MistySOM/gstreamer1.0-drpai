@@ -48,7 +48,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: gstreamer1.0-drpai
-        submodules: recursive
+        submodules: true
 
     - name: Replace the RZV2L gstreamer1.0-drpai with the current one.
       run: |
