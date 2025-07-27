@@ -44,17 +44,14 @@ The plugin also provides you with the following parameters:
 | **stop-error**              | Boolean             |    true | Stop the gstreamer if kernel modules fail to open.                                                        |
 | **max-video-rate**          | Float [0.001 - 120] |     120 | Force maximum video frame rate using thread sleeps.                                                       |
 | **max-drpai-rate**          | Float [0 - 120]     |     120 | Force maximum DRPAI frame rate using thread sleeps. Zero means DRPAI is disabled.                         |
-| **smooth-video-rate**       | Float [1 - 1000]    |       1 | Number of last video frame rates to average for a more smooth value.                                      |
-| **smooth-drpai-rate**       | Float [1 - 1000]    |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
+| **smooth-video-rate**       | Integer [1 - 1000]  |       1 | Number of last video frame rates to average for a more smooth value.                                      |
+| **smooth-drpai-rate**       | Integer [1 - 1000]  |       1 | Number of last DRPAI frame rates to average for a more smooth value.                                      |
 | **bitmap-save-dir**         | String              |   `"."` | The directory path to save bitmap images for fewer probability detections.                                |
 | **bitmap-save-minutes**     | Float [0 - 1000]    |       5 | Minutes between each bitmap save for fewer probability detections. Zero means every frame.                |
 | **bitmap-save-probability** | Float [0 - 100]     |       0 | The maximum detection probability that triggers the bitmap saving for detections. Zero means disabled.    |
 | **bitmap-save-classes**     | String              |    `""` | A comma seperated list of classes that triggers the bitmap saving for detections.                         |
-| **post-process-properties** | String              |     --- | A semi-colon seperated properties used in post-processor library.                                         |
 
-### Acceptable items in 'post-process-properties' :
-
-#### Tracking Parameters (YOLO specific)
+#### Tracking Parameters
 
 | Name                     | Type                 | Default | Description                                                                                                                                                                  |
 |--------------------------|----------------------|--------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -65,17 +62,18 @@ The plugin also provides you with the following parameters:
 | **track-history-length** | Integer [0 - 1440]   |      60 | Minutes to keep the tracking history.                                                                                                                                        |
 | **smooth-bbox-rate**     | Float [1 - 1000]     |       1 | Number of last bounding-box updates to average. (requires tracking)                                                                                                          |
 
-#### Filtering Parameters (YOLO specific)
+#### Filtering Parameters
 
-| Name                     | Type              | Default | Description                                                                       |
-|--------------------------|-------------------|--------:|-----------------------------------------------------------------------------------|
-| **filter-prob**          | Integer [0 - 100] |     50  | The probability of detection to consider as valid.                                |
-| **filter-show**          | Boolean           |   false | Show a yellow box where the filter is applied.                                    |
-| **filter-class**         | String            |     --- | A comma-separated list of classes to filter the detection.<br>Shows all if empty. |
-| **filter-left**          | Integer [0 - 639] |       0 | The left edge of the region of interest to filter the detection.                  |
-| **filter-top**           | Integer [0 - 479] |       0 | The top edge of the region of interest to filter the detection.                   |
-| **filter-width**         | Integer [1 - 640] |     640 | The left edge of the region of interest to filter the detection.                  |
-| **filter-height**        | Integer [1 - 480] |     480 | The left edge of the region of interest to filter the detection.                  |
+| Name              | Type              | Default | Description                                                                                                       |
+|-------------------|-------------------|--------:|-------------------------------------------------------------------------------------------------------------------|
+| **filter-nms**    | Integer [0 - 100] |      50 | The IOU threshold in percent for the Non-Maximum Suppression (NMS), which filters out overlapping bounding boxes. |
+| **filter-prob**   | Integer [0 - 100] |      50 | The probability in percent of detection to consider as valid.                                                     |
+| **filter-show**   | Boolean           |   false | Show a yellow box where the filter is applied.                                                                    |
+| **filter-class**  | String            |     --- | A comma-separated list of classes to filter the detection.<br>Shows all if empty.                                 |
+| **filter-left**   | Integer [0 - MAX] |       0 | The left edge of the region of interest to filter the detection.                                                  |
+| **filter-top**    | Integer [0 - MAX] |       0 | The top edge of the region of interest to filter the detection.                                                   |
+| **filter-width**  | Integer [1 - MAX] |     MAX | The width of the region of interest to filter the detection.                                                      |
+| **filter-height** | Integer [1 - MAX] |     MAX | The height of the region of interest to filter the detection.                                                     |
 
 ## AI Model
 

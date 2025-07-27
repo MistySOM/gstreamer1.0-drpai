@@ -375,7 +375,7 @@ void BaseDRPAI::get_property(GstDRPAI_Properties prop, GValue *value) const {
             g_value_set_float(value, rate.get_max_rate());
             break;
         case PROP_SMOOTH_DRPAI_RATE:
-            g_value_set_float(value, rate.get_smooth_rate());
+            g_value_set_uint(value, static_cast<uint>(rate.get_smooth_rate()));
             break;
         default:
             throw std::exception();
@@ -385,12 +385,14 @@ void BaseDRPAI::get_property(GstDRPAI_Properties prop, GValue *value) const {
 /// Registers properties of the class to used by the Gstreamer
 /// @param [in,out] params The map of properties containing the property enumerator and property spec.
 void BaseDRPAI::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *> &params) {
-    params.emplace(PROP_MAX_DRPAI_RATE, g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
-                                                        "Force maximum DRPAI frame rate using thread sleeps.",
-                                                        0.0f, 120.f, 120.f, G_PARAM_READWRITE));
-    params.emplace(PROP_SMOOTH_DRPAI_RATE, g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
-                                                          "Number of last DRPAI frame rates to average for a more smooth value.",
-                                                          1, 1000, 1, G_PARAM_READWRITE));
+    params.emplace(PROP_MAX_DRPAI_RATE, g_param_spec_float(
+        "max_drpai_rate", "Max DRPAI Framerate",
+        "Force maximum DRPAI frame rate using thread sleeps.",
+        0.0f, 120.f, 120.f, G_PARAM_READWRITE));
+    params.emplace(PROP_SMOOTH_DRPAI_RATE, g_param_spec_uint(
+        "smooth_drpai_rate", "Smooth DRPAI Framerate",
+        "Number of last DRPAI frame rates to average for a more smooth value.",
+        1, 1000, 1, G_PARAM_READWRITE));
 }
 
 /// Class constructor, capturing the DRP-AI object files prefix and directories.

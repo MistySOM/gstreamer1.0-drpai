@@ -8,6 +8,8 @@
 /*Definition of Macros & other variables*/
 #include "image.h"
 #include "rate_controller.h"
+#include "tracker.h"
+#include "filterer.h"
 #include "drpai-models/base_drpai.h"
 #include "drpai-models/base_post_processor.h"
 
@@ -22,7 +24,7 @@ class BaseDRPAI;
 class DRPAI_Controller {
 
 public:
-    explicit DRPAI_Controller() = default;
+    explicit DRPAI_Controller();
 
     void open_post_processor_library(const std::string& modelPrefix);
     void open_resources();
@@ -40,8 +42,16 @@ private:
     bool show_fps = false;
     bool show_time = false;
     bool show_bbox = true;
+    bool show_track_id = false;
+    bool show_filter = false;
     bool log_exec_time = false;
+    bool log_detects = false; /// Log detections in the standard output.
     rate_controller video_rate{};
+    tracker det_tracker;
+    filterer det_filterer;
+
+    std::vector<std::string> labels;
+    void load_label_file(const std::string& label_file_name);
 
     BaseDRPAI* drpai = nullptr;
     BasePostProcessor* postprocessor = nullptr;

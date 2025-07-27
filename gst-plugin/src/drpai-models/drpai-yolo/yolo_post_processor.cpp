@@ -5,24 +5,6 @@
 #include "yolo_post_processor.h"
 #include <iostream>
 #include <fstream>
-#include <mutex>
-
-/*****************************************
-* Function Name : print_box
-* Description   : Function to printout details of single bounding box to standard output
-* Arguments     : d = detected box details
-*                 i = result number
-* Return value  : -
-******************************************/
-void YOLO_PostProcessor::print_box(detection d, int32_t i)
-{
-    std::cout << "Result " << i << " -----------------------------------------*" << std::endl;
-    std::cout << "\x1b[1m";
-    std::cout << "Class           : " << d.name << std::endl;
-    std::cout << "\x1b[0m";
-    std::cout << "(X, Y, W, H)    : (" << d.bbox.x << ", " << d.bbox.y << ", " << d.bbox.w << ", " << d.bbox.h << ")" << std::endl;
-    std::cout << "Probability     : " << d.prob*100 << "%" << std::endl << std::endl;
-}
 
 /*****************************************
 * Function Name : yolo_offset
@@ -80,8 +62,7 @@ struct matrix_ref {
                 std::to_string(t.size()) + " != " + std::to_string(x_len) + "x" + std::to_string(y_len));
     }
 
-    [[nodiscard]] inline const float& get(uint32_t x,uint32_t y) const
-    { return t.at(y*x_len + x); }
+    [[nodiscard]] const float& get(uint32_t x,uint32_t y) const { return t.at(y*x_len + x); }
 };
 
 /*****************************************
@@ -94,10 +75,9 @@ struct matrix_ref {
 ******************************************/
 void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_output_buf)
 {
-    std::unique_lock lock (mutex);
-
-    std::vector<float> classes (labels.size());
-    last_det.clear();
+    std::vector<float> classes (num_classes);
+    auto& det_list = detections.get_current();
+    det_list.clear();
 
     switch (yolo_version) {
         case 'x':
@@ -115,10 +95,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                     const float y = m.get(item, 1) * static_cast<float>(img_height) / MODEL_IN_H;
                     const float w = m.get(item, 2) * static_cast<float>(img_width) / MODEL_IN_W;
                     const float h = m.get(item, 3) * static_cast<float>(img_height) / MODEL_IN_H;
-                    last_det.emplace_back(
-                            Box{ x,y,w,h },
-                            pred_class, *max_pred, labels.at(pred_class).c_str()
-                    );
+                    det_list.emplace_back(Box{ x,y,w,h }, pred_class, *max_pred);
                 }
             }
             break;
@@ -206,10 +183,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                                 box.w = std::round(box.w * static_cast<float>(img_width));
                                 box.h = std::round(box.h * static_cast<float>(img_height));
 
-                                last_det.emplace_back(
-                                        box,
-                                        pred_class, probability, labels.at(pred_class).c_str()
-                                );
+                                det_list.emplace_back(box, pred_class, probability);
                             }
                         }
                     }
@@ -220,36 +194,11 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
         default:
             break;
     }
-
-    filterer.apply(last_det);
-
-    if(det_tracker.active)
-        det_tracker.track(last_det);
-
-    /* Print details */
-    if(log_detects) {
-        if (det_tracker.active) {
-            std::cout << "DRP-AI tracked items:  ";
-            for (const auto& detection: det_tracker.last_tracked_detection) {
-                /* Print the box details on console */
-                //print_box(detection, n++);
-                std::cout << detection->to_string_hr(true) + "\t";
-            }
-        }
-        else {
-            std::cout << "DRP-AI detected items:  ";
-            for (const auto &detection: last_det) {
-                /* Print the box details on console */
-                //print_box(detection, n++);
-                std::cout << detection.to_string_hr() + "\t";
-            }
-        }
-        std::cout << std::endl;
-    }
 }
 
-void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, const uint32_t img_width, uint32_t const img_height) {
-    BasePostProcessor::open_resource(inference_output_size, img_width, img_height);
+void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size,
+    const uint32_t img_width, const uint32_t img_height, uint32_t num_classes) {
+    BasePostProcessor::open_resource(inference_output_size, img_width, img_height, num_classes);
 
     auto value = get_param("[yolo_version]");
     if (value.empty())
@@ -271,17 +220,11 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
     }
     std::cout << "YOLO Version: " << yolo_version << std::endl;
 
-    /*Load Label from label_list file*/
-    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "Loading : " << label_list << std::flush;
-    load_label_file(label_list);
-    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
-
     switch (yolo_version) {
         case '5':
         case '3':
         case '2': {
-            item_size = labels.size()+5;
+            item_size = num_classes+5;
 
             /*Load anchors from anchors file*/
             const std::string anchors_list = prefix + "/" + prefix + "_anchors.txt";
@@ -309,55 +252,13 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
         case 'x':
         case 'X':
         case '8':
-            item_size = labels.size()+4;
+            item_size = num_classes+4;
             sum_grids = inference_output_size/item_size;
             num_bb = 1;
             break;
         default:
             break;
     }
-
-    value = get_param("[iou_threshold]", false);
-    if (!value.empty())
-        try {
-            filterer.TH_NMS = std::stof(value);
-            std::cout << "Option: IOU Threshold: " << filterer.TH_NMS << std::endl;
-        }
-        catch (...) {
-            throw std::runtime_error("[ERROR] Failed to read value for param [iou_threshold]: " + value);
-        }
-
-    if (filterer.is_filter_region_active())
-        std::cout << "Option : Filtering region of interest to " << filterer.get_filter_region_json().to_string() << std::endl;
-    else {
-        filterer.set_filter_region_width(static_cast<float>(img_width));
-        filterer.set_filter_region_height(static_cast<float>(img_height));
-    }
-}
-
-/*****************************************
-* Function Name     : load_label_file
-* Description       : Load label list text file and return the label list that contains the label.
-* Arguments         : label_file_name = filename of label list. must be in txt format
-* Return value      : 0 if succeeded
-*                     not 0 if error occurred
-******************************************/
-void YOLO_PostProcessor::load_label_file(const std::string& label_file_name)
-{
-    std::ifstream infile(label_file_name);
-    if (!infile.is_open())
-        throw std::runtime_error("[ERROR] Failed to open label file: " + label_file_name);
-
-    std::string line;
-    while (getline(infile,line))
-    {
-        if (line.empty())
-            continue;
-        labels.push_back(line);
-        if (infile.fail())
-            throw std::runtime_error("[ERROR] Failed to read label file: " + label_file_name);
-    }
-    infile.close();
 }
 
 /*****************************************
@@ -412,82 +313,8 @@ void YOLO_PostProcessor::load_num_grids(const std::string& data_out_list_file_na
     infile.close();
 }
 
-void YOLO_PostProcessor::render_detections_on_image(Image &img) {
-    if (show_filter)
-        filterer.render_filter_region(img);
-    if (det_tracker.active)
-        for (const auto& tracked: det_tracker.last_tracked_detection) {
-            /* Draw the bounding box on the image */
-            img.draw_rect(tracked->smooth_bbox.mix, tracked->to_string_hr(show_track_id));
-        }
-    else
-        BasePostProcessor::render_detections_on_image(img);
-}
-
-std::string YOLO_PostProcessor::get_status() const {
-    if (det_tracker.active) {
-        return "Tracked/" + std::to_string(det_tracker.history_length/60) + "min: " +
-               std::to_string(det_tracker.count());
-    }
-    return "";
-}
-
-json_array YOLO_PostProcessor::get_detections_json() {
-    if (det_tracker.active)
-        return det_tracker.get_detections_json();
-    else
-        return BasePostProcessor::get_detections_json();
-}
-
-json_object YOLO_PostProcessor::get_json() {
-    json_object j = BasePostProcessor::get_json();
-    if (filterer.is_active() && (filterer.get_filter_region_width() < static_cast<float>(img_width) ||
-                                 filterer.get_filter_region_height() < static_cast<float>(img_width)))
-        j.add("filter", filterer.get_json());
-    if(det_tracker.active)
-        j.add("track_history", det_tracker.get_json());
-    return j;
-}
-
-bool YOLO_PostProcessor::set_property(const std::string& key, const std::string& value) {
-    if (key == "tracking") {
-        det_tracker.active = to_bool(value);
-        if (det_tracker.active)
-            std::cout << "Option : Detection Tracking is Active!" << std::endl;
-    } else if (key == "show-track-id") {
-        show_track_id = to_bool(value);
-    } else if (key == "smooth-bbox-rate") {
-        det_tracker.bbox_smooth_rate = std::stoul(value);
-    } else if (key == "history-length") {
-        det_tracker.history_length = std::stoul(value)*60;
-    } else if (key == "track-seconds") {
-        det_tracker.time_threshold = std::stof(value);
-    } else if (key == "doa-threshold") {
-        det_tracker.doa_threshold = std::stof(value);
-    } else if (key == "filter-prob") {
-        TH_PROB = std::stof(value) / 100.f;
-    } else if (key == "filter-show") {
-        show_filter = to_bool(value);
-    } else if (key == "filter-class") {
-        filterer.set_filter_classes(value);
-    } else if (key == "filter-left") {
-        filterer.set_filter_region_left(std::stof(value));
-    } else if (key == "filter-top") {
-        filterer.set_filter_region_top(std::stof(value));
-    } else if (key == "filter-width") {
-        filterer.set_filter_region_width(std::stof(value));
-    } else if (key == "filter-height") {
-        filterer.set_filter_region_height(std::stof(value));
-    } else {
-        return BasePostProcessor::set_property(key, value);
-    }
-    return true;
-}
-
 YOLO_PostProcessor::YOLO_PostProcessor(const std::string &prefix) :
-        BasePostProcessor(prefix),
-        det_tracker(true, 2, 2.25, 1),
-        filterer(labels)
+        BasePostProcessor(prefix)
 {}
 
 BasePostProcessor* create_post_processor_instance(const char* prefix) {

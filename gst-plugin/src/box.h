@@ -53,7 +53,10 @@ inline std::string rgb2string(uint32_t c) {
 ******************************************/
 struct Box
 {
-    float x, y, w, h;
+    float x = 0;
+    float y = 0;
+    float w = 0;
+    float h = 0;
     colorBGR color = RED_DATA;
 
     explicit constexpr Box(float center_x, float center_y, float width, float height, colorBGR color = RED_DATA):
@@ -94,22 +97,18 @@ struct detection
     Box bbox;
     const classID c;
     const float prob;
-    const char* name;
     bool saved_image = false;
 
     detection(const detection& det) = default;
-    explicit detection(Box box, classID c, float prob, const char* name = nullptr):
-        bbox(box), c(c), prob(prob), name(name)  { }
+    explicit detection(const Box& box, const classID c, const float prob):
+        bbox(box), c(c), prob(prob)  { }
 
-    [[nodiscard]] std::string to_string_hr() const {
-        if (name)
-            return std::string(name) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
-        else
-            return "";
+    [[nodiscard]] std::string to_string_hr(const std::vector<std::string>& labels) const {
+        return labels.at(c) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
     }
-    [[nodiscard]] json_object get_json() const {
+    [[nodiscard]] json_object get_json(const std::vector<std::string>& labels) const {
         json_object j;
-        j.add("class", std::string(name));
+        j.add("class", labels.at(c));
         j.add("probability", prob, 2);
         j.add("box", bbox.get_json(true));
         j.add("saved_image", saved_image);

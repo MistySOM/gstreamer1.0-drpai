@@ -5,7 +5,6 @@
 #include "mobilenet_post_processor.h"
 #include <fstream>
 #include <iostream>
-#include <mutex>
 
 /*****************************************
 * Function Name : extract_detections
@@ -17,14 +16,13 @@
 ******************************************/
 void MobileNet_PostProcessor::extract_detections(const std::vector<float>& inference_output_buf)
 {
-    std::unique_lock lock (mutex);
-
     const auto detection_count_max = inference_output_buf.size()/6;
 
     const auto classes_start_index = detection_count_max*5;
     const auto boxes_start_index = detection_count_max;
 
-    last_det.clear();
+    auto& det_list = detections.get_current();
+    det_list.clear();
     for (std::size_t i = 0; i< detection_count_max; i++) {
         const auto score = inference_output_buf.at(i);
 
@@ -41,83 +39,9 @@ void MobileNet_PostProcessor::extract_detections(const std::vector<float>& infer
             const float x = (x1 + x2)/2;
             const float y = (y1 + y2)/2;
 
-            last_det.emplace_back(
-                    Box{ x,y,w,h },
-                    pred_class, score, labels.at(pred_class).c_str()
-            );
+            det_list.emplace_back(Box{ x,y,w,h }, pred_class, score);
         }
     }
-
-    /* Print details */
-    if(log_detects) {
-        std::cout << "DRP-AI detected items:  ";
-        for (const auto &detection: last_det) {
-            /* Print the box details on console */
-            //print_box(detection, n++);
-            std::cout << detection.to_string_hr() + "\t";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void MobileNet_PostProcessor::open_resource(const uint32_t inference_output_size, const uint32_t img_width, uint32_t const img_height) {
-    BasePostProcessor::open_resource(inference_output_size, img_width, img_height);
-
-    /*Load Label from label_list file*/
-    const std::string label_list = prefix + "/" + prefix + "_labels.txt";
-    std::cout << "Loading : " << label_list << std::flush;
-    load_label_file(label_list);
-    std::cout << "\t\t\tFound classes: " << labels.size() << std::endl;
-}
-
-/*****************************************
-* Function Name     : load_label_file
-* Description       : Load label list text file and return the label list that contains the label.
-* Arguments         : label_file_name = filename of label list. must be in txt format
-* Return value      : 0 if succeeded
-*                     not 0 if error occurred
-******************************************/
-void MobileNet_PostProcessor::load_label_file(const std::string& label_file_name)
-{
-    std::ifstream infile(label_file_name);
-    if (!infile.is_open())
-        throw std::runtime_error("[ERROR] Failed to open label file: " + label_file_name);
-
-    std::string line;
-    while (getline(infile,line))
-    {
-        if (line.empty())
-            continue;
-        labels.push_back(line);
-        if (infile.fail())
-            throw std::runtime_error("[ERROR] Failed to read label file: " + label_file_name);
-    }
-    infile.close();
-}
-
-void MobileNet_PostProcessor::render_detections_on_image(Image &img) {
-    BasePostProcessor::render_detections_on_image(img);
-}
-
-std::string MobileNet_PostProcessor::get_status() const {
-    return "";
-}
-
-json_array MobileNet_PostProcessor::get_detections_json() {
-    return BasePostProcessor::get_detections_json();
-}
-
-json_object MobileNet_PostProcessor::get_json() {
-    return BasePostProcessor::get_json();
-}
-
-bool MobileNet_PostProcessor::set_property(const std::string& key, const std::string& value) {
-    if (key == "filter-prob") {
-        TH_PROB = std::stof(value) / 100.f;
-    } else {
-        return BasePostProcessor::set_property(key, value);
-    }
-    return true;
 }
 
 MobileNet_PostProcessor::MobileNet_PostProcessor(const std::string &prefix) :
