@@ -17,6 +17,7 @@ plugin_sources = [
   'src/detection_list.cpp',
   'src/tracker.cpp',
   'src/filterer.cpp',
+  'src/drivers/dmabuf.cpp',
   'src/drpai-models/base_drpai.cpp',
   'src/drpai-models/base_post_processor.cpp',
   'src/image.cpp',
@@ -24,7 +25,7 @@ plugin_sources = [
  ]
 
 plugin_dependencies = [
-  gst_dep, thread_dep, dl_dep
+  gst_dep, thread_dep, dl_dep, mmngr_dep, mmngrbuf_dep
 ]
 
 subdir('src/drpai-models/drpai-tvm')

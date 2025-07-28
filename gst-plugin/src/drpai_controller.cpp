@@ -177,7 +177,7 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
             std::to_string(drpai->IN_WIDTH) + "x" + std::to_string(drpai->IN_HEIGHT));
 
     image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf();
+    image_mapped_udma->map_dma_buffer();
 
     postprocessor->open_resource(drpai->drpai_output_buf.size(),
         image_width, image_height, labels.size());
@@ -193,7 +193,7 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
 void DRPAI_Controller::release_resources() {
     if(process_thread) {
         {
-            std::unique_lock<std::mutex> state_lock(state_mutex);
+            std::unique_lock state_lock(state_mutex);
             thread_state = Closing;
             v.notify_one();
         }
@@ -294,11 +294,15 @@ void DRPAI_Controller::thread_function_single() {
             std::cout << "DRPAI recovered after retrying." << std::endl;
             error_retries = 0;
         }
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        error_retries++;
-        if (error_retries >= 3) {
-            throw std::runtime_error("thread failed 3 consequent times. Letting the GStreamer know.");
+    } catch (const std::exception& e) {
+        if (thread_state != Closing) {
+            std::cerr << e.what() << std::endl;
+            error_retries++;
+            if (error_retries >= 3) {
+                throw std::runtime_error("thread failed 3 consequent times. Letting the GStreamer know.");
+            }
+        } else {
+            throw std::exception();
         }
     }
 }

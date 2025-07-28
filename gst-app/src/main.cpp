@@ -52,18 +52,17 @@
 
 GstElement *pipeline;
 
-int signalHandler(int signal) {
+void signalHandler(int signal) {
     g_print("\n\nSignal %s received! Exiting...\n\n", strsignal(signal));
     gst_element_send_event(pipeline, gst_event_new_eos());
-    return 0;
 }
 
 int main (int argc, char *argv[]) {
     if (argc < 2)
         g_error("Need a pipeline launch argument, starting with src and ending with sink.");
 
-    signal(SIGINT, (__sighandler_t) signalHandler);
-    signal(SIGTERM, (__sighandler_t) signalHandler);
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
 
     std::string arg = argv[1];
     for (int i = 2; i<argc; i++)

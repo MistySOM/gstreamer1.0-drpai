@@ -28,6 +28,8 @@
 #include "box.h"
 #include <memory>
 
+class DMABuffer;
+
 enum IMAGE_FORMAT {
     BGR_DATA, RGB_DATA, YUV_DATA
 };
@@ -35,15 +37,13 @@ enum IMAGE_FORMAT {
 class Image
 {
     public:
-        explicit Image(const uint32_t w, const uint32_t h, const uint32_t c, IMAGE_FORMAT format, uint8_t* data):
-            img_buffer(data), img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c),
-            convert_from_format(format) {};
+        explicit Image(uint32_t w, uint32_t h, uint32_t c, IMAGE_FORMAT format, uint8_t* data);
         ~Image();
 
         [[nodiscard]] constexpr uint8_t at(const int32_t a) const { return img_buffer[a]; }
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
-        void map_udmabuf();
+        void map_dma_buffer();
         void copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT format);
         void save_bmp(const std::string& filename) const;
         void prepare();
@@ -63,7 +63,7 @@ class Image
         const uint32_t img_c;
 
     private:
-        uint8_t udmabuf_fd = 0;
+        std::unique_ptr<DMABuffer> dma_buffer;
         IMAGE_FORMAT format;
         uint32_t size;
 
