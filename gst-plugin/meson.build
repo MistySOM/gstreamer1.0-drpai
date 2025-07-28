@@ -14,6 +14,9 @@ incdir = include_directories('src')
 plugin_sources = [
   'src/gstdrpai.cpp',
   'src/drpai_controller.cpp',
+  'src/detection_list.cpp',
+  'src/tracker.cpp',
+  'src/filterer.cpp',
   'src/drpai-models/base_drpai.cpp',
   'src/drpai-models/base_post_processor.cpp',
   'src/image.cpp',

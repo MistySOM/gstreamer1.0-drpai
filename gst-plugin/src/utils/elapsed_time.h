@@ -27,10 +27,10 @@ public:
 
         static std::string to_string(const std::chrono::time_point<std::chrono::system_clock>& time) {
             std::ostringstream oss;
-            auto t = std::chrono::system_clock::to_time_t(time);
+            const auto t = std::chrono::system_clock::to_time_t(time);
             oss << std::put_time(std::gmtime(&t), "%FT%T");
 
-            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
+            const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()) % 1000;
             oss << '.' << std::setfill('0') << std::setw(3) << milliseconds.count() << "Z";
             return oss.str();
         }

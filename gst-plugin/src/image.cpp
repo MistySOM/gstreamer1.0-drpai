@@ -383,6 +383,9 @@ void Image::draw_rect(const Box &box) const {
 /// @param [in] corner_text Reference to the array of strings to be rendered at the corner of the image.
 void Image::render_text_at_corner(const std::vector<std::string>& corner_text) const {
     for(std::size_t i=0; i<corner_text.size(); i++) {
+        if (corner_text.at(i).empty()) {
+            continue;
+        }
         write_string(corner_text.at(i), 0, static_cast<int32_t>(i*15), WHITE_DATA, BLACK_DATA, 5);
     }
 }

@@ -163,8 +163,8 @@ TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
 {
 }
 
-std::string TVM_DRPAI::get_log_exec_time() const {
-    return "PreRuntime: " + std::to_string(ms_int1)
-          + "ms\tRuntimeTVM: " + std::to_string(ms_int2)
-          + "ms\tF16 to F32: " + std::to_string(ms_int3) + "ms";
+void TVM_DRPAI::print_log_exec_time() const {
+    std::cout << "\tPreRuntime:\t" + std::to_string(ms_int1) << "ms" << std::endl;
+    std::cout << "\tRuntimeTVM:\t" + std::to_string(ms_int2) << "ms" << std::endl;
+    std::cout << "\tF16 to F32:\t" + std::to_string(ms_int3) << "ms" << std::endl;
 }

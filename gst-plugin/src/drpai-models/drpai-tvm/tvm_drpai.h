@@ -17,8 +17,7 @@ public:
 
     void run_inference() override;
     void open_resource(uint32_t data_in_address, bool open_files) override;
-
-    [[nodiscard]] std::string get_log_exec_time() const override;
+    void print_log_exec_time() const override;
 
 private:
     MeraDrpRuntimeWrapper runtime;

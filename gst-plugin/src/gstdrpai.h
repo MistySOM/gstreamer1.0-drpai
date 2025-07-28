@@ -56,11 +56,10 @@ G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
 class DRPAI_Controller;
 
-struct _GstDRPAI
+struct _GstDRPAI: GstElement
 {
-  GstElement element;
-
-  GstPad *sinkpad, *srcpad;
+  GstPad *sinkpad;
+  GstPad *srcpad;
 
   gboolean stop_error;
 

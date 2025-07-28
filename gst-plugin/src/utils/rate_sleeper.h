@@ -17,15 +17,14 @@ public:
 
     explicit rate_sleeper() = default;
 
-    void sleep_to_max_rate(float current_duration) {
+    void sleep_to_max_rate(const float current_duration) {
         const float s = max - current_duration + last_sleep_duration;
-        if (s > 0) {
-            //for some reason I had to add 25 milliseconds to this sleep to match the max_rate result. I don't know why.
-            last_sleep_duration = s;
-            std::this_thread::sleep_for(std::chrono::duration<float>(s));
-        }
-        else
+        if (s <= 0) {
             last_sleep_duration = 0;
+            return;
+        }
+        last_sleep_duration = s;
+        std::this_thread::sleep_for(std::chrono::duration<float>(s));
     }
 };
 
