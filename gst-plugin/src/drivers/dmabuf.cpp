@@ -19,9 +19,8 @@ DMABuffer::DMABuffer(const uint32_t buf_size):
 {
     MMNGR_ID id;
     int m_dma_fd;
-    uint32_t phard_addr;
 
-    int ret = mmngr_alloc_in_user_ext(&idx, size, &phard_addr, &mem, MMNGR_VA_SUPPORT_CACHED, nullptr);
+    int ret = mmngr_alloc_in_user_ext(&idx, size, &phy_addr, &mem, MMNGR_VA_SUPPORT_CACHED, nullptr);
     if (ret < 0) {
         throw std::runtime_error("[ERROR] Can't allocate user ext in mmngr: " + std::to_string(ret));
     }
@@ -29,7 +28,7 @@ DMABuffer::DMABuffer(const uint32_t buf_size):
     // Write once to allocate physical memory to u-dma-buf virtual space.
     std::memset(mem, 0, size);
 
-    ret = mmngr_export_start_in_user_ext(&id, size, phard_addr, &m_dma_fd, nullptr);
+    ret = mmngr_export_start_in_user_ext(&id, size, phy_addr, &m_dma_fd, nullptr);
     if (ret < 0) {
         throw std::runtime_error("[ERROR] Can't export start user ext in mmngr: " + std::to_string(ret));
     }

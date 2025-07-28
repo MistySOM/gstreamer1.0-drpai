@@ -385,6 +385,10 @@ void Image::render_text_at_corner(const std::vector<std::string>& corner_text) c
     }
 }
 
+uint32_t Image::get_dma_buffer_physical_address() const {
+    return dma_buffer->get_physical_address();
+}
+
 constexpr void assign_u16(uint8_t* array, uint8_t offset, uint16_t value) {
     array[offset + 0] = 0xff & (value >> 0);
     array[offset + 1] = 0xff & (value >> 8);

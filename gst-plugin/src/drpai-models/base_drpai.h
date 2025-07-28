@@ -29,9 +29,12 @@ public:
     virtual void run_inference();
 
     /// Allocate resources for the DRP-AI Driver.
-    /// @param [in] data_in_address The address of UDMA memory to read input images.
     /// @param [in] open_files To open other files in addition to the DRP-AI driver.
-    virtual void open_resource(uint32_t data_in_address, bool open_files);
+    virtual void open_resource(bool open_files);
+
+    /// Sets the physical address of the UDMA memory to read input images.
+    /// @param [in] data_in_address The address of UDMA memory to read input images.
+    virtual void set_data_in_address(uint32_t data_in_address);
 
     /// Release resources for the DRP-AI Driver.
     virtual void release_resource();

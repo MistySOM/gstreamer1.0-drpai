@@ -29,24 +29,12 @@ void DRPAI_Controller::open_resources() {
     else
         thread_state = Ready;
 
-    /* Obtain udmabuf memory area starting address */
-    uint64_t udmabuf_address;
-    {
-        std::ifstream file ("/sys/class/u-dma-buf/udmabuf0/phys_addr", std::ifstream::in);
-        if (!file.is_open())
-            throw std::runtime_error("[ERROR] Failed to open udmabuf0/phys_addr : errno="  + std::string(std::strerror(errno)));
-        file >> std::hex >> udmabuf_address;
-        file.close();
-    }
-    /* Filter the bit higher than 32 bit */
-    udmabuf_address &=0xFFFFFFFF;
-
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
 
     /* Read DRP-AI Object files address and size */
-    drpai->open_resource(udmabuf_address, true);
+    drpai->open_resource(true);
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
@@ -178,6 +166,7 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
 
     image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
     image_mapped_udma->map_dma_buffer();
+    drpai->set_data_in_address(image_mapped_udma->get_dma_buffer_physical_address());
 
     postprocessor->open_resource(drpai->drpai_output_buf.size(),
         image_width, image_height, labels.size());
