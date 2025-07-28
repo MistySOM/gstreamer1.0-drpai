@@ -7,7 +7,7 @@ cdata.set_quoted('GST_LICENSE', 'LGPL')
 cdata.set_quoted('GST_API_VERSION', api_version)
 cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
 cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
-cdata.set('HAVE_MMNGR', mmngr_dep.found())
+cdata.set('HAVE_MMNGR', enable_mmngr.enabled())
 configure_file(output : 'config.h', configuration : cdata)
 
 incdir = include_directories('src')

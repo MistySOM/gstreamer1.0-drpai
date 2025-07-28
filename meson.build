@@ -12,9 +12,11 @@ gst_dep = dependency('gstreamer-1.0', version : '>=1.16.3',
 gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.16.3',
   fallback : ['gstreamer', 'gst_base_dep'])
 thread_dep = dependency('threads')
-mmngr_dep = cxx.find_library('mmngr', required : false)
-mmngrbuf_dep = cxx.find_library('mmngrbuf', required : mmngr_dep.found())
 dl_dep = cxx.find_library('dl', required : true)
+
+enable_mmngr = get_option('mmngr')
+mmngr_dep = cxx.find_library('mmngr', required : enable_mmngr)
+mmngrbuf_dep = cxx.find_library('mmngrbuf', required : enable_mmngr)
 
 subdir('gst-app')
 subdir('gst-plugin')

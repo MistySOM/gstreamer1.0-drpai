@@ -21,7 +21,7 @@ jobs:
       run: sudo apt update && sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev libunwind-dev
       
     - name: setup meson
-      run: meson setup build
+      run: meson setup build -Dtvm=disabled -Dmmngr=disabled
       
     - name: compile
       run: meson compile -C build
