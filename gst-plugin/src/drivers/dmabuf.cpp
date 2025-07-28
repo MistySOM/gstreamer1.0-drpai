@@ -3,20 +3,24 @@
 //
 
 #include "dmabuf.h"
+#include "config.h"
 #include <string>
 #include <cstring>
 #include <stdexcept>
 #include <iostream>
 
 /* This block of code is only accessible from C code. */
+#ifdef HAVE_MMNGR
 extern "C" {
 #include "mmngr_user_public.h"
 #include "mmngr_buf_user_public.h"
 }
+#endif
 
 DMABuffer::DMABuffer(const uint32_t buf_size):
     size(buf_size)
 {
+#ifdef HAVE_MMNGR
     MMNGR_ID id;
     int m_dma_fd;
 
@@ -32,12 +36,20 @@ DMABuffer::DMABuffer(const uint32_t buf_size):
     if (ret < 0) {
         throw std::runtime_error("[ERROR] Can't export start user ext in mmngr: " + std::to_string(ret));
     }
+#else
+    mem = malloc(size);
+    phy_addr = 0;
+#endif
 }
 
 DMABuffer::~DMABuffer() {
+#ifdef HAVE_MMNGR
     if (const int ret = mmngr_free_in_user_ext(idx); ret < 0) {
         std::cerr << "[ERROR] Can't free user ext in mmngr: " << ret << std::endl;
     }
+#else
+    free(mem);
+#endif
 }
 
 void DMABuffer::copy(const void *src) const {
@@ -45,9 +57,11 @@ void DMABuffer::copy(const void *src) const {
 }
 
 void DMABuffer::flush() const  {
+#ifdef HAVE_MMNGR
     if (const int ret = mmngr_flush(idx, 0, size); ret < 0) {
         throw std::runtime_error("[ERROR] Can't flush mmngr: " + std::to_string(ret));
     }
+#endif
 }
 
 
