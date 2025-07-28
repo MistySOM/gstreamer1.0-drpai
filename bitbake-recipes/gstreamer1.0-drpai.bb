@@ -3,7 +3,7 @@ LICENSE = "MIT"
 SRC_URI = "git://github.com/MistySOM/gstreamer1.0-drpai.git;branch=master"
 SRCREV = "${AUTOREV}"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=546bb90dc9b7cbf2b99de6cc06051bf9"
-DEPENDS = "gstreamer1.0 drpai mmngr mmngrbuf"
+DEPENDS = "gstreamer1.0 drpai mmngr-user-module mmngrbuf-user-module"
 
 inherit meson
 MESON_BUILDTYPE = "release"
