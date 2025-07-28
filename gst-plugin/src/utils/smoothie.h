@@ -15,10 +15,10 @@ private:
         uint32_t count = 0;
 public:
         uint32_t max = 1;
-        T mix;
+        T mix = 0;
 
-        explicit smoothie(uint32_t max): max(max) {}
-        explicit smoothie(const T item, uint32_t max): max(max), mix(item) {}
+        explicit smoothie(const uint32_t max): max(max) {}
+        explicit smoothie(const T item, const uint32_t max): max(max), mix(item) {}
 
         void add(const T& item) {
             count = std::min(count+1, max);

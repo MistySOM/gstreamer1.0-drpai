@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> labels {"car", "bike"};
 
-    detection_filterer f(640, 480, labels);
+    detection_filterer f(labels);
     assert(!f.is_active());
 
     if (arg == ARG_CLASS) {

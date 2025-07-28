@@ -22,7 +22,7 @@ json_object tracked_detection::get_json() const {
 
 /** @brief Track detected items based on previous detections. It populates last_tracked_detection.
  *  @param detections A list of detected items in one frame. */
-void tracker::track(const std::vector<detection>& detections) {
+void tracker::track(const std::list<detection>& detections) {
     const auto now = std::chrono::system_clock::now();
 
     /* Let's keep pointers to all detected items.

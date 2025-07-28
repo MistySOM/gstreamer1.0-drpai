@@ -29,14 +29,14 @@
 #include <memory>
 
 enum IMAGE_FORMAT {
-    BGR_DATA, YUV_DATA
+    BGR_DATA, RGB_DATA, YUV_DATA
 };
 
 class Image
 {
     public:
-        explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
-            img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c), img_buffer(data),
+        explicit Image(const uint32_t w, const uint32_t h, const uint32_t c, IMAGE_FORMAT format, uint8_t* data):
+            img_buffer(data), img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c),
             convert_from_format(format) {};
         ~Image();
 
@@ -44,7 +44,8 @@ class Image
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
         void map_udmabuf();
-        void copy(const uint8_t* data, IMAGE_FORMAT format);
+        void copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT format);
+        void save_bmp(const std::string& filename) const;
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;
@@ -52,14 +53,19 @@ class Image
         void write_string(const std::string& pcode, int32_t x, int32_t y,
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
+        /// Renders texts at the corner of the image using the list of corner texts
+        /// @param [in] corner_text Reference to the array of strings to be rendered at the corner of the image.
+        void render_text_at_corner(const std::vector<std::string>& corner_text) const;
+
+        uint8_t* img_buffer = nullptr;
+        const uint32_t img_w;
+        const uint32_t img_h;
+        const uint32_t img_c;
+
     private:
         uint8_t udmabuf_fd = 0;
-        uint32_t img_w;
-        uint32_t img_h;
-        uint32_t img_c;
         IMAGE_FORMAT format;
         uint32_t size;
-        uint8_t* img_buffer = nullptr;
 
         /* converting section */
         constexpr static uint32_t BGR_NUM_CHANNEL = 3;

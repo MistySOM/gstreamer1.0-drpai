@@ -121,11 +121,10 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
         }
     } catch (std::runtime_error& e) {
         std::cerr << std::endl << e.what() << std::endl << std::endl;
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        throw e;
+        throw;
     } catch (std::exception& e) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        throw e;
+        throw;
     }
 }
 
@@ -168,6 +167,19 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
             /* do something with the caps */
             GST_DEBUG("\tCaps: %s\n", gst_caps_to_string(caps));
 
+            const auto s = gst_caps_get_structure(caps, 0);
+            gint width, height;
+            gst_structure_get_int (s, "width", &width);
+            gst_structure_get_int (s, "height", &height);
+
+            try {
+                obj->drpai_controller->open_resources_with_image_size(width, height);
+            }
+            catch (const std::exception& e) {
+                std::cerr << std::endl << e.what() << std::endl << std::endl;
+                throw;
+            }
+
             /* and forward */
             ret = gst_pad_event_default(pad, parent, event);
             break;
@@ -191,7 +203,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     gst_buffer_map(buf, &info, GST_MAP_READWRITE);
 
     try {
-        obj->drpai_controller->process_image(info.data);
+        obj->drpai_controller->process_image(info.data, info.size);
     }
     catch (const std::exception& e) {
         std::cerr << std::endl << e.what() << std::endl << std::endl;

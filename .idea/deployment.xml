@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="MistySOM-V2L" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="Matin-V2L-Matin">
+      <paths name="MistySOM-V2L">
         <serverdata>
           <mappings>
-            <mapping deploy="/usr/lib64/gstreamer-1.0/libgstdrpai.so" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" web="" />
-            <mapping deploy="/usr/lib64/libgstdrpai-yolo.so" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-yolo/libgstdrpai-yolo.so" />
+            <mapping deploy="/usr/lib64/libgstdrpai-yolo.so" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-yolo/libgstdrpai-yolo.so" web="/" />
+            <mapping deploy="/usr/lib64/gstreamer-1.0/libgstdrpai.so" local="$PROJECT_DIR$/buildDir/gst-plugin/libgstdrpai.so" />
+            <mapping deploy="/usr/lib64/libtvm_runtime.so" local="$PROJECT_DIR$/gst-plugin/src/drpai-models/drpai-tvm/rzv_drp-ai_tvm/obj/build_runtime/V2L/libtvm_runtime.so" />
+            <mapping deploy="/usr/lib64/libgstdrpai-mobilenet.so" local="$PROJECT_DIR$/buildDir/gst-plugin/src/drpai-models/drpai-mobilenet/libgstdrpai-mobilenet.so" web="" />
           </mappings>
         </serverdata>
       </paths>

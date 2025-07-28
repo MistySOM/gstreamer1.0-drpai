@@ -54,7 +54,7 @@ inline std::string rgb2string(uint32_t c) {
 struct Box
 {
     float x, y, w, h;
-    colorBGR color;
+    colorBGR color = RED_DATA;
 
     explicit constexpr Box(float center_x, float center_y, float width, float height, colorBGR color = RED_DATA):
         x(center_x), y(center_y), w(width), h(height), color(color) {}
@@ -91,10 +91,15 @@ struct Box
 using classID = uint32_t;
 struct detection
 {
-    Box bbox {};
-    classID c = 0;
-    float prob = 0;
-    const char* name = nullptr;
+    Box bbox;
+    const classID c;
+    const float prob;
+    const char* name;
+    bool saved_image = false;
+
+    detection(const detection& det) = default;
+    explicit detection(Box box, classID c, float prob, const char* name = nullptr):
+        bbox(box), c(c), prob(prob), name(name)  { }
 
     [[nodiscard]] std::string to_string_hr() const {
         if (name)
@@ -107,6 +112,7 @@ struct detection
         j.add("class", std::string(name));
         j.add("probability", prob, 2);
         j.add("box", bbox.get_json(true));
+        j.add("saved_image", saved_image);
         return j;
     }
 };
