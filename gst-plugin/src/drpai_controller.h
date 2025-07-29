@@ -6,20 +6,23 @@
 #define GSTREAMER1_0_DRPAI_DRPAI_CONTROLLER_H
 
 /*Definition of Macros & other variables*/
-#include "image.h"
 #include "rate_controller.h"
 #include "tracker.h"
 #include "filterer.h"
-#include "drpai-models/base_drpai.h"
-#include "drpai-models/base_post_processor.h"
-
-#include <thread>
+#include "properties.h"
 #include <mutex>
 #include <condition_variable>
 #include <netdb.h>
 #include <map>
 
 class BaseDRPAI;
+class BasePostProcessor;
+class Image;
+typedef struct _GValue GValue;
+typedef struct _GParamSpec GParamSpec;
+namespace std {
+    class thread;
+}
 
 class DRPAI_Controller {
 
@@ -35,7 +38,7 @@ public:
 
     void set_property(GstDRPAI_Properties prop, const GValue* value);
     void get_property(GstDRPAI_Properties prop, GValue* value) const;
-    static void install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params);
+    static void install_properties(std::map<GstDRPAI_Properties, GParamSpec*>& params);
 
 private:
     bool multithread = true;
@@ -70,6 +73,7 @@ private:
     ThreadState thread_state = Unknown;
     std::unique_ptr<std::thread> process_thread = nullptr;
     std::mutex state_mutex;
+    std::mutex detections_mutex;
     std::condition_variable v;
     void thread_function_loop();
     void thread_function_single();

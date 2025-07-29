@@ -21,8 +21,7 @@ void MobileNet_PostProcessor::extract_detections(const std::vector<float>& infer
     const auto classes_start_index = detection_count_max*5;
     const auto boxes_start_index = detection_count_max;
 
-    auto& det_list = detections.get_current();
-    det_list.clear();
+    detections.clear();
     for (std::size_t i = 0; i< detection_count_max; i++) {
         const auto score = inference_output_buf.at(i);
 
@@ -39,7 +38,7 @@ void MobileNet_PostProcessor::extract_detections(const std::vector<float>& infer
             const float x = (x1 + x2)/2;
             const float y = (y1 + y2)/2;
 
-            det_list.emplace_back(Box{ x,y,w,h }, pred_class, score);
+            detections.emplace_back(Box{ x,y,w,h }, pred_class, score);
         }
     }
 }

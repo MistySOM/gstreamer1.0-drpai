@@ -76,8 +76,7 @@ struct matrix_ref {
 void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_output_buf)
 {
     std::vector<float> classes (num_classes);
-    auto& det_list = detections.get_current();
-    det_list.clear();
+    detections.clear();
 
     switch (yolo_version) {
         case 'x':
@@ -95,7 +94,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                     const float y = m.get(item, 1) * static_cast<float>(img_height) / MODEL_IN_H;
                     const float w = m.get(item, 2) * static_cast<float>(img_width) / MODEL_IN_W;
                     const float h = m.get(item, 3) * static_cast<float>(img_height) / MODEL_IN_H;
-                    det_list.emplace_back(Box{ x,y,w,h }, pred_class, *max_pred);
+                    detections.emplace_back(Box{ x,y,w,h }, pred_class, *max_pred);
                 }
             }
             break;
@@ -183,7 +182,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float>& inference_
                                 box.w = std::round(box.w * static_cast<float>(img_width));
                                 box.h = std::round(box.h * static_cast<float>(img_height));
 
-                                det_list.emplace_back(box, pred_class, probability);
+                                detections.emplace_back(box, pred_class, probability);
                             }
                         }
                     }

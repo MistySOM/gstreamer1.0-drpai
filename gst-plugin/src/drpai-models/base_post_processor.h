@@ -5,7 +5,9 @@
 #ifndef GSTREAMER1_0_DRPAI_BASE_POST_PROCESSOR_H
 #define GSTREAMER1_0_DRPAI_BASE_POST_PROCESSOR_H
 
-#include "detection_list.h"
+#include "box.h"
+#include "utils/json.h"
+#include <list>
 
 class BasePostProcessor
 {
@@ -23,16 +25,20 @@ public:
     /// @param [in] num_classes The number of classes with labels
     virtual void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height, uint32_t num_classes);
 
+    virtual void print_string_hr(const std::vector<std::string>& labels) const;
+
     /// Get status to be shown at the corner of the image.
     /// This function usually gets overridden by the child class. But it is not a must.
     /// @returns A string containing the tracking info
     [[nodiscard]] virtual std::string get_status() const;
 
+    [[nodiscard]] virtual json_array get_detections_json(const std::vector<std::string>& labels) const;
+
     /// Get a json object containing detections to be used in UDP packets.
     /// It uses the function `BasePostProcessor::get_detections_json` and places it in the key `detections`.
     /// This function can get overridden by the child class to add extra info to the json object.
     /// @returns A json_object containing detections
-    [[nodiscard]] virtual json_object get_json(const std::vector<std::string>& labels);
+    [[nodiscard]] virtual json_object get_json(const std::vector<std::string>& labels) const;
 
     /// Loads post process params list text file and finds the param variable.
     /// @param [in] params_file_name The filename of params list. must be in txt format.
@@ -43,7 +49,7 @@ public:
                                                const std::string& param, bool error_not_found = true);
 
     float TH_PROB = 0.5f;
-    DetectionList detections; /// List of latest detections, filled by `extract_detections` function
+    std::list<detection> detections; /// List of latest detections, filled by `extract_detections` function
 
     /// Extract information from the output layer of the running ML model and writes them into the last detections list.
     /// This function MUST be implemented by the child class
