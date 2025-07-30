@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="CidrRootsConfiguration">
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/gst-plugin/src/drpai-models/drpai-tvm/rzv_drp-ai_tvm" />
+    </excludeRoots>
+  </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="MesonSettings">
     <option name="linkedExternalProjectsSettings">
@@ -12,6 +17,14 @@
         </option>
         <option name="profiles">
           <MesonProfile>
+            <option name="setupOptions">
+              <list>
+                <option value="--cross-file" />
+                <option value="meson-aarch64-poky.cross" />
+                <option value="--buildtype" />
+                <option value="debug" />
+              </list>
+            </option>
             <option name="toolchainName" value="Poky aarch64" />
           </MesonProfile>
         </option>

@@ -2,7 +2,7 @@
 // Created by matin on 12/03/24.
 //
 
-#include "detection_filterer.h"
+#include "filterer.h"
 #include <iostream>
 
 /*****************************************
@@ -13,7 +13,7 @@
 *                 th_nms = threshold for nms
 * Return value  : -
 ******************************************/
-void detection_filterer::filter_boxes_nms(std::list<detection>& det)
+void filterer::filter_boxes_nms(std::list<detection>& det) const
 {
     for (auto i = det.begin(); i != det.end(); ++i)
     {
@@ -45,7 +45,7 @@ void detection_filterer::filter_boxes_nms(std::list<detection>& det)
     }
 }
 
-void detection_filterer::apply(std::list<detection> &d) {
+void filterer::apply(std::list<detection> &d) const {
     if (d.empty())
         return;
 
@@ -56,31 +56,35 @@ void detection_filterer::apply(std::list<detection> &d) {
         /* Skip the bounding boxes outside of region of interest */
         if (!filter_classes.empty()) {
             const auto f = filter_classes.find(det->c);
-            if (f == filter_classes.end())
-                det = d.erase(det);
-            else
-                det->bbox.color = f->second; // colorBGR
+            if (f == filter_classes.end()) {
+                det = --d.erase(det);
+                continue;
+            }
+            det->bbox.color = f->second; // colorBGR
         }
-        if ((filter_region & det->bbox) == 0)
-            det = d.erase(det);
+
+        if ((filter_region & det->bbox) == 0) {
+            det = --d.erase(det);
+        }
     }
 }
 
-void detection_filterer::render_filter_region(Image &img) const {
+void filterer::render_filter_region(const Image &img) const {
     if (is_filter_region_active())
         img.draw_rect(filter_region);
 }
 
-json_object detection_filterer::get_json() const {
+json_object filterer::get_json(const std::vector<std::string>& labels) const {
     json_object j;
     if (is_filter_classes_active())
-        j.add("classes", get_filter_classes_json());
+        j.add("classes", get_filter_classes_json(labels));
     if (is_filter_region_active())
         j.add("region", get_filter_region_json());
     return j;
 }
 
-void detection_filterer::set_filter_classes(const std::string &s) {
+void filterer::set_filter_classes(const std::vector<std::string>& labels, const std::string &s)
+{
     filter_classes.clear();
     if (s.empty())
         return;
@@ -109,7 +113,7 @@ void detection_filterer::set_filter_classes(const std::string &s) {
     }
 }
 
-json_array detection_filterer::get_filter_classes_json() const {
+json_array filterer::get_filter_classes_json(const std::vector<std::string>& labels) const {
     json_array j;
     for (const auto & [id, c]: filter_classes) {
         json_object o;
@@ -120,7 +124,7 @@ json_array detection_filterer::get_filter_classes_json() const {
     return j;
 }
 
-std::string detection_filterer::get_filter_classes_string() const {
+std::string filterer::get_filter_classes_string(const std::vector<std::string>& labels) const {
     std::string s;
     bool empty = true;
     for (const auto & [id, c]: filter_classes) {

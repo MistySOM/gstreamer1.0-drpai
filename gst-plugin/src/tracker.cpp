@@ -4,17 +4,18 @@
 
 #include "tracker.h"
 #include "utils/elapsed_time.h"
+#include <iostream>
 
 inline double get_duration(const tracking_time &a, const tracking_time &b) {
     return std::chrono::duration<double>(a - b).count();
 }
 
-json_object tracked_detection::get_json() const {
+json_object tracked_detection::get_json(const std::vector<std::string>& labels) const {
     json_object j;
     j.add("id", id);
     j.add("seen-first", elapsed_time::to_string(seen_first));
     j.add("seen-last", elapsed_time::to_string(seen_last));
-    j.add("class", std::string(name));
+    j.add("class", labels.at(c));
     j.add("probability", prob, 2);
     j.add("box", smooth_bbox.mix.get_json(true));
     return j;
@@ -92,15 +93,24 @@ void tracker::track(const std::list<detection>& detections) {
 
     /* In case there is still a detected item that we haven't found it already, it is new.
      * Let's welcome it to the family! */
-    for (auto d: detections_ptr) {
+    for (const auto d: detections_ptr) {
         auto item = std::make_shared<tracked_detection>(generate_ID(), *d, now, bbox_smooth_rate);
-        names[d->c] = d->name;
         counts[d->c]++;
         current_items.push_front(item);
         result.push_back(item);
     }
 
     last_tracked_detection = result;
+}
+
+void tracker::print_string_hr(const std::vector<std::string>& labels) const {
+    std::cout << "DRP-AI tracked items:  ";
+    for (const auto& detection: last_tracked_detection) {
+        /* Print the box details on console */
+        //print_box(detection, n++);
+        std::cout << detection->to_string_hr(true, labels) + "\t";
+    }
+    std::cout << std::endl;
 }
 
 void tracker::erase_outdated_history() {
@@ -115,18 +125,18 @@ void tracker::erase_outdated_history() {
     }
 }
 
-json_object tracker::get_json() const {
+json_object tracker::get_json(const std::vector<std::string>& labels) const {
     json_object j;
     j.add("minutes", history_length/60);
     j.add("total_count", count());
-    for (auto const& [c, name] : names)
-        j.add(name, counts.at(c));
+    for (auto const& [c, count] : counts)
+        j.add(labels.at(c), count);
     return j;
 }
 
-json_array tracker::get_detections_json() const {
+json_array tracker::get_detections_json(const std::vector<std::string>& labels) const {
     json_array a;
     for(const auto& det: last_tracked_detection)
-        a.add(det->get_json());
+        a.add(det->get_json(labels));
     return a;
 }

@@ -66,49 +66,38 @@
 #include <gst/gst.h>
 #include <iostream>
 
-static GstStateChangeReturn
-gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
-    const auto *obj = reinterpret_cast<GstDRPAI*>(&element->object);
+static GstStateChangeReturn gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
+    const auto *obj = GST_PLUGIN_DRPAI(&element->object);
+    const auto parent_element_class = GST_ELEMENT_CLASS (parent_class);
+    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
 
-    switch (transition) {
-        case GST_STATE_CHANGE_NULL_TO_READY:
-            try {
+    try {
+        switch (transition) {
+            case GST_STATE_CHANGE_NULL_TO_READY:
                 /* open the device */
                 obj->drpai_controller->open_resources();
-            }
-            catch (std::runtime_error &e) {
-                std::cerr << std::endl << e.what() << std::endl << std::endl;
-                if (obj->stop_error)
-                    return GST_STATE_CHANGE_FAILURE;
-            }
-            break;
-        default:
-            break;
-    }
-
-    auto state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state(element, transition);
-
-    switch (transition) {
-        case GST_STATE_CHANGE_READY_TO_NULL:
-            try {
+                ret = parent_element_class->change_state(element, transition);
+                break;
+            case GST_STATE_CHANGE_READY_TO_NULL:
+                ret = parent_element_class->change_state(element, transition);
                 /* close the device */
                 obj->drpai_controller->release_resources();
-            }
-            catch (std::runtime_error &e) {
-                std::cerr << std::endl << e.what() << std::endl << std::endl;
-                state_change_ret = GST_STATE_CHANGE_FAILURE;
-            }
-            delete obj->drpai_controller;
-            break;
-        default:
-            break;
+                break;
+            default:
+                ret = parent_element_class->change_state(element, transition);
+                break;
+        }
     }
-    return state_change_ret;
+    catch (std::runtime_error &e) {
+        std::cerr << std::endl << e.what() << std::endl << std::endl;
+        if (obj->stop_error)
+            return GST_STATE_CHANGE_FAILURE;
+    }
+    return ret;
 }
-static void
-gst_drpai_set_property(GObject *object, const guint prop_id,
-                              const GValue *value, GParamSpec *pspec) {
-    GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
+
+static void gst_drpai_set_property(GObject *object, const guint prop_id, const GValue *value, GParamSpec *pspec) {
+    auto *obj = GST_PLUGIN_DRPAI(object);
 
     try {
         switch (prop_id) {
@@ -121,18 +110,15 @@ gst_drpai_set_property(GObject *object, const guint prop_id,
         }
     } catch (std::runtime_error& e) {
         std::cerr << std::endl << e.what() << std::endl << std::endl;
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        throw e;
+        throw;
     } catch (std::exception& e) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        throw e;
+        throw;
     }
 }
 
-static void
-gst_drpai_get_property(GObject *object, const guint prop_id,
-                              GValue *value, GParamSpec *pspec) {
-    const GstDRPAI *obj = GST_PLUGIN_DRPAI(object);
+static void gst_drpai_get_property(GObject *object, const guint prop_id, GValue *value, GParamSpec *pspec) {
+    const auto *obj = GST_PLUGIN_DRPAI(object);
 
     try {
         switch (prop_id) {
@@ -151,14 +137,11 @@ gst_drpai_get_property(GObject *object, const guint prop_id,
 /* GstElement vmethod implementations */
 
 /* this function handles sink events */
-static gboolean
-gst_drpai_sink_event(GstPad *pad, GstObject *parent,
-                            GstEvent *event) {
+static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *event) {
     gboolean ret;
     const auto obj = GST_PLUGIN_DRPAI(parent);
 
-    GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT,
-                    GST_EVENT_TYPE_NAME(event), event);
+    GST_LOG_OBJECT (obj, "Received %s event: %" GST_PTR_FORMAT, GST_EVENT_TYPE_NAME(event), event);
 
     switch (GST_EVENT_TYPE (event)) {
         case GST_EVENT_CAPS: {
@@ -167,6 +150,19 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
 
             /* do something with the caps */
             GST_DEBUG("\tCaps: %s\n", gst_caps_to_string(caps));
+
+            const auto s = gst_caps_get_structure(caps, 0);
+            gint width, height;
+            gst_structure_get_int (s, "width", &width);
+            gst_structure_get_int (s, "height", &height);
+
+            try {
+                obj->drpai_controller->open_resources_with_image_size(width, height);
+            }
+            catch (const std::exception& e) {
+                std::cerr << std::endl << e.what() << std::endl << std::endl;
+                throw;
+            }
 
             /* and forward */
             ret = gst_pad_event_default(pad, parent, event);
@@ -182,8 +178,7 @@ gst_drpai_sink_event(GstPad *pad, GstObject *parent,
 /* chain function
  * this function does the actual processing
  */
-static GstFlowReturn
-gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
+static GstFlowReturn gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
     
     const auto obj = GST_PLUGIN_DRPAI(parent);
 
@@ -211,8 +206,7 @@ gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *buf) {
  * set pad callback functions
  * initialize instance structure
  */
-static void
-gst_drpai_init(GstDRPAI* self) {
+static void gst_drpai_init(GstDRPAI* self) {
     self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
     gst_pad_set_event_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
     gst_pad_set_chain_function (self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_chain));
@@ -223,13 +217,12 @@ gst_drpai_init(GstDRPAI* self) {
     GST_PAD_SET_PROXY_CAPS (self->srcpad);
     gst_element_add_pad(GST_ELEMENT (self), self->srcpad);
 
-    self->drpai_controller = new DRPAI_Controller();
+    self->drpai_controller = std::make_unique<DRPAI_Controller>();
     self->stop_error = TRUE;
 }
 
 /* initialize the plugin's class */
-static void
-gst_drpai_class_init(GstDRPAIClass *klass) {
+static void gst_drpai_class_init(GstDRPAIClass *klass) {
     const auto gobject_class = reinterpret_cast<GObjectClass *>(klass);
     const auto gstelement_class = reinterpret_cast<GstElementClass *>(klass);
 
@@ -244,18 +237,17 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
                                                       TRUE, G_PARAM_READWRITE));
     DRPAI_Controller::install_properties(params);
 
-    for (auto& [prop_id, spec]: params)
+    for (auto& [prop_id, spec]: params) {
         g_object_class_install_property(gobject_class, prop_id, spec);
+    }
 
     gst_element_class_set_details_simple(gstelement_class,
                                          "DRP-AI",
                                          "DRP-AI",
                                          "DRP-AI Element", "Matin Lotfaliei matin.lotfali@mistywest.com");
 
-    gst_element_class_add_pad_template(gstelement_class,
-                                       gst_static_pad_template_get(&src_factory));
-    gst_element_class_add_pad_template(gstelement_class,
-                                       gst_static_pad_template_get(&sink_factory));
+    gst_element_class_add_pad_template(gstelement_class, gst_static_pad_template_get(&src_factory));
+    gst_element_class_add_pad_template(gstelement_class, gst_static_pad_template_get(&sink_factory));
 }
 
 
@@ -263,8 +255,7 @@ gst_drpai_class_init(GstDRPAIClass *klass) {
  * initialize the plug-in itself
  * register the element factories and other features
  */
-static gboolean
-plugin_init(GstPlugin *plugin) {
+static gboolean plugin_init(GstPlugin *plugin) {
     /* debug category for filtering log messages */
     GST_DEBUG_CATEGORY_INIT (gst_drpai_debug, "drpai", 0, "DRP-AI plugin");
     return gst_element_register (plugin, "drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);

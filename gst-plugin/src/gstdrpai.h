@@ -47,6 +47,7 @@
 #ifndef GST_PLUGIN_DRPAI_H
 #define GST_PLUGIN_DRPAI_H
 
+#include <memory>
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
@@ -56,15 +57,14 @@ G_DECLARE_FINAL_TYPE (GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
 class DRPAI_Controller;
 
-struct _GstDRPAI
+struct _GstDRPAI: GstElement
 {
-  GstElement element;
-
-  GstPad *sinkpad, *srcpad;
+  GstPad *sinkpad;
+  GstPad *srcpad;
 
   gboolean stop_error;
 
-  DRPAI_Controller *drpai_controller;
+  std::unique_ptr<DRPAI_Controller> drpai_controller;
 };
 
 GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);
@@ -80,9 +80,8 @@ enum {
  *
  * describe the real formats here.
  */
-#define CAP_WIDTH (640)
-#define CAP_HEIGHT (480)
-constexpr auto pad_caps = "video/x-raw, width = (int) 640, height = (int) 480, format = (string) BGR";
+
+constexpr auto pad_caps = "video/x-raw, format = (string) BGR";
 static GstStaticPadTemplate sink_factory =
         GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS(pad_caps));
 static GstStaticPadTemplate src_factory =

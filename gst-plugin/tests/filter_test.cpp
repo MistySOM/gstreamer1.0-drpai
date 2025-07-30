@@ -2,7 +2,7 @@
 // Created by matin on 25/12/23.
 //
 
-#include "drpai-models/drpai-yolo/detection_filterer.h"
+#include "../src/filterer.h"
 #include "box.h"
 #include <cassert>
 #include <string>
@@ -25,30 +25,30 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> labels {"car", "bike"};
 
-    detection_filterer f(640, 480, labels);
+    filterer f;
     assert(!f.is_active());
 
     if (arg == ARG_CLASS) {
-        f.set_filter_classes("");
+        f.set_filter_classes(labels, "");
         assert(!f.is_active());
-        assert(f.get_filter_classes_json().to_string() == "[]");
-        f.set_filter_classes("car");
-        auto a = f.get_filter_classes_string();
-        f.set_filter_classes(a);
-        auto b = f.get_filter_classes_string();
+        assert(f.get_filter_classes_json(labels).to_string() == "[]");
+        f.set_filter_classes(labels, "car");
+        auto a = f.get_filter_classes_string(labels);
+        f.set_filter_classes(labels,a);
+        auto b = f.get_filter_classes_string(labels);
         assert(f.is_active());
         assert(f.is_filter_classes_active());
         assert(!f.is_filter_region_active());
         assert(a == b);
-        f.set_filter_classes("car,bike");
-        f.set_filter_classes("bike, car");
-        f.set_filter_classes("car:ff0000,bike:0000ff");
-        b = f.get_filter_classes_json().to_string();
+        f.set_filter_classes(labels, "car,bike");
+        f.set_filter_classes(labels, "bike, car");
+        f.set_filter_classes(labels, "car:ff0000,bike:0000ff");
+        b = f.get_filter_classes_json(labels).to_string();
         assert(b == "[{\"class\": \"car\", \"color\": \"ff0000\"}, {\"class\": \"bike\", \"color\": \"0000ff\"}]");
 
         bool thrown = false;
         try {
-            f.set_filter_classes("car,truck,bike");
+            f.set_filter_classes(labels, "car,truck,bike");
         } catch (...) {
             thrown = true;
         }

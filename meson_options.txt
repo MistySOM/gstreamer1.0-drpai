@@ -1,0 +1,2 @@
+option('tvm', type: 'feature', value: 'auto')
+option('mmngr', type: 'feature', value: 'enabled')

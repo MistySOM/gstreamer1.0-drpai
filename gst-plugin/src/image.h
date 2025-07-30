@@ -28,6 +28,8 @@
 #include "box.h"
 #include <memory>
 
+class DMABuffer;
+
 enum IMAGE_FORMAT {
     BGR_DATA, RGB_DATA, YUV_DATA
 };
@@ -35,16 +37,15 @@ enum IMAGE_FORMAT {
 class Image
 {
     public:
-        explicit Image(const int32_t w, const int32_t h, const int32_t c, IMAGE_FORMAT format, uint8_t* data):
-            img_w(w), img_h(h), img_c(c), format(format), size(img_w*img_h*img_c), img_buffer(data),
-            convert_from_format(format) {};
+        explicit Image(uint32_t w, uint32_t h, uint32_t c, IMAGE_FORMAT format, uint8_t* data);
         ~Image();
 
         [[nodiscard]] constexpr uint8_t at(const int32_t a) const { return img_buffer[a]; }
         constexpr void set(const int32_t a, const uint8_t val) const { img_buffer[a] = val; }
 
-        void map_udmabuf();
+        void map_dma_buffer();
         void copy(const uint8_t* data, uint32_t data_len, IMAGE_FORMAT format);
+        void save_bmp(const std::string& filename) const;
         void prepare();
         void draw_rect(const Box& box, const std::string& str) const;
         void draw_rect(const Box& box) const;
@@ -52,14 +53,21 @@ class Image
         void write_string(const std::string& pcode, int32_t x, int32_t y,
                           colorBGR color, colorBGR backcolor, int8_t margin=0) const;
 
+        /// Renders texts at the corner of the image using the list of corner texts
+        /// @param [in] corner_text Reference to the array of strings to be rendered at the corner of the image.
+        void render_text_at_corner(const std::vector<std::string>& corner_text) const;
+
+        [[nodiscard]] uint32_t get_dma_buffer_physical_address() const;
+
+        uint8_t* img_buffer = nullptr;
+        const uint32_t img_w;
+        const uint32_t img_h;
+        const uint32_t img_c;
+
     private:
-        uint8_t udmabuf_fd = 0;
-        uint32_t img_w;
-        uint32_t img_h;
-        uint32_t img_c;
+        std::unique_ptr<DMABuffer> dma_buffer;
         IMAGE_FORMAT format;
         uint32_t size;
-        uint8_t* img_buffer = nullptr;
 
         /* converting section */
         constexpr static uint32_t BGR_NUM_CHANNEL = 3;
