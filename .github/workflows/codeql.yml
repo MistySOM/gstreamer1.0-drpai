@@ -81,7 +81,7 @@ jobs:
       shell: bash      
       run: |
         sudo apt update && sudo apt install -y -f meson ninja-build gstreamer1.0-tools libgstreamer1.0-dev libunwind-dev
-        meson setup build
+        meson setup build -Dtvm=disabled -Dmmngr=disabled
         meson compile -C build
         meson test -C build
         gst-inspect-1.0 build/gst-plugin/libgstdrpai.so
