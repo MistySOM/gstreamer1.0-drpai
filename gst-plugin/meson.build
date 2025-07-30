@@ -7,6 +7,7 @@ cdata.set_quoted('GST_LICENSE', 'LGPL')
 cdata.set_quoted('GST_API_VERSION', api_version)
 cdata.set_quoted('GST_PACKAGE_NAME', 'GStreamer DRP-AI Plug-in')
 cdata.set_quoted('GST_PACKAGE_ORIGIN', 'https://mistysom.com')
+cdata.set('HAVE_MMNGR', enable_mmngr.enabled())
 configure_file(output : 'config.h', configuration : cdata)
 
 incdir = include_directories('src')
@@ -14,9 +15,9 @@ incdir = include_directories('src')
 plugin_sources = [
   'src/gstdrpai.cpp',
   'src/drpai_controller.cpp',
-  'src/detection_list.cpp',
   'src/tracker.cpp',
   'src/filterer.cpp',
+  'src/drivers/dmabuf.cpp',
   'src/drpai-models/base_drpai.cpp',
   'src/drpai-models/base_post_processor.cpp',
   'src/image.cpp',
@@ -24,7 +25,7 @@ plugin_sources = [
  ]
 
 plugin_dependencies = [
-  gst_dep, thread_dep, dl_dep
+  gst_dep, thread_dep, dl_dep, mmngr_dep, mmngrbuf_dep
 ]
 
 subdir('src/drpai-models/drpai-tvm')

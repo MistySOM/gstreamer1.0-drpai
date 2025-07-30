@@ -174,10 +174,15 @@ void BaseDRPAI::wait() const {
     }
 }
 
+void BaseDRPAI::set_data_in_address(const uint32_t data_in_address) {
+    /* Set DRP-AI Driver Input (DRP-AI Object files address and size)*/
+    proc[DRPAI_INDEX_INPUT].address = data_in_address;
+}
+
 /// Allocate resources for the DRP-AI Driver.
 /// @param [in] data_in_address The address of UDMA memory to read input images.
 /// @param [in] open_files To open other files in addition to the DRP-AI driver.
-void BaseDRPAI::open_resource(const uint32_t data_in_address, const bool open_files) {
+void BaseDRPAI::open_resource(const bool open_files) {
 
     /* Open DRP-AI Driver */
     errno = 0;
@@ -198,9 +203,6 @@ void BaseDRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
 
     /* Load DRP-AI Data from Filesystem to Memory via DRP-AI Driver */
     load_data_to_mem();
-
-    /* Set DRP-AI Driver Input (DRP-AI Object files address and size)*/
-    proc[DRPAI_INDEX_INPUT].address = data_in_address;
 
     const auto drpai_param_file = directory + "/drp_param_info.txt";
     /*Load DRPAI Parameter for Cropping later*/

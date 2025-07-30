@@ -16,8 +16,8 @@ float float16_to_float32(const uint16_t a)
     return __extendXfYf2__<uint16_t, uint16_t, 10, float, uint32_t, 23>(a);
 }
 
-void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_files) {
-    BaseDRPAI::open_resource(data_in_address, false);
+void TVM_DRPAI::open_resource(const bool open_files) {
+    BaseDRPAI::open_resource(false);
 
     /*Load pre_dir object to DRP-AI */
     auto ret = preruntime.Load(prefix + "/preprocess");
@@ -29,7 +29,6 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
     IN_WIDTH = preruntime.internal_param_val.pre_in_shape_w;
     IN_HEIGHT = preruntime.internal_param_val.pre_in_shape_h;
     IN_CHANNEL = 3;
-    in_param.pre_in_addr = data_in_address;
 
     /*Load model_dir structure and its weight to runtime object */
     auto drpaimem_addr_start = get_drpai_start_addr();
@@ -67,6 +66,10 @@ void TVM_DRPAI::open_resource(const uint32_t data_in_address, const bool open_fi
         }
     }
     drpai_output_buf.resize(output_size);
+}
+
+void TVM_DRPAI::set_data_in_address(uint32_t data_in_address) {
+    in_param.pre_in_addr = data_in_address;
 }
 
 void TVM_DRPAI::run_inference() {

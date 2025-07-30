@@ -68,41 +68,32 @@
 
 static GstStateChangeReturn gst_drpai_change_state (GstElement * element, const GstStateChange transition) {
     const auto *obj = GST_PLUGIN_DRPAI(&element->object);
+    const auto parent_element_class = GST_ELEMENT_CLASS (parent_class);
+    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
 
-    switch (transition) {
-        case GST_STATE_CHANGE_NULL_TO_READY:
-            try {
+    try {
+        switch (transition) {
+            case GST_STATE_CHANGE_NULL_TO_READY:
                 /* open the device */
                 obj->drpai_controller->open_resources();
-            }
-            catch (std::runtime_error &e) {
-                std::cerr << std::endl << e.what() << std::endl << std::endl;
-                if (obj->stop_error)
-                    return GST_STATE_CHANGE_FAILURE;
-            }
-            break;
-        default:
-            break;
-    }
-
-    auto state_change_ret = GST_ELEMENT_CLASS (parent_class)->change_state(element, transition);
-
-    switch (transition) {
-        case GST_STATE_CHANGE_READY_TO_NULL:
-            try {
+                ret = parent_element_class->change_state(element, transition);
+                break;
+            case GST_STATE_CHANGE_READY_TO_NULL:
+                ret = parent_element_class->change_state(element, transition);
                 /* close the device */
                 obj->drpai_controller->release_resources();
-            }
-            catch (std::runtime_error &e) {
-                std::cerr << std::endl << e.what() << std::endl << std::endl;
-                state_change_ret = GST_STATE_CHANGE_FAILURE;
-            }
-            delete obj->drpai_controller;
-            break;
-        default:
-            break;
+                break;
+            default:
+                ret = parent_element_class->change_state(element, transition);
+                break;
+        }
     }
-    return state_change_ret;
+    catch (std::runtime_error &e) {
+        std::cerr << std::endl << e.what() << std::endl << std::endl;
+        if (obj->stop_error)
+            return GST_STATE_CHANGE_FAILURE;
+    }
+    return ret;
 }
 
 static void gst_drpai_set_property(GObject *object, const guint prop_id, const GValue *value, GParamSpec *pspec) {
@@ -226,7 +217,7 @@ static void gst_drpai_init(GstDRPAI* self) {
     GST_PAD_SET_PROXY_CAPS (self->srcpad);
     gst_element_add_pad(GST_ELEMENT (self), self->srcpad);
 
-    self->drpai_controller = new DRPAI_Controller();
+    self->drpai_controller = std::make_unique<DRPAI_Controller>();
     self->stop_error = TRUE;
 }
 

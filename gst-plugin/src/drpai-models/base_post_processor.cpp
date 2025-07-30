@@ -60,17 +60,33 @@ void BasePostProcessor::open_resource(uint32_t inference_output_size,
     BasePostProcessor::num_classes = num_classes;
 }
 
+void BasePostProcessor::print_string_hr(const std::vector<std::string> &labels) const {
+    std::cout << "DRP-AI detected items:  ";
+    for (const auto &detection: detections) {
+        std::cout << detection.to_string_hr(labels) + "\t";
+    }
+    std::cout << std::endl;
+}
+
 std::string BasePostProcessor::get_status() const {
     return "";
+}
+
+json_array BasePostProcessor::get_detections_json(const std::vector<std::string>& labels) const
+{
+    json_array a;
+    for(const auto &detection: detections)
+        a.add(detection.get_json(labels));
+    return a;
 }
 
 /// Get a json object containing detections to be used in UDP packets.
 /// It uses the function `BasePostProcessor::get_detections_json` and places it in the key `detections`.
 /// This function can get overridden by the child class to add extra info to the json object.
 /// @returns A json_object containing detections
-json_object BasePostProcessor::get_json(const std::vector<std::string>& labels) {
+json_object BasePostProcessor::get_json(const std::vector<std::string>& labels) const {
     json_object j;
-    j.add("detections", detections.get_json(labels));
+    j.add("detections", get_detections_json(labels));
     return j;
 }
 

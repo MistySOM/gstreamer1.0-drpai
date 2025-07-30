@@ -47,6 +47,7 @@
 #ifndef GST_PLUGIN_DRPAI_H
 #define GST_PLUGIN_DRPAI_H
 
+#include <memory>
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
@@ -63,7 +64,7 @@ struct _GstDRPAI: GstElement
 
   gboolean stop_error;
 
-  DRPAI_Controller *drpai_controller;
+  std::unique_ptr<DRPAI_Controller> drpai_controller;
 };
 
 GST_DEBUG_CATEGORY_STATIC (gst_drpai_debug);

@@ -3,7 +3,8 @@
 //
 
 #include "drpai_controller.h"
-#include "drpai-models/drpai-yolo/yolo_post_processor.h"
+#include "drpai-models/base_drpai.h"
+#include "drpai-models/base_post_processor.h"
 #ifdef ENABLE_TVM
 #include "drpai-models/drpai-tvm/tvm_drpai.h"
 #endif
@@ -29,29 +30,16 @@ void DRPAI_Controller::open_resources() {
     else
         thread_state = Ready;
 
-    /* Obtain udmabuf memory area starting address */
-    uint64_t udmabuf_address;
-    {
-        std::ifstream file ("/sys/class/u-dma-buf/udmabuf0/phys_addr", std::ifstream::in);
-        if (!file.is_open())
-            throw std::runtime_error("[ERROR] Failed to open udmabuf0/phys_addr : errno="  + std::string(std::strerror(errno)));
-        file >> std::hex >> udmabuf_address;
-        file.close();
-    }
-    /* Filter the bit higher than 32 bit */
-    udmabuf_address &=0xFFFFFFFF;
-
     /**********************************************************************/
     /* Inference preparation                                              */
     /**********************************************************************/
 
     /* Read DRP-AI Object files address and size */
-    drpai->open_resource(udmabuf_address, true);
+    drpai->open_resource(true);
     std::cout <<"DRP-AI Ready!" << std::endl;
 }
 
 void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
-    const auto t0 = std::chrono::high_resolution_clock::now();
     if (drpai->rate.get_max_rate() != 0) {
         switch (thread_state) {
             case Failed:
@@ -71,7 +59,6 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
                 break;
         }
     }
-    const auto t1 = std::chrono::high_resolution_clock::now();
 
     if(drpai->rate.get_max_rate() != 0 && !multithread)
         try {
@@ -84,9 +71,8 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
             throw;
         }
 
-    Image img (image_mapped_udma->img_w, image_mapped_udma->img_h, image_mapped_udma->img_c, BGR_DATA, img_data);
+    const Image img (image_mapped_udma->img_w, image_mapped_udma->img_h, image_mapped_udma->img_c, BGR_DATA, img_data);
     video_rate.inform_frame();
-    const auto t2 = std::chrono::high_resolution_clock::now();
 
     /* Compute the result, draw the result on img and display it on console */
     std::vector<std::string> corner_text {};
@@ -111,26 +97,18 @@ void DRPAI_Controller::process_image(uint8_t* img_data, uint32_t img_data_len) {
         det_filterer.render_filter_region(img);
     }
     if (show_bbox) {
+        std::unique_lock state_lock(detections_mutex);
         if (det_tracker.active) {
             for (const auto& tracked: det_tracker.last_tracked_detection) {
                 img.draw_rect(tracked->smooth_bbox.mix, tracked->to_string_hr(show_track_id, labels));
             }
         } else {
-            postprocessor->detections.draw(img, labels);
+            for (const auto& detection: postprocessor->detections) {
+                img.draw_rect(detection.bbox, detection.to_string_hr(labels));
+            }
         }
     }
     img.render_text_at_corner(corner_text);
-    const auto t3 = std::chrono::high_resolution_clock::now();
-
-    if (log_exec_time) {
-        const auto ms_int0 = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-        const auto ms_int1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        const auto ms_int2 = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
-        std::cout << std::endl << "Video Frame Times:" << std::endl;
-        std::cout << "UDMA copy:\t" << ms_int0 << "ms" << std::endl;
-        std::cout << "Image define:\t" << ms_int1 << "ms"<< std::endl;
-        std::cout << "Render bbox:\t" << ms_int2 << "ms"<< std::endl;
-    }
 }
 
 void DRPAI_Controller::set_socket_address(const std::string& address) {
@@ -177,7 +155,8 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
             std::to_string(drpai->IN_WIDTH) + "x" + std::to_string(drpai->IN_HEIGHT));
 
     image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
-    image_mapped_udma->map_udmabuf();
+    image_mapped_udma->map_dma_buffer();
+    drpai->set_data_in_address(image_mapped_udma->get_dma_buffer_physical_address());
 
     postprocessor->open_resource(drpai->drpai_output_buf.size(),
         image_width, image_height, labels.size());
@@ -193,7 +172,7 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
 void DRPAI_Controller::release_resources() {
     if(process_thread) {
         {
-            std::unique_lock<std::mutex> state_lock(state_mutex);
+            std::unique_lock state_lock(state_mutex);
             thread_state = Closing;
             v.notify_one();
         }
@@ -246,14 +225,17 @@ void DRPAI_Controller::thread_function_single() {
         drpai->run_inference();
         const auto t3 = std::chrono::high_resolution_clock::now();
 
-        postprocessor->extract_detections(drpai->drpai_output_buf);
-        const auto t4 = std::chrono::high_resolution_clock::now();
+        auto t4 = t3;
+        {
+            std::unique_lock state_lock(detections_mutex);
+            postprocessor->extract_detections(drpai->drpai_output_buf);
+            t4 = std::chrono::high_resolution_clock::now();
 
-        det_filterer.apply(postprocessor->detections.get_current());
-        if(det_tracker.active) {
-            det_tracker.track(postprocessor->detections.get_current());
+            det_filterer.apply(postprocessor->detections);
+            if(det_tracker.active) {
+                det_tracker.track(postprocessor->detections);
+            }
         }
-        postprocessor->detections.submit_current();
         const auto t5 = std::chrono::high_resolution_clock::now();
 
         check_save_bmp();
@@ -267,7 +249,7 @@ void DRPAI_Controller::thread_function_single() {
             if (det_tracker.active) {
                 det_tracker.print_string_hr(labels);
             } else {
-                postprocessor->detections.print_string_hr(labels);
+                postprocessor->print_string_hr(labels);
             }
         }
 
@@ -280,8 +262,8 @@ void DRPAI_Controller::thread_function_single() {
             const auto ms_int5 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count();
             const auto ms_int6 = std::chrono::duration_cast<std::chrono::milliseconds>(t7 - t6).count();
             std::cout << std::endl << "Execution Times:" << std::endl;
-            std::cout << "Lock:\t" << ms_int0 << "ms" << std::endl;
-            std::cout << "UDMA prepare:\t" << ms_int1 << "ms"<< std::endl;
+            std::cout << "Wait:\t" << ms_int0 << "ms" << std::endl;
+            std::cout << "DMA flush:\t" << ms_int1 << "ms"<< std::endl;
             std::cout << "Inference:\t" << ms_int2 << "ms"<< std::endl;
             drpai->print_log_exec_time();
             std::cout << "Extract:\t" << ms_int3 << "ms"<< std::endl;
@@ -294,11 +276,15 @@ void DRPAI_Controller::thread_function_single() {
             std::cout << "DRPAI recovered after retrying." << std::endl;
             error_retries = 0;
         }
-    } catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        error_retries++;
-        if (error_retries >= 3) {
-            throw std::runtime_error("thread failed 3 consequent times. Letting the GStreamer know.");
+    } catch (const std::exception& e) {
+        if (thread_state != Closing) {
+            std::cerr << e.what() << std::endl;
+            error_retries++;
+            if (error_retries >= 3) {
+                throw std::runtime_error("thread failed 3 consequent times. Letting the GStreamer know.");
+            }
+        } else {
+            throw e;
         }
     }
 }
@@ -537,7 +523,7 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
     }
 }
 
-void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, _GParamSpec*>& params) {
+void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSpec*>& params) {
     params.emplace(PROP_MODEL, g_param_spec_string(
         "model", "Model",
         "The name of the pretrained model and the directory prefix.",
@@ -665,7 +651,7 @@ void DRPAI_Controller::check_save_bmp() {
         return;
 
     /* Bitmap saving for fewer probabilities */
-    for (auto det : postprocessor->detections.get_last()) {
+    for (auto det : postprocessor->detections) {
         if (det.prob < bitmap_save_class_probability) {
             const auto& name = labels.at(det.c);
             if (bitmap_save_classes.empty() || std_find(bitmap_save_classes, name) != bitmap_save_classes.end()) {

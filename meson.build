@@ -14,5 +14,9 @@ gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.16.3',
 thread_dep = dependency('threads')
 dl_dep = cxx.find_library('dl', required : true)
 
+enable_mmngr = get_option('mmngr')
+mmngr_dep = cxx.find_library('mmngr', required : enable_mmngr)
+mmngrbuf_dep = cxx.find_library('mmngrbuf', required : enable_mmngr)
+
 subdir('gst-app')
 subdir('gst-plugin')

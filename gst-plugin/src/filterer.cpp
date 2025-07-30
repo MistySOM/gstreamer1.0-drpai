@@ -56,13 +56,16 @@ void filterer::apply(std::list<detection> &d) const {
         /* Skip the bounding boxes outside of region of interest */
         if (!filter_classes.empty()) {
             const auto f = filter_classes.find(det->c);
-            if (f == filter_classes.end())
-                det = d.erase(det);
-            else
-                det->bbox.color = f->second; // colorBGR
+            if (f == filter_classes.end()) {
+                det = --d.erase(det);
+                continue;
+            }
+            det->bbox.color = f->second; // colorBGR
         }
-        if ((filter_region & det->bbox) == 0)
-            det = d.erase(det);
+
+        if ((filter_region & det->bbox) == 0) {
+            det = --d.erase(det);
+        }
     }
 }
 

@@ -15,9 +15,11 @@ public:
 
     void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height, uint32_t num_classes) override;
     void extract_detections(const std::vector<float>& inference_output_buf) override;
+    void print_string_hr(const std::vector<std::string> &labels) const override;
 
     [[nodiscard]] std::string get_status() const override;
-    [[nodiscard]] json_object get_json(const std::vector<std::string>& labels) override;
+    [[nodiscard]] json_array get_detections_json(const std::vector<std::string> &labels) const override;
+    [[nodiscard]] json_object get_json(const std::vector<std::string>& labels) const override;
 };
 
 

@@ -38,7 +38,7 @@ struct tracked_detection {
     [[nodiscard]] std::string to_string_hr(const bool include_id, const std::vector<std::string>& labels) const {
         std::string r = labels.at(c) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
         if (include_id)
-            r = std::to_string(id) + r;
+            r = std::to_string(id) + "." + r;
         return r;
     }
     [[nodiscard]] json_object get_json(const std::vector<std::string>& labels) const;

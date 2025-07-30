@@ -7,12 +7,15 @@
 
 void Dummy_PostProcessor::extract_detections(const std::vector<float>& inference_output_buf)
 {
-    auto& det_list = detections.get_current();
-    det_list.clear();
+    detections.clear();
+}
+
+void Dummy_PostProcessor::print_string_hr(const std::vector<std::string> &labels) const {
+    BasePostProcessor::print_string_hr(labels);
 }
 
 void Dummy_PostProcessor::open_resource(const uint32_t inference_output_size,
-    const uint32_t img_width, uint32_t const img_height, const uint32_t num_classes) {
+                                        const uint32_t img_width, uint32_t const img_height, const uint32_t num_classes) {
     BasePostProcessor::open_resource(inference_output_size, img_width, img_height, num_classes);
 }
 
@@ -20,7 +23,11 @@ std::string Dummy_PostProcessor::get_status() const {
     return "";
 }
 
-json_object Dummy_PostProcessor::get_json(const std::vector<std::string>& labels) {
+json_array Dummy_PostProcessor::get_detections_json(const std::vector<std::string> &labels) const {
+    return BasePostProcessor::get_detections_json(labels);
+}
+
+json_object Dummy_PostProcessor::get_json(const std::vector<std::string>& labels) const {
     return BasePostProcessor::get_json(labels);
 }
 
