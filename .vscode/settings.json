@@ -1,0 +1,45 @@
+{
+    "terminal.integrated.profiles.linux": {
+        "bash": {
+            "path": "/bin/bash",
+            "args": [],
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "editor.formatOnSave": true,
+    "C_Cpp.default.compileCommands": "/workspace/build/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+    "C_Cpp.codeAnalysis.runAutomatically": true,
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.codeAction.formatFixes": true,
+    "C_Cpp.codeAnalysis.clangTidy.headerFilter": "^/workspace/.*",
+    "C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
+        "modernize-*",
+        "performance-*",
+        "bugprone-*",
+        "readability-*",
+        "clang-analyzer-*",
+        "concurrency-*",
+        "cppcoreguidelines-*"
+    ],
+    "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+        "modernize-use-trailing-return-type",
+        "readability-identifier-length",
+        "bugprone-easily-swappable-parameters",
+        "bugprone-implicit-widening-of-multiplication-result",
+        "performance-avoid-endl",
+        "cppcoreguidelines-non-private-member-variables-in-classes",
+        "cppcoreguidelines-pro-type-reinterpret-cast"
+    ],
+    "mesonbuild.configureOnOpen": true,
+    "mesonbuild.buildFolder": "/workspace/build",
+    "mesonbuild.downloadLanguageServer": true,
+    "mesonbuild.formatting.enabled": true,
+    "mesonbuild.linting.enabled": true,
+    "mesonbuild.linter.mesonlsp.enabled": true,
+    "mesonbuild.linter.muon.enabled": false,
+    "mesonbuild.languageServer": "mesonlsp",
+    "files.associations": {
+        "array": "cpp"
+    }
+}

@@ -2,10 +2,11 @@
 // Created by matin on 02/02/24.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_PROPERTIES_H
-#define GSTREAMER1_0_DRPAI_PROPERTIES_H
+#pragma once
 
-enum GstDRPAI_Properties {
+#include <cstdint>
+
+enum GstDRPAI_Properties : std::uint8_t {
     PROP_0,
     PROP_MULTITHREAD,
     PROP_MODEL,
@@ -44,5 +45,3 @@ enum GstDRPAI_Properties {
     PROP_BITMAP_SAVE_PROB,
     PROP_BITMAP_SAVE_CLASS,
 };
-
-#endif //GSTREAMER1_0_DRPAI_PROPERTIES_H

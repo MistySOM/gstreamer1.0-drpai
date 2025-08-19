@@ -2,7 +2,7 @@
 // Created by matin on 01/11/24.
 //
 
-#include "tvm_drpai.h"
+#include "drpai_tvm.h"
 #include <builtin_fp16.h>
 
 /*****************************************
@@ -11,13 +11,13 @@
 * Arguments         : a = uint16_t number
 * Return value      : float = float32 number
 ******************************************/
-float float16_to_float32(const uint16_t a)
+static float float16_to_float32(const uint16_t a)
 {
     return __extendXfYf2__<uint16_t, uint16_t, 10, float, uint32_t, 23>(a);
 }
 
-void TVM_DRPAI::open_resource(const bool open_files) {
-    BaseDRPAI::open_resource(false);
+void DRPAI_TVM::open_resource(const bool open_files) {
+    DRPAI_Native::open_resource(false);
 
     /*Load pre_dir object to DRP-AI */
     auto ret = preruntime.Load(prefix + "/preprocess");
@@ -68,11 +68,11 @@ void TVM_DRPAI::open_resource(const bool open_files) {
     drpai_output_buf.resize(output_size);
 }
 
-void TVM_DRPAI::set_data_in_address(uint32_t data_in_address) {
+void DRPAI_TVM::set_data_in_address(uint32_t data_in_address) {
     in_param.pre_in_addr = data_in_address;
 }
 
-void TVM_DRPAI::run_inference() {
+void DRPAI_TVM::run_inference() {
     rate.inform_frame();
 
     void* preprocess_output_ptr = nullptr;
@@ -160,13 +160,13 @@ void TVM_DRPAI::run_inference() {
     ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
 }
 
-TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
-    BaseDRPAI(prefix),
+DRPAI_TVM::DRPAI_TVM(const std::string &prefix):
+    DRPAI_Native(prefix),
     input_data_type(InOutDataType::OTHER)
 {
 }
 
-void TVM_DRPAI::print_log_exec_time() const {
+void DRPAI_TVM::print_log_exec_time() const {
     std::cout << "\tPreRuntime:\t" + std::to_string(ms_int1) << "ms" << std::endl;
     std::cout << "\tRuntimeTVM:\t" + std::to_string(ms_int2) << "ms" << std::endl;
     std::cout << "\tF16 to F32:\t" + std::to_string(ms_int3) << "ms" << std::endl;

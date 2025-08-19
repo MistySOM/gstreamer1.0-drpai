@@ -11,3 +11,8 @@ filter_test = executable('filter_test', 'filter_test.cpp', include_directories :
 )
 test('Filtering Inactive', filter_test)
 test('Filtering Classes', filter_test, args: ['class'])
+
+image_test = executable('image_test', 'image_test.cpp', include_directories : incdir,
+    dependencies: [thread_dep, gstdrpai_dep]
+)
+test('Image Save Bitmap File', image_test, args: ['save_bmp'])

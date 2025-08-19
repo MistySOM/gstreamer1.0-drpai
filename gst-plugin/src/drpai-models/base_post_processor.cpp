@@ -11,40 +11,43 @@
 /// @param [in] param The name of the parameter. must be in [name] format without any spaces.
 /// @param [in] error_not_found If not found, returns empty string when False and throws exception when True.
 /// @returns the value of the parameter. if not found, it will be empty string.
-std::string BasePostProcessor::get_param(const std::string& params_file_name, const std::string& param, bool error_not_found)
+std::string BasePostProcessor::get_param(const std::string &params_file_name, const std::string &param,
+                                         bool error_not_found)
 {
     std::ifstream infile(params_file_name);
-    if (!infile.is_open())
+    if (!infile.is_open()) {
         throw std::runtime_error("[ERROR] Failed to open param in file: " + params_file_name);
+    }
 
-    bool found = false;
+    bool        found = false;
     std::string line;
-    while (getline(infile,line))
-    {
-        line.erase( remove(line.begin(), line.end(), ' ' ), line.end() );
-        if (infile.fail())
+    while (getline(infile, line)) {
+        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+        if (infile.fail()) {
             throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);
-        if (line.empty())
+        }
+        if (line.empty()) {
             continue;
+        }
         if (found) {
             infile.close();
             return line;
         }
-        if (line == param)
+        if (line == param) {
             found = true;
+        }
     }
     infile.close();
-    if (error_not_found)
-        throw std::runtime_error("[ERROR] Failed to find param '"+ param + "' in file: " + params_file_name);
-    else
-        return "";
+    if (error_not_found) {
+        throw std::runtime_error("[ERROR] Failed to find param '" + param + "' in file: " + params_file_name);
+    }
+    return "";
 }
 
 /// Class constructor, capturing the DRP-AI object files prefix.
 /// @param [in] prefix The prefix of the DRP-AI object files.
-BasePostProcessor::BasePostProcessor(const std::string &prefix):
-    prefix(prefix),
-    params_file_name(prefix + "/" + prefix + "_post_process_params.txt")
+BasePostProcessor::BasePostProcessor(const std::string &prefix) :
+    prefix(prefix), params_file_name(prefix + "/" + prefix + "_post_process_params.txt")
 {
 }
 
@@ -53,14 +56,16 @@ BasePostProcessor::BasePostProcessor(const std::string &prefix):
 /// @param [in] inference_output_size The size of output layer
 /// @param [in] img_width The width of the input image to match bounding box locations.
 /// @param [in] img_height The height of the input image to match bounding box locations.
-void BasePostProcessor::open_resource(uint32_t inference_output_size,
-    const uint32_t img_width, const uint32_t img_height, const uint32_t num_classes) {
-    BasePostProcessor::img_width = img_width;
-    BasePostProcessor::img_height = img_height;
+void BasePostProcessor::open_resource(uint32_t inference_output_size, const uint32_t img_width,
+                                      const uint32_t img_height, const uint32_t num_classes)
+{
+    BasePostProcessor::img_width   = img_width;
+    BasePostProcessor::img_height  = img_height;
     BasePostProcessor::num_classes = num_classes;
 }
 
-void BasePostProcessor::print_string_hr(const std::vector<std::string> &labels) const {
+void BasePostProcessor::print_string_hr(const std::vector<std::string> &labels) const
+{
     std::cout << "DRP-AI detected items:  ";
     for (const auto &detection: detections) {
         std::cout << detection.to_string_hr(labels) + "\t";
@@ -68,15 +73,14 @@ void BasePostProcessor::print_string_hr(const std::vector<std::string> &labels) 
     std::cout << std::endl;
 }
 
-std::string BasePostProcessor::get_status() const {
-    return "";
-}
+std::string BasePostProcessor::get_status() const { return ""; }
 
-json_array BasePostProcessor::get_detections_json(const std::vector<std::string>& labels) const
+json_array BasePostProcessor::get_detections_json(const std::vector<std::string> &labels) const
 {
     json_array a;
-    for(const auto &detection: detections)
+    for (const auto &detection: detections) {
         a.add(detection.get_json(labels));
+    }
     return a;
 }
 
@@ -84,7 +88,8 @@ json_array BasePostProcessor::get_detections_json(const std::vector<std::string>
 /// It uses the function `BasePostProcessor::get_detections_json` and places it in the key `detections`.
 /// This function can get overridden by the child class to add extra info to the json object.
 /// @returns A json_object containing detections
-json_object BasePostProcessor::get_json(const std::vector<std::string>& labels) const {
+json_object BasePostProcessor::get_json(const std::vector<std::string> &labels) const
+{
     json_object j;
     j.add("detections", get_detections_json(labels));
     return j;
@@ -93,18 +98,22 @@ json_object BasePostProcessor::get_json(const std::vector<std::string>& labels) 
 /// Parses a string to boolean
 /// @param [in] str A string containing either variation of "true", "false", or "1", "0" to be changed to a boolean.
 /// @returns A boolean
-bool BasePostProcessor::to_bool(std::string str) {
+bool BasePostProcessor::to_bool(std::string str)
+{
     str.erase(str.find_last_not_of("\t\n\v\f\r ") + 1); // right trim
     str.erase(0, str.find_first_not_of("\t\n\v\f\r ")); // left trim
-    if (str == "1")
+    if (str == "1") {
         return true;
-    if (str == "0")
+    }
+    if (str == "0") {
         return false;
-    std::transform(str.begin(), str.end(), str.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
-    if (str == "true")
+    }
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+    if (str == "true") {
         return true;
-    if (str == "false")
+    }
+    if (str == "false") {
         return false;
+    }
     throw std::runtime_error("Can't convert '" + str + "' to boolean.");
 }

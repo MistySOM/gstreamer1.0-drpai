@@ -5,15 +5,15 @@
 #ifndef DRPAI_TVM_H
 #define DRPAI_TVM_H
 
-#include "drpai-models/base_drpai.h"
+#include "drivers/drpai_native.h"
 #include "PreRuntime.h"
 #include "MeraDrpRuntimeWrapper.h"
 
-class TVM_DRPAI final : public BaseDRPAI {
+class DRPAI_TVM final : public DRPAI_Native {
 
 public:
-    explicit TVM_DRPAI(const std::string& prefix);
-    ~TVM_DRPAI() override = default;
+    explicit DRPAI_TVM(const std::string& prefix);
+    ~DRPAI_TVM() override = default;
 
     void run_inference() override;
     void open_resource(bool open_files) override;
