@@ -4,6 +4,9 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "runArgs": [
+    "--name=vscode-gstreamer1.0-drpai"
+  ],
   "remoteUser": "ubuntu",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
@@ -12,6 +15,10 @@
     "source=/opt/poky,target=/opt/poky,type=bind",
     "source=/tmp,target=/tmp,type=bind"
   ],
+  "remoteEnv": {
+    "POKY_VERSION": "3.1.31",
+    "PATH": "${containerEnv:PATH}:/opt/poky/3.1.31/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux"
+  },
   "onCreateCommand": "/workspace/setup_env.sh",
   "customizations": {
     "jetbrains": {
@@ -26,7 +33,8 @@
       "extensions": [
         "ms-vscode.cpptools",
         "ms-python.python",
-        "mesonbuild.mesonbuild"
+        "mesonbuild.mesonbuild",
+        "cnshenj.vscode-task-manager"
         // Extension ID can be found on the corresponding extension’s page at https://marketplace.visualstudio.com.
       ]
     }

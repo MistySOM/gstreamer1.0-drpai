@@ -1,23 +1,29 @@
-FROM debian:trixie
+FROM ubuntu:24.04
+
+RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu/|http://ca.archive.ubuntu.com/ubuntu/|' /etc/apt/sources.list.d/ubuntu.sources
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        bash-completion \
-        clang-tidy \
-        gdb \
-        git \
-        g++ \
-        meson \
-        ninja-build \
-        libgstreamer1.0-dev \
-        libgstreamer-plugins-base1.0-dev \
-        openssh-client \
-        sudo \
-        && \
-        rm -rf /var/lib/apt/lists/*
+    bash-completion \
+    ca-certificates \
+    clang-tidy \
+    file \
+    findutils \
+    gdb \
+    git \
+    g++ \    
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \    
+    ninja-build \
+    openssh-client \
+    python3-pip \
+    sudo \
+    unzip \
+    wget \
+    xz-utils \
+    && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN useradd --shell /bin/bash --create-home ubuntu
-RUN usermod -aG sudo ubuntu && \
-    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER ubuntu

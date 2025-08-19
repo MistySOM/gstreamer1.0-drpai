@@ -4,19 +4,34 @@
         {
             "type": "shell",
             "label": "Meson: Setup x86",
-            "command": "meson setup --reconfigure -Dtvm=disabled -Dmmngr=disabled --wipe /workspace/build",
+            "command": "rm -rf /workspace/build && /usr/bin/meson setup -Dtvm=disabled -Dmmngr=disabled /workspace/build",
+            "problemMatcher": [
+                "$meson-gcc"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Meson: Setup Aarch64 Poky",
+            "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
             "problemMatcher": [
                 "$meson-gcc"
             ]
         },
         {
             "type": "meson",
+            "label": "Meson: Build",
             "mode": "build",
             "problemMatcher": [
                 "$meson-gcc"
             ],
-            "group": "build",
-            "label": "Meson: Build x86"
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Start GDB Server",
+            "command": "ssh root@192.168.100.138 gdbserver :1234 /home/root/gst-launch",
+            "isBackground": true,
+            "problemMatcher": []
         }
     ]
 }

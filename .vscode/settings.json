@@ -39,6 +39,11 @@
     "mesonbuild.linter.mesonlsp.enabled": true,
     "mesonbuild.linter.muon.enabled": false,
     "mesonbuild.languageServer": "mesonlsp",
+    "mesonbuild.configureOptions": [
+        "-Dbuildtype=debug",
+        "-Dmmngr=disabled",
+        "-Dtvm=disabled"
+    ],
     "files.associations": {
         "array": "cpp"
     }

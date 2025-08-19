@@ -385,17 +385,17 @@ void Image::render_text_at_corner(const std::vector<std::string> &corner_text) c
 
 uint32_t Image::get_dma_buffer_physical_address() const { return dma_buffer->get_physical_address(); }
 
-constexpr void write_u16(std::vector<char> &buffer, uint16_t value)
+inline static void write_u16(std::vector<char> &buffer, uint16_t value)
 {
     buffer.push_back(static_cast<char>(BYTE_MASK & (value >> 0)));
     buffer.push_back(static_cast<char>(BYTE_MASK & (value >> BITS_PER_BYTE)));
 }
-constexpr void write_u32(std::vector<char> &buffer, uint32_t value)
+inline static void write_u32(std::vector<char> &buffer, uint32_t value)
 {
     write_u16(buffer, value >> 0);
     write_u16(buffer, value >> (BITS_PER_BYTE * sizeof(uint16_t)));
 }
-constexpr void write_u64(std::vector<char> &buffer, uint64_t value)
+inline static void write_u64(std::vector<char> &buffer, uint64_t value)
 {
     write_u32(buffer, value >> 0);
     write_u32(buffer, value >> (BITS_PER_BYTE * sizeof(uint32_t)));

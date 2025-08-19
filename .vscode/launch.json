@@ -5,19 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch x86",
+            "name": "Remote Debugging",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/gst-plugin/tests/image_test",
-            "args": [
-                "save_bmp"
-            ],
-            "stopAtEntry": false,
+            "program": "${workspaceFolder}/build/gst-app/gst-launch",
             "cwd": "${workspaceFolder}",
+            "args": [],
+            "stopAtEntry": false,
             "environment": [],
-            "externalConsole": false,
+            "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
+            "miDebuggerPath": "/opt/poky/3.1.21/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/aarch64-poky-linux-gdb",
+            "miDebuggerServerAddress": "192.168.100.138:1234",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -25,7 +24,8 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Meson: Build x86",
-        },
+            "preLaunchTask": "Start GDB Server",
+            "postDebugTask": ""
+        }
     ]
 }
