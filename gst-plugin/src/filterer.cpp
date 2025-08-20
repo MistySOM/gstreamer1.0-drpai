@@ -65,7 +65,7 @@ void filterer::apply(std::list<detection> &d) const
     for (auto det = d.begin(); det != d.end(); ++det) {
         /* Skip the bounding boxes outside of region of interest */
         if (!filter_classes.empty()) {
-            if (!filter_classes.contains(det->c)) {
+            if (filter_classes.find(det->c) == filter_classes.end()) {
                 det = --d.erase(det);
                 continue;
             }
