@@ -20,7 +20,7 @@
 #include <iostream>
 #include <memory>
 
-static constexpr std::size_t CURRENT_TIME_STRING_LEN = 25;
+static constexpr std::size_t CURRENT_TIME_STRING_LEN = 22;
 
 void DRPAI_Controller::open_resources()
 {
