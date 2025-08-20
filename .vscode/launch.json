@@ -28,7 +28,14 @@
                     "text": "python register_libstdcxx_printers(None)"
                 },
                 {
-                    "text": "set auto-solib-add off"
+                    "text": "set sysroot target:",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "set auto-load off"
+                },
+                {
+                    "text": "sharedlibrary ^libgst.*"
                 },
                 {
                     "description": "Enable pretty-printing for gdb",
