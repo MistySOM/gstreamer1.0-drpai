@@ -21,7 +21,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Remote GDB Server: Start"
+            "preLaunchTask": "Remote: Start GDB Server"
         }
     ]
 }

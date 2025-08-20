@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "Meson: Setup x86",
-            "command": "rm -rf /workspace/build && /usr/bin/meson setup -Dtvm=disabled -Dmmngr=disabled /workspace/build",
+            "command": "rm -rf /workspace/build && /usr/bin/meson setup --buildtype=${input:build_type} -Dtvm=disabled -Dmmngr=disabled /workspace/build",
             "problemMatcher": [
                 "$meson-gcc"
             ]
@@ -12,7 +12,7 @@
         {
             "type": "shell",
             "label": "Meson: Setup Aarch64 Poky",
-            "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
+            "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --buildtype=${input:build_type} --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
             "problemMatcher": [
                 "$meson-gcc"
             ]
@@ -28,7 +28,16 @@
         },
         {
             "type": "shell",
-            "label": "Remote GDB Server: Start",
+            "label": "Remote: Deploy",
+            "command": "/workspace/scripts/remote_deploy.sh",
+            "dependsOn": [
+                "Meson: Build",
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "type": "shell",
+            "label": "Remote: Start GDB Server",
             "command": "/workspace/scripts/remote_debug.sh",
             "presentation": {
                 "echo": true,
@@ -64,9 +73,22 @@
                 }
             },
             "dependsOn": [
-                "Meson: Build"
+                "Meson: Build",
+                "Remote: Deploy"
             ],
             "dependsOrder": "sequence"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "build_type",
+            "type": "pickString",
+            "description": "Select the meson build type",
+            "default": "debug",
+            "options": [
+                "debug",
+                "release"
+            ]
         }
     ]
 }
