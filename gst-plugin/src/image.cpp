@@ -421,7 +421,7 @@ void Image::save_bmp(const std::string &filename) const
     const uint32_t     bf_size             = (line_width_padded * img_h) + header_size;
     std::cout << "Outputing Image File : " << filename << std::endl;
 
-    std::ofstream file(filename, std::fstream::out | std::fstream::binary);
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("[ERROR] Could not open the file " + filename + "for writing.");
     }
