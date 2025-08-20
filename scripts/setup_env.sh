@@ -23,4 +23,4 @@ sudo ${POKY_PIP} install meson --upgrade --root-user-action=ignore
 sudo ln -s ${OECORE_NATIVE_SYSROOT}/usr/bin/meson /usr/bin/meson
 
 git config --global --add safe.directory /workspace/gst-plugin/src/drivers/drpai-tvm/rzv_drp-ai_tvm
-git submodule update --init --recursive
+git submodule update --init --recursive --recommend-shallow

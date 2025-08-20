@@ -10,13 +10,10 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/gst-app/gst-launch",
             "cwd": "${workspaceFolder}",
-            "args": [],
             "stopAtEntry": false,
-            "environment": [],
-            "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerPath": "/opt/poky/3.1.21/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux/aarch64-poky-linux-gdb",
-            "miDebuggerServerAddress": "192.168.100.138:1234",
+            "miDebuggerPath": "aarch64-poky-linux-gdb",
+            "miDebuggerServerAddress": "127.0.0.1:${env:GDB_PORT}",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -24,8 +21,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Start GDB Server",
-            "postDebugTask": ""
+            "preLaunchTask": "Remote GDB Server: Start"
         }
     ]
 }

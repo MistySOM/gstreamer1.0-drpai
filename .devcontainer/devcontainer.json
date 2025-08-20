@@ -11,15 +11,18 @@
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/home/ubuntu/.ssh,type=bind,readonly",
+    "source=${localEnv:HOME}/.ssh,target=/home/ubuntu/.ssh,type=bind",
     "source=/opt/poky,target=/opt/poky,type=bind",
     "source=/tmp,target=/tmp,type=bind"
   ],
-  "remoteEnv": {
+  "containerEnv": {
     "POKY_VERSION": "3.1.31",
-    "PATH": "${containerEnv:PATH}:/opt/poky/3.1.31/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux"
+    "GDB_PORT": "1234"
   },
-  "onCreateCommand": "/workspace/setup_env.sh",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/opt/poky/${containerEnv:POKY_VERSION}/sysroots/x86_64-pokysdk-linux/usr/bin/aarch64-poky-linux"
+  },
+  "onCreateCommand": "/workspace/scripts/setup_env.sh",
   "customizations": {
     "jetbrains": {
       "backend": "IntelliJ",
