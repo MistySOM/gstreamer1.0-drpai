@@ -3,8 +3,16 @@
         "bash": {
             "path": "/bin/bash",
             "args": [],
-        }
+        },
+        "SSH MistySOM": {
+            "path": "/workspace/scripts/remote_ssh.sh",
+            "icon": "remote",
+            "overrideName": true
+        },
+        "JavaScript Debug Terminal": null,
     },
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.suggest.enabled": true,
     "terminal.integrated.defaultProfile.linux": "bash",
     "editor.formatOnSave": true,
     "C_Cpp.default.compileCommands": "/workspace/build/compile_commands.json",

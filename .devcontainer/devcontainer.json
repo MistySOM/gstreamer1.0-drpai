@@ -11,7 +11,7 @@
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "mounts": [
-    "source=${localEnv:HOME}/.ssh,target=/home/ubuntu/.ssh,type=bind",
+    "source=${localEnv:HOME}/.ssh,target=/home/ubuntu/.ssh,type=bind,readonly",
     "source=/opt/poky,target=/opt/poky,type=bind",
     "source=/tmp,target=/tmp,type=bind"
   ],

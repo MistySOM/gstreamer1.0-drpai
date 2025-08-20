@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Remote Debugging",
+            "name": "Remote Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/gst-app/gst-launch",
@@ -21,7 +21,8 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Remote: Start GDB Server"
+            "preLaunchTask": "Remote: Start GDB Server",
+            "postDebugTask": "Remote: Stop Gstreamer"
         }
     ]
 }

@@ -18,6 +18,7 @@ RUN apt-get update && \
     ninja-build \
     openssh-client \
     python3-pip \
+    rsync \
     sshpass \
     sudo \
     unzip \

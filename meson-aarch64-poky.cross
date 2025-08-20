@@ -7,7 +7,6 @@ strip = ['aarch64-poky-linux-strip']
 pkg-config = 'pkg-config'
 
 [built-in options]
-needs_exe_wrapper = true
 c_args = []
 c_link_args = []
 cpp_args = []

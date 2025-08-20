@@ -4,6 +4,9 @@
         {
             "type": "shell",
             "label": "Meson: Setup x86",
+            "icon": {
+                "id": "info"
+            },
             "command": "rm -rf /workspace/build && /usr/bin/meson setup --buildtype=${input:build_type} -Dtvm=disabled -Dmmngr=disabled /workspace/build",
             "problemMatcher": [
                 "$meson-gcc"
@@ -12,6 +15,9 @@
         {
             "type": "shell",
             "label": "Meson: Setup Aarch64 Poky",
+            "icon": {
+                "id": "info"
+            },
             "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --buildtype=${input:build_type} --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
             "problemMatcher": [
                 "$meson-gcc"
@@ -21,6 +27,9 @@
             "type": "meson",
             "label": "Meson: Build",
             "mode": "build",
+            "icon": {
+                "id": "package"
+            },
             "problemMatcher": [
                 "$meson-gcc"
             ],
@@ -30,8 +39,12 @@
             "type": "shell",
             "label": "Remote: Deploy",
             "command": "/workspace/scripts/remote_deploy.sh",
+            "icon": {
+                "id": "cloud-upload"
+            },
             "dependsOn": [
                 "Meson: Build",
+                "Remote: Stop Gstreamer"
             ],
             "dependsOrder": "sequence"
         },
@@ -39,6 +52,7 @@
             "type": "shell",
             "label": "Remote: Start GDB Server",
             "command": "/workspace/scripts/remote_debug.sh",
+            "promptOnClose": true,
             "presentation": {
                 "echo": true,
                 "reveal": "always",
@@ -51,7 +65,7 @@
                 "instanceLimit": 1
             },
             "icon": {
-                "id": "debug-disconnect",
+                "id": "debug",
                 "color": "terminal.ansiCyan"
             },
             "group": "build",
@@ -77,6 +91,40 @@
                 "Remote: Deploy"
             ],
             "dependsOrder": "sequence"
+        },
+        {
+            "type": "shell",
+            "label": "Remote: Launch without debugging",
+            "command": "${workspaceFolder}/scripts/remote_launch.sh",
+            "promptOnClose": true,
+            "icon": {
+                "id": "run"
+            },
+            "runOptions": {
+                "instanceLimit": 1,
+            },
+            "dependsOn": [
+                "Meson: Build",
+                "Remote: Deploy"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "type": "shell",
+            "label": "Remote: Stop Gstreamer",
+            "command": "${workspaceFolder}/scripts/remote_stop.sh",
+            "promptOnClose": true,
+            "icon": {
+                "id": "stop"
+            },
+            "runOptions": {
+                "instanceLimit": 1,
+            }
+        },
+        {
+            "type": "shell",
+            "label": "Remote: Open SSH",
+            "command": "${workspaceFolder}/scripts/remote_ssh.sh",
         }
     ],
     "inputs": [
