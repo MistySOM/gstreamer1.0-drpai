@@ -4,6 +4,9 @@ set -e
 
 source /workspace/.env
 
+DESTDIR=/opt/poky/3.1.31/sysroots/aarch64-poky-linux
+sudo meson install --quiet --destdir ${DESTDIR} -C build
+
 SOCK="/tmp/${MISTYSOM_USER}@${MISTYSOM_HOST}.ctl"
 
 # 1) Open a single persistent SSH control connection

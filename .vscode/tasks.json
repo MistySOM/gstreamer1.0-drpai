@@ -18,7 +18,7 @@
             "icon": {
                 "id": "info"
             },
-            "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --buildtype=${input:build_type} --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
+            "command": "(source /opt/poky/${POKY_VERSION}/environment-setup-aarch64-poky-linux; rm -rf /workspace/build; /usr/bin/meson setup --prefix /usr --libdir /usr/lib64 --buildtype=${input:build_type} --cross-file meson-aarch64-poky.cross -Dtvm=enabled -Dmmngr=enabled /workspace/build)",
             "problemMatcher": [
                 "$meson-gcc"
             ]

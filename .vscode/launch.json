@@ -10,7 +10,6 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/gst-app/gst-launch",
             "cwd": "${workspaceFolder}",
-            "stopAtEntry": false,
             "MIMode": "gdb",
             "miDebuggerPath": "aarch64-poky-linux-gdb",
             "miDebuggerServerAddress": "127.0.0.1:${env:GDB_PORT}",
@@ -28,14 +27,7 @@
                     "text": "python register_libstdcxx_printers(None)"
                 },
                 {
-                    "text": "set sysroot target:",
-                    "ignoreFailures": true
-                },
-                {
-                    "text": "set auto-load off"
-                },
-                {
-                    "text": "sharedlibrary ^libgst.*"
+                    "text": "set sysroot /opt/poky/3.1.31/sysroots/aarch64-poky-linux/"
                 },
                 {
                     "description": "Enable pretty-printing for gdb",
