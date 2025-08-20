@@ -28,6 +28,9 @@
                     "text": "python register_libstdcxx_printers(None)"
                 },
                 {
+                    "text": "set auto-solib-add off"
+                },
+                {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
