@@ -35,9 +35,11 @@
     "vscode": {
       "extensions": [
         "ms-vscode.cpptools",
+        "ms-vscode.cpptools-themes",
         "ms-python.python",
         "mesonbuild.mesonbuild",
-        "cnshenj.vscode-task-manager"
+        "cnshenj.vscode-task-manager",
+        "mhutchie.git-graph"
         // Extension ID can be found on the corresponding extension’s page at https://marketplace.visualstudio.com.
       ]
     }
