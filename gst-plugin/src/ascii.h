@@ -29,9 +29,9 @@
 #include <array>
 #include <vector>
 
-constexpr char ASCII_FIRST_PRINTABLE_CHAR = 0x20;
-constexpr char ASCII_LAST_PRINTABLE_CHAR  = 0x7e;
-constexpr char ASCII_STAR_CHAR_INDEX      = 0x7e;
+constexpr char ASCII_FIRST_PRINTABLE_CHAR = ' ';
+constexpr char ASCII_LAST_PRINTABLE_CHAR  = '~';
+constexpr char ASCII_STAR_CHAR_INDEX      = '*' - ASCII_FIRST_PRINTABLE_CHAR;
 constexpr bool ASCII_IS_PRINTABLE_CHAR(const char code)
 {
     return code >= ASCII_FIRST_PRINTABLE_CHAR && code <= ASCII_LAST_PRINTABLE_CHAR;

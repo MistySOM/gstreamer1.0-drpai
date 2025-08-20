@@ -88,7 +88,7 @@ void DRPAI_Controller::process_image(uint8_t *img_data, uint32_t img_data_len)
         const auto  now_time_t = std::chrono::system_clock::to_time_t(now);
         auto *const now_local  = std::localtime(&now_time_t);
         std::string current_time_str;
-        current_time_str.reserve(CURRENT_TIME_STRING_LEN);
+        current_time_str.resize(CURRENT_TIME_STRING_LEN);
         std::snprintf(current_time_str.data(), CURRENT_TIME_STRING_LEN, "Current Time: %02d:%02d:%02d",
                       now_local->tm_hour, now_local->tm_min, now_local->tm_sec);
         corner_text.emplace_back(current_time_str);

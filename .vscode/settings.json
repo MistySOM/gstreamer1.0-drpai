@@ -45,7 +45,4 @@
         "-Dtvm=disabled"
     ],
     "taskManager.exclude": "rzv_drp-ai_tvm",
-    "files.associations": {
-        "array": "cpp"
-    }
 }

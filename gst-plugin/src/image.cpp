@@ -428,7 +428,9 @@ void Image::save_bmp(const std::string &filename) const
 
     // Prepare the BMP file header
     std::vector<char> bmp_header = {'B', 'M'}; // BMP file signature
-    write_u32(bmp_header, bf_size);            // bf_size
+    bmp_header.reserve(header_size);
+
+    write_u32(bmp_header, bf_size); // bf_size
     write_u32(bmp_header, 0);
     write_u32(bmp_header, header_size);           // bf_off_bits
     write_u32(bmp_header, INFOHEADERSIZE_W_V3);   // bi_size
