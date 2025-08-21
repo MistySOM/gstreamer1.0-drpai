@@ -20,8 +20,6 @@
 #include <iostream>
 #include <memory>
 
-static constexpr std::size_t CURRENT_TIME_STRING_LEN = 22;
-
 void DRPAI_Controller::open_resources()
 {
     if (drpai->rate.get_max_rate() == 0) {
@@ -84,14 +82,12 @@ void DRPAI_Controller::process_image(uint8_t *img_data, uint32_t img_data_len)
     /* Compute the result, draw the result on img and display it on console */
     std::vector<std::string> corner_text{};
     if (show_time) {
-        const auto  now        = std::chrono::system_clock::now();
-        const auto  now_time_t = std::chrono::system_clock::to_time_t(now);
-        auto *const now_local  = std::localtime(&now_time_t);
-        std::string current_time_str;
-        current_time_str.resize(CURRENT_TIME_STRING_LEN);
-        std::snprintf(current_time_str.data(), CURRENT_TIME_STRING_LEN, "Current Time: %02d:%02d:%02d",
-                      now_local->tm_hour, now_local->tm_min, now_local->tm_sec);
-        corner_text.emplace_back(current_time_str);
+        const auto        now        = std::chrono::system_clock::now();
+        const auto        now_time_t = std::chrono::system_clock::to_time_t(now);
+        auto *const       now_local  = std::localtime(&now_time_t);
+        std::stringstream ss;
+        ss << "Current Time: " << std::put_time(now_local, "%H:%M:%S");
+        corner_text.emplace_back(ss.str());
     }
     if (show_fps) {
         corner_text.push_back("Video Rate: " + std::to_string(static_cast<int32_t>(video_rate.get_smooth_rate())) +

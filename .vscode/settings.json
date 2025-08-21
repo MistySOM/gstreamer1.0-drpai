@@ -53,6 +53,7 @@
         "-Dtvm=disabled"
     ],
     "taskManager.exclude": "rzv_drp-ai_tvm",
+    "git.detectSubmodules": false,
     "files.associations": {
         "chrono": "cpp",
         "iostream": "cpp",
