@@ -5,7 +5,7 @@ set -e
 source /workspace/.env
 
 SOCK="/tmp/${MISTYSOM_USER}@${MISTYSOM_HOST}.ctl"
-SSH_CMD="sshpass -e ssh \
+SSH_CMD="sshpass -e ssh -C \
   -o ControlMaster=auto \
   -o ControlPath=${SOCK} \
   -o ControlPersist=180 \
