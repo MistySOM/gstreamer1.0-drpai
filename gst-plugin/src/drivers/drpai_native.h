@@ -25,6 +25,12 @@ public:
     explicit DRPAI_Native(const std::string &prefix, const std::string &directory = "");
     virtual ~DRPAI_Native() = default;
 
+    // Delete copy and move constructors and assignment operators
+    DRPAI_Native(const DRPAI_Native &)            = delete;
+    DRPAI_Native &operator=(const DRPAI_Native &) = delete;
+    DRPAI_Native(DRPAI_Native &&)                 = delete;
+    DRPAI_Native &operator=(DRPAI_Native &&)      = delete;
+
     /// Runs the inference on DRP-AI driver by calling start, wait, and get_result instructions.
     virtual void run_inference();
 
@@ -109,9 +115,6 @@ protected:
     [[nodiscard]] uint32_t get_drpai_start_addr() const;
 
 private:
-    constexpr static uint32_t DRPAI_TIMEOUT = 5;    /// Seconds to wait until DRP-AI Driver generates the output.
-    constexpr static uint32_t BUF_SIZE      = 1024; /// Buffer size for writing data to memory via DRP-AI Driver.
-
     /// Loads address and size of DRP-AI Object files into struct addr.
     /// @param [in] addr_file Filename of addressmap file (from DRP-AI Object files)
     void read_addrmap_txt(const std::string &addr_file);

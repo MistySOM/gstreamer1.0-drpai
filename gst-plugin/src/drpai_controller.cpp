@@ -568,7 +568,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSp
                                                         TRUE, G_PARAM_READWRITE));
     params.emplace(PROP_MAX_VIDEO_RATE, g_param_spec_float("max_video_rate", "Max Video Framerate",
                                                            "Force maximum video frame rate using thread sleeps.",
-                                                           0.001f, 120.f, 120.f, G_PARAM_READWRITE));
+                                                           0.001f, FRAMERATE_MAX, FRAMERATE_MAX, G_PARAM_READWRITE));
     params.emplace(PROP_SMOOTH_VIDEO_RATE, g_param_spec_uint("smooth_video_rate", "Smooth Video Framerate",
                                                              "Number of last video frame rates to "
                                                              "average for a more smooth value.",

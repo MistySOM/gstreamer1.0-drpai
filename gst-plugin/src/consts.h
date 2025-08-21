@@ -7,6 +7,13 @@ constexpr static uint32_t BITS_PER_HEX   = 4;
 constexpr static uint32_t BITS_PER_BYTE  = 8;
 constexpr static uint32_t BITS_PER_SHORT = 2 * BITS_PER_BYTE;
 constexpr static uint32_t HEX_BASE       = 16;
+constexpr static float    FRAMERATE_MAX  = 120.0F;
+constexpr static uint32_t SMOOTH_FPS_MAX = 1000;
+
+constexpr static uint32_t DRPAI_MEM_OFFSET = 0x38E0000;
+constexpr static uint32_t DRPAI_TIMEOUT    = 5;    /// Seconds to wait until DRP-AI Driver generates the output.
+constexpr static uint32_t BUF_SIZE         = 1024; /// Buffer size for writing data to memory via DRP-AI Driver.
+
 
 using colorBGR                        = uint32_t;
 constexpr static colorBGR BLACK_DATA  = 0x000000U;

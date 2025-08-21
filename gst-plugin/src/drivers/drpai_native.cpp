@@ -73,11 +73,13 @@ void DRPAI_Native::load_data_to_mem(const std::string &file, const drpai_data_t 
         throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
-    char drpai_buf[BUF_SIZE];
+
+    std::array<char, BUF_SIZE> drpai_buf{};
+
     auto start = std::chrono::steady_clock::now();
-    while (file_stream.read(drpai_buf, BUF_SIZE)) {
+    while (file_stream.read(drpai_buf.data(), BUF_SIZE)) {
         errno = 0;
-        if (write(drpai_fd, drpai_buf, BUF_SIZE) == -1) {
+        if (write(drpai_fd, drpai_buf.data(), BUF_SIZE) == -1) {
             throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
                                      " " + std::string(std::strerror(errno)));
         }
@@ -89,9 +91,9 @@ void DRPAI_Native::load_data_to_mem(const std::string &file, const drpai_data_t 
 
     const std::streamsize remaining_size = file_stream.gcount();
     if (remaining_size > 0) {
-        file_stream.read(drpai_buf, remaining_size);
+        file_stream.read(drpai_buf.data(), remaining_size);
         errno = 0;
-        if (write(drpai_fd, drpai_buf, remaining_size) == -1) {
+        if (write(drpai_fd, drpai_buf.data(), remaining_size) == -1) {
             throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
                                      " " + std::string(std::strerror(errno)));
         }
@@ -118,7 +120,7 @@ void DRPAI_Native::load_data_to_mem() const
 /// Get DRP-AI Output from memory via DRP-AI Driver
 void DRPAI_Native::get_result()
 {
-    const drpai_data_t &drpai_data = proc[DRPAI_INDEX_OUTPUT];
+    const drpai_data_t &drpai_data = proc.at(DRPAI_INDEX_OUTPUT);
 
     errno = 0;
     /* Assign the memory address and size to be read */
@@ -150,7 +152,7 @@ uint32_t DRPAI_Native::get_drpai_start_addr() const
 void DRPAI_Native::start()
 {
     errno = 0;
-    if (const int ret = ioctl(drpai_fd, DRPAI_START, &proc[0]); 0 != ret) {
+    if (const int ret = ioctl(drpai_fd, DRPAI_START, proc); 0 != ret) {
         throw std::runtime_error("[ERROR] Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
@@ -194,7 +196,7 @@ void DRPAI_Native::wait() const
 void DRPAI_Native::set_data_in_address(const uint32_t data_in_address)
 {
     /* Set DRP-AI Driver Input (DRP-AI Object files address and size)*/
-    proc[DRPAI_INDEX_INPUT].address = data_in_address;
+    proc.at(DRPAI_INDEX_INPUT).address = data_in_address;
 }
 
 /// Allocate resources for the DRP-AI Driver.
@@ -265,14 +267,15 @@ void DRPAI_Native::read_data_in_list(const std::string &data_in_list)
         if (line.find("Input_node_name") != std::string::npos) {
             const auto pos   = line.find(':') + 2;
             const auto value = line.substr(pos);
-            if (value == "bgr_data")
+            if (value == "bgr_data") {
                 IN_FORMAT = BGR_DATA;
-            else if (value == "yuv_data")
+            } else if (value == "yuv_data") {
                 IN_FORMAT = YUV_DATA;
-            else if (value == "rgb_data")
+            } else if (value == "rgb_data") {
                 IN_FORMAT = RGB_DATA;
-            else
+            } else {
                 throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
+            }
             std::cout << " " << value;
         }
     }
@@ -294,7 +297,7 @@ void DRPAI_Native::release_resource()
 /// @returns A string containing the DRPAI rate
 std::string DRPAI_Native::get_status() const
 {
-    return "DRPAI Rate: " + (drpai_fd ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A");
+    return "DRPAI Rate: " + (drpai_fd > 0 ? std::to_string(static_cast<int>(rate.get_smooth_rate())) + " fps" : "N/A");
 }
 
 /// Get a json to be used in UDP packets.
@@ -309,7 +312,7 @@ json_object DRPAI_Native::get_json()
 /// Runs the inference on DRP-AI driver by calling start, wait, and get_result instructions.
 void DRPAI_Native::run_inference()
 {
-    if (!drpai_fd) {
+    if (drpai_fd == 0) {
         return;
     }
 
@@ -351,10 +354,10 @@ void DRPAI_Native::load_drpai_param_file(const drpai_data_t &_proc, const std::s
     }
     file_stream.seekg(0, std::ios::beg);
 
-    char drpai_buf[BUF_SIZE];
-    while (file_stream.read(drpai_buf, BUF_SIZE)) {
+    std::array<char, BUF_SIZE> drpai_buf{};
+    while (file_stream.read(drpai_buf.data(), BUF_SIZE)) {
         errno = 0;
-        if (0 > write(drpai_fd, drpai_buf, BUF_SIZE)) {
+        if (0 > write(drpai_fd, drpai_buf.data(), BUF_SIZE)) {
             throw std::runtime_error("[ERROR] DRPAI Write Failed:  errno=" + std::to_string(errno) + " " +
                                      std::string(std::strerror(errno)));
         }
@@ -362,9 +365,9 @@ void DRPAI_Native::load_drpai_param_file(const drpai_data_t &_proc, const std::s
 
     auto remaining_size = file_stream.gcount();
     if (remaining_size > 0) {
-        file_stream.read(drpai_buf, remaining_size);
+        file_stream.read(drpai_buf.data(), remaining_size);
         errno = 0;
-        if (write(drpai_fd, drpai_buf, remaining_size) == -1) {
+        if (write(drpai_fd, drpai_buf.data(), remaining_size) == -1) {
             throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
                                      " " + std::string(std::strerror(errno)));
         }
@@ -379,11 +382,9 @@ void DRPAI_Native::crop(const Box &crop_region) const
     drpai_crop_t crop_param;
     crop_param.img_owidth  = std::clamp(static_cast<int>(crop_region.w), 1, IN_WIDTH);
     crop_param.img_oheight = std::clamp(static_cast<int>(crop_region.h), 1, IN_HEIGHT);
-    crop_param.pos_x =
-            std::clamp(static_cast<int>(crop_region.x - crop_region.w / 2), 0, IN_WIDTH - crop_param.img_owidth);
-    crop_param.pos_y =
-            std::clamp(static_cast<int>(crop_region.y - crop_region.h / 2), 0, IN_HEIGHT - crop_param.img_oheight);
-    crop_param.obj = proc[DRPAI_INDEX_DRP_PARAM];
+    crop_param.pos_x       = std::clamp(static_cast<int>(crop_region.getLeft()), 0, IN_WIDTH - crop_param.img_owidth);
+    crop_param.pos_y       = std::clamp(static_cast<int>(crop_region.getTop()), 0, IN_HEIGHT - crop_param.img_oheight);
+    crop_param.obj         = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param)) {
         throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
@@ -432,12 +433,12 @@ void DRPAI_Native::get_property(GstDRPAI_Properties prop, GValue *value) const
 void DRPAI_Native::install_properties(std::map<GstDRPAI_Properties, _GParamSpec *> &params)
 {
     params.emplace(PROP_MAX_DRPAI_RATE, g_param_spec_float("max_drpai_rate", "Max DRPAI Framerate",
-                                                           "Force maximum DRPAI frame rate using thread sleeps.", 0.0f,
-                                                           120.f, 120.f, G_PARAM_READWRITE));
+                                                           "Force maximum DRPAI frame rate using thread sleeps.", 0.0F,
+                                                           FRAMERATE_MAX, FRAMERATE_MAX, G_PARAM_READWRITE));
     params.emplace(PROP_SMOOTH_DRPAI_RATE,
                    g_param_spec_uint("smooth_drpai_rate", "Smooth DRPAI Framerate",
-                                     "Number of last DRPAI frame rates to average for a more smooth value.", 1, 1000, 1,
-                                     G_PARAM_READWRITE));
+                                     "Number of last DRPAI frame rates to average for a more smooth value.", 1,
+                                     SMOOTH_FPS_MAX, 1, G_PARAM_READWRITE));
 }
 
 /// Class constructor, capturing the DRP-AI object files prefix and directories.

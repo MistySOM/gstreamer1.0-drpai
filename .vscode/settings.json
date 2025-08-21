@@ -36,8 +36,11 @@
         "bugprone-easily-swappable-parameters",
         "bugprone-implicit-widening-of-multiplication-result",
         "performance-avoid-endl",
+        "cppcoreguidelines-pro-bounds-pointer-arithmetic",
         "cppcoreguidelines-non-private-member-variables-in-classes",
-        "cppcoreguidelines-pro-type-reinterpret-cast"
+        "cppcoreguidelines-pro-type-reinterpret-cast",
+        "cppcoreguidelines-pro-type-vararg",
+        "concurrency-mt-unsafe"
     ],
     "mesonbuild.configureOnOpen": true,
     "mesonbuild.buildFolder": "/workspace/build",
