@@ -18,7 +18,7 @@ plugin_sources = [
   'src/tracker.cpp',
   'src/filterer.cpp',
   'src/drivers/dmabuf.cpp',
-  'src/drpai-models/base_drpai.cpp',
+  'src/drivers/drpai_native.cpp',
   'src/drpai-models/base_post_processor.cpp',
   'src/image.cpp',
   'src/box.cpp'
@@ -28,7 +28,7 @@ plugin_dependencies = [
   gst_dep, thread_dep, dl_dep, mmngr_dep, mmngrbuf_dep
 ]
 
-subdir('src/drpai-models/drpai-tvm')
+subdir('src/drivers/drpai-tvm')
 
 gstplugindrpai = library('gstdrpai',
   plugin_sources,

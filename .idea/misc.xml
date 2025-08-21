@@ -21,8 +21,9 @@
               <list>
                 <option value="--cross-file" />
                 <option value="meson-aarch64-poky.cross" />
-                <option value="--buildtype" />
-                <option value="debug" />
+                <option value="-Dbuildtype=release" />
+                <option value="-Dtvm=enabled" />
+                <option value="-Dmmngr=enabled" />
               </list>
             </option>
             <option name="toolchainName" value="Poky aarch64" />
@@ -32,4 +33,5 @@
     </option>
   </component>
   <component name="MesonWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
+  <component name="WestSettings">{}</component>
 </project>

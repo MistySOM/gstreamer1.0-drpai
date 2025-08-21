@@ -2,38 +2,41 @@
 // Created by matin on 01/11/24.
 //
 
-#include "tvm_drpai.h"
+#include "drpai_tvm.h"
 #include <builtin_fp16.h>
+#include "../../consts.h"
 
 /*****************************************
-* Function Name     : float16_to_float32
-* Description       : Function by Edgecortex. Cast uint16_t a into float value.
-* Arguments         : a = uint16_t number
-* Return value      : float = float32 number
-******************************************/
-float float16_to_float32(const uint16_t a)
+ * Function Name     : float16_to_float32
+ * Description       : Function by Edgecortex. Cast uint16_t a into float value.
+ * Arguments         : a = uint16_t number
+ * Return value      : float = float32 number
+ ******************************************/
+static float float16_to_float32(const uint16_t a)
 {
-    return __extendXfYf2__<uint16_t, uint16_t, 10, float, uint32_t, 23>(a);
+    constexpr int SRC_SIG_BITS = 10;
+    constexpr int DST_SIG_BITS = 23;
+    return __extendXfYf2__<uint16_t, uint16_t, SRC_SIG_BITS, float, uint32_t, DST_SIG_BITS>(a);
 }
 
-void TVM_DRPAI::open_resource(const bool open_files) {
-    BaseDRPAI::open_resource(false);
+void DRPAI_TVM::open_resource(const bool open_files)
+{
+    DRPAI_Native::open_resource(false);
 
     /*Load pre_dir object to DRP-AI */
     auto ret = preruntime.Load(prefix + "/preprocess");
-    if (0 < ret)
-    {
+    if (0 < ret) {
         std::cerr << "[ERROR] Failed to run Pre-processing Runtime Load()." << std::endl;
         throw;
     }
-    IN_WIDTH = preruntime.internal_param_val.pre_in_shape_w;
-    IN_HEIGHT = preruntime.internal_param_val.pre_in_shape_h;
+    IN_WIDTH   = preruntime.internal_param_val.pre_in_shape_w;
+    IN_HEIGHT  = preruntime.internal_param_val.pre_in_shape_h;
     IN_CHANNEL = 3;
 
     /*Load model_dir structure and its weight to runtime object */
     auto drpaimem_addr_start = get_drpai_start_addr();
     /* Currently, the start address can only use the head of the area managed by the DRP-AI. */
-    runtime.LoadModel(prefix, drpaimem_addr_start+0x38E0000);
+    runtime.LoadModel(prefix, drpaimem_addr_start + DRPAI_MEM_OFFSET);
 
     input_data_type = runtime.GetInputDataType(0);
 
@@ -48,18 +51,19 @@ void TVM_DRPAI::open_resource(const bool open_files) {
             break;
     }
 
-    const auto output_num = runtime.GetNumOutput();
-    long output_size = 0;
-    for (int i=0; i<output_num; i++) {
+    const auto output_num  = runtime.GetNumOutput();
+    long       output_size = 0;
+    for (int i = 0; i < output_num; i++) {
         const auto output = runtime.GetOutput(i);
 
         switch (std::get<0>(output)) {
             case InOutDataType::INT64:
                 std::cout << "Warning: Output data type INT64 is not supported for output index " << i << std::endl;
-            break;
+                break;
             case InOutDataType::OTHER:
-                std::cout << "Warning: Output data type is unknown and not supported for output index " << i << std::endl;
-            break;
+                std::cout << "Warning: Output data type is unknown and not supported for output index " << i
+                          << std::endl;
+                break;
             default:
                 output_size += std::get<2>(output);
                 break;
@@ -68,21 +72,21 @@ void TVM_DRPAI::open_resource(const bool open_files) {
     drpai_output_buf.resize(output_size);
 }
 
-void TVM_DRPAI::set_data_in_address(uint32_t data_in_address) {
-    in_param.pre_in_addr = data_in_address;
-}
+void DRPAI_TVM::set_data_in_address(uint32_t data_in_address) { in_param.pre_in_addr = data_in_address; }
 
-void TVM_DRPAI::run_inference() {
+void DRPAI_TVM::run_inference()
+{
     rate.inform_frame();
 
-    void* preprocess_output_ptr = nullptr;
-    uint32_t preprocess_out_size = 0;
+    void    *preprocess_output_ptr = nullptr;
+    uint32_t preprocess_out_size   = 0;
 
     /* Pre-processing */
-    const auto t1 = std::chrono::high_resolution_clock::now();
-    auto ret = preruntime.Pre(&in_param, &preprocess_output_ptr, &preprocess_out_size);
-    if (0 < ret)
+    const auto t1  = std::chrono::high_resolution_clock::now();
+    auto       ret = preruntime.Pre(&in_param, &preprocess_output_ptr, &preprocess_out_size);
+    if (0 < ret) {
         throw std::runtime_error("[ERROR] Failed to run Pre-processing Runtime Pre().");
+    }
     const auto t2 = std::chrono::high_resolution_clock::now();
 
     /*Set Pre-processing output to be inference input. */
@@ -102,13 +106,13 @@ void TVM_DRPAI::run_inference() {
     const auto t3 = std::chrono::high_resolution_clock::now();
 
     /* Get the number of output of the target model. For ResNet, 1 output. */
-    const auto output_num = runtime.GetNumOutput();
-    int64_t output_start_index = 0;
+    const auto output_num         = runtime.GetNumOutput();
+    int64_t    output_start_index = 0;
 
-    for (int i=0; i<output_num; i++) {
+    for (int i = 0; i < output_num; i++) {
         /* output_buffer below is tuple, which is { data type, address of output data, number of elements } */
-        const auto output_buffer = runtime.GetOutput(i);
-        const int64_t out_size = std::get<2>(output_buffer);
+        const auto    output_buffer = runtime.GetOutput(i);
+        const int64_t out_size      = std::get<2>(output_buffer);
         /* Array to store the FP32 output data from inference. */
         switch (std::get<0>(output_buffer)) {
             case InOutDataType::FLOAT16: {
@@ -117,8 +121,7 @@ void TVM_DRPAI::run_inference() {
 
                 /* Post-processing for FP16 */
                 /* Cast FP16 output data to FP32. */
-                for (int n = 0; n < out_size; n++)
-                {
+                for (int n = 0; n < out_size; n++) {
                     drpai_output_buf.at(n + output_start_index) = float16_to_float32(data_ptr[n]);
                 }
                 output_start_index += out_size;
@@ -128,8 +131,7 @@ void TVM_DRPAI::run_inference() {
                 /* Extract data in FP32 <float>. */
                 const auto *data_ptr = static_cast<float *>(std::get<1>(output_buffer));
                 /*Copy output data to buffer for post-processing. */
-                for (int n = 0; n < out_size; n++)
-                {
+                for (int n = 0; n < out_size; n++) {
                     drpai_output_buf.at(n + output_start_index) = data_ptr[n];
                 }
                 output_start_index += out_size;
@@ -141,8 +143,7 @@ void TVM_DRPAI::run_inference() {
 
                 /* Post-processing for INT64 */
                 /* Cast INT64 output data to FP32. */
-                for (int n = 0; n < out_size; n++)
-                {
+                for (int n = 0; n < out_size; n++) {
                     drpai_output_buf.at(n + output_start_index) = static_cast<float>(data_ptr[n]);
                 }
                 output_start_index += out_size;
@@ -160,13 +161,10 @@ void TVM_DRPAI::run_inference() {
     ms_int3 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
 }
 
-TVM_DRPAI::TVM_DRPAI(const std::string &prefix):
-    BaseDRPAI(prefix),
-    input_data_type(InOutDataType::OTHER)
-{
-}
+DRPAI_TVM::DRPAI_TVM(const std::string &prefix) : DRPAI_Native(prefix), input_data_type(InOutDataType::OTHER) {}
 
-void TVM_DRPAI::print_log_exec_time() const {
+void DRPAI_TVM::print_log_exec_time() const
+{
     std::cout << "\tPreRuntime:\t" + std::to_string(ms_int1) << "ms" << std::endl;
     std::cout << "\tRuntimeTVM:\t" + std::to_string(ms_int2) << "ms" << std::endl;
     std::cout << "\tF16 to F32:\t" + std::to_string(ms_int3) << "ms" << std::endl;

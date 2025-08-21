@@ -1,3 +1,3 @@
-[submodule "gst-plugin/src/drpai-models/drpai-tvm/rzv_drp-ai_tvm"]
-	path = gst-plugin/src/drpai-models/drpai-tvm/rzv_drp-ai_tvm
+[submodule "gst-plugin/src/drivers/drpai-tvm/rzv_drp-ai_tvm"]
+	path = gst-plugin/src/drivers/drpai-tvm/rzv_drp-ai_tvm
 	url = https://github.com/renesas-rz/rzv_drp-ai_tvm

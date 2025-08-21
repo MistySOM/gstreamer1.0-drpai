@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="dcdb38a7-5b12-404c-ad83-d30ce94d4bef" name="MistyVision">
+        <fileTransfer accessType="SFTP" host="MistyVision.local" port="22" sshConfigId="c15ded1f-e06a-4954-ad5e-f8d3c2432794" sshConfig="root@MistyVision.local:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

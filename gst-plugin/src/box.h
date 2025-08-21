@@ -1,119 +1,107 @@
-/***********************************************************************************************************************
-* DISCLAIMER
-* This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products. No
-* other uses are authorized. This software is owned by Renesas Electronics Corporation and is protected under all
-* applicable laws, including copyright laws.
-* THIS SOFTWARE IS PROVIDED "AS IS" AND RENESAS MAKES NO WARRANTIES REGARDING
-* THIS SOFTWARE, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. ALL SUCH WARRANTIES ARE EXPRESSLY DISCLAIMED. TO THE MAXIMUM
-* EXTENT PERMITTED NOT PROHIBITED BY LAW, NEITHER RENESAS ELECTRONICS CORPORATION NOR ANY OF ITS AFFILIATED COMPANIES
-* SHALL BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES FOR ANY REASON RELATED TO THIS
-* SOFTWARE, EVEN IF RENESAS OR ITS AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-* Renesas reserves the right, without notice, to make changes to this software and to discontinue the availability of
-* this software. By using this software, you agree to the additional terms and conditions found by accessing the
-* following link:
-* http://www.renesas.com/disclaimer
-*
-* Copyright (C) 2022 Renesas Electronics Corporation. All rights reserved.
-***********************************************************************************************************************/
-/***********************************************************************************************************************
-* File Name    : box.h
-* Version      : 7.20
-* Description  : RZ/V2L DRP-AI Sample Application for Darknet-PyTorch YOLO Image version
-***********************************************************************************************************************/
+/**
+ * @file box.h
+ * @brief Defines bounding box structures, color utilities, and detection results for object detection.
+ */
 
-#ifndef BOX_H
-#define BOX_H
+#pragma once
 
-#include "utils/json.h"
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
+#include "consts.h"
+#include "utils/json.h"
 
-using colorBGR = uint32_t;
-constexpr colorBGR BLACK_DATA = 0x000000u;
-constexpr colorBGR RED_DATA   = 0x0000FFu;
-constexpr colorBGR GREEN_DATA = RED_DATA << 8;
-constexpr colorBGR BLUE_DATA  = GREEN_DATA << 8;
-constexpr colorBGR YELLOW_DATA= RED_DATA | GREEN_DATA;
-constexpr colorBGR WHITE_DATA = RED_DATA | GREEN_DATA | BLUE_DATA;
-constexpr uint32_t rgb2bgr(uint32_t color) {
-    auto r = (color >> 16) & 0x000000FF;
-    auto g = (color >> 8)  & 0x000000FF;
-    auto b = color         & 0x000000FF;
-    return (b << 16) | (g << 8) | r;
+/**
+ * @brief Converts an RGB color to BGR format.
+ * @param color RGB color value.
+ * @return BGR color value.
+ */
+constexpr uint32_t rgb2bgr(const uint32_t color)
+{
+    const auto r = (color >> BITS_PER_SHORT) & BYTE_MASK;
+    const auto g = (color >> BITS_PER_BYTE) & BYTE_MASK;
+    const auto b = color & BYTE_MASK;
+    return (b << BITS_PER_SHORT) | (g << BITS_PER_BYTE) | r;
 }
-inline std::string rgb2string(uint32_t c) {
+
+
+/**
+ * @brief Converts a color value to a hexadecimal string.
+ * @param c Color value.
+ * @return Hexadecimal string representation.
+ */
+inline std::string rgb2string(const uint32_t c)
+{
     std::stringstream ss;
-    ss << std::hex << std::setfill('0') << std::setw(6) << c;
+    ss << std::hex << std::setfill('0') << std::setw(3 * BITS_PER_BYTE / BITS_PER_HEX) << c;
     return ss.str();
 }
 
-/*****************************************
-* Box : Bounding box coordinates and its size
-******************************************/
-struct Box
-{
-    float x = 0;
-    float y = 0;
-    float w = 0;
-    float h = 0;
-    colorBGR color = RED_DATA;
+/**
+ * @brief Structure representing a bounding box with center coordinates and size.
+ */
+struct Box {
+    float x = 0; /*< Center x-coordinate */
+    float y = 0; /*< Center y-coordinate */
+    float w = 0; /*< Width */
+    float h = 0; /*< Height */
 
-    explicit constexpr Box(float center_x, float center_y, float width, float height, colorBGR color = RED_DATA):
-        x(center_x), y(center_y), w(width), h(height), color(color) {}
+    /**
+     * @brief Constructs a Box with specified center and size.
+     * @param center_x Center x-coordinate.
+     * @param center_y Center y-coordinate.
+     * @param width Width of the box.
+     * @param height Height of the box.
+     */
+    explicit constexpr Box(const float center_x, const float center_y, const float width, const float height) :
+        x(center_x), y(center_y), w(width), h(height)
+    {
+    }
     explicit Box() = default;
 
-    constexpr void setLeft(const float _x) { x = _x + w/2; }
-    constexpr void setTop(const float _y) { y = _y + h/2; }
+    constexpr void setLeft(const float _x) { x = _x + w / 2; }
+    constexpr void setTop(const float _y) { y = _y + h / 2; }
 
-    [[nodiscard]] constexpr float getLeft() const { return x - w/2; }
-    [[nodiscard]] constexpr float getTop() const { return y - h/2; }
-    [[nodiscard]] constexpr float getRight() const { return x + w/2; }
-    [[nodiscard]] constexpr float getBottom() const { return y + h/2; }
-    [[nodiscard]] json_object get_json(bool center_origin=true) const;
+    [[nodiscard]] constexpr float getLeft() const { return x - (w / 2); }
+    [[nodiscard]] constexpr float getTop() const { return y - (h / 2); }
+    [[nodiscard]] constexpr float getRight() const { return x + (w / 2); }
+    [[nodiscard]] constexpr float getBottom() const { return y + (h / 2); }
+    [[nodiscard]] json_object     get_json(bool center_origin = true) const;
 
-    [[nodiscard]] float iou_with(const Box& b) const;
-    [[nodiscard]] float doa_with(const Box& b) const;
-    [[nodiscard]] constexpr float area() const { return w*h; };
+    [[nodiscard]] float           iou_with(const Box &b) const;
+    [[nodiscard]] float           doa_with(const Box &b) const;
+    [[nodiscard]] constexpr float area() const { return w * h; };
 
-    [[nodiscard]] float operator&(const Box& b) const; // intersection
-    [[nodiscard]] float operator|(const Box& b) const; // union
-    [[nodiscard]] constexpr float operator%(const Box& b) const { // euclidean distance
+    [[nodiscard]] float           operator&(const Box &b) const; // intersection
+    [[nodiscard]] float           operator|(const Box &b) const; // union
+    [[nodiscard]] constexpr float operator%(const Box &b) const
+    { // euclidean distance
         const auto dx = x - b.x;
         const auto dy = y - b.y;
-        return std::sqrt(dx*dx + dy*dy);
+        return std::sqrt((dx * dx) + (dy * dy));
     }
-    [[nodiscard]] constexpr Box operator*(const float a) const { return Box(x*a, y*a, w*a, h*a, color); }
-    [[nodiscard]] constexpr Box operator/(const float a) const { return Box(x/a, y/a, w/a, h/a, color); }
-    [[nodiscard]] constexpr Box operator+(const Box& a) const { return Box(x+a.x, y+a.y, w+a.w, h+a.h, color); }
+    [[nodiscard]] constexpr Box operator*(const float a) const { return Box(x * a, y * a, w * a, h * a); }
+    [[nodiscard]] constexpr Box operator/(const float a) const { return Box(x / a, y / a, w / a, h / a); }
+    [[nodiscard]] constexpr Box operator+(const Box &a) const { return Box(x + a.x, y + a.y, w + a.w, h + a.h); }
 };
 
 /*****************************************
-* detection : Detected result
-******************************************/
+ * detection : Detected result
+ ******************************************/
 using classID = uint32_t;
-struct detection
-{
-    Box bbox;
+struct detection {
+    Box           bbox;
     const classID c;
-    const float prob;
-    bool saved_image = false;
+    const float   prob;
+    bool          saved_image = false;
 
-    detection(const detection& det) = default;
-    explicit detection(const Box& box, const classID c, const float prob):
-        bbox(box), c(c), prob(prob)  { }
+    detection(const detection &det)            = default;
+    detection &operator=(const detection &det) = delete;
+    detection(detection &&det)                 = default;
+    detection &operator=(detection &&det)      = delete;
+    ~detection()                               = default;
 
-    [[nodiscard]] std::string to_string_hr(const std::vector<std::string>& labels) const {
-        return labels.at(c) + " (" + std::to_string(static_cast<int>(prob*100)) + "%)";
-    }
-    [[nodiscard]] json_object get_json(const std::vector<std::string>& labels) const {
-        json_object j;
-        j.add("class", labels.at(c));
-        j.add("probability", prob, 2);
-        j.add("box", bbox.get_json(true));
-        j.add("saved_image", saved_image);
-        return j;
-    }
+    explicit detection(const Box &box, const classID c, const float prob) : bbox(box), c(c), prob(prob) {}
+
+    [[nodiscard]] std::string to_string_hr(const std::vector<std::string> &labels) const;
+    [[nodiscard]] json_object get_json(const std::vector<std::string> &labels) const;
 };
-
-#endif
