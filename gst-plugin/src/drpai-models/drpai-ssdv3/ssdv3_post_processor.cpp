@@ -7106,14 +7106,13 @@ void SSDV3_PostProcessor::softmax(std::vector<float> &val)
         v /= sum;
 }
 
-/*****************************************
- * Function Name : extract_detections
- * Description   : Process CPU post-processing for SSDV3 (drawing bounding boxes) and print the result on console.
- * Arguments     : floatarr = float DRP-AI output data
- *                 img = image to draw the detection result
- * Return value  : 0 if succeeded
- *                 not 0 otherwise
- ******************************************/
+/****************************************
+ Function Name : extract_detections
+ Description   : Process CPU post-processing for SSDV3
+                 (drawing bounding boxes) and print the result on console.
+ Arguments     : inference_output_buf = float DRP-AI output data
+ Return value  : void
+****************************************/
 void SSDV3_PostProcessor::extract_detections(const std::vector<float> &inference_output_buf)
 {
     std::vector<float> classes(num_classes);

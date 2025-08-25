@@ -20,7 +20,4 @@ private:
 
 };
 
-
-
-
 #endif //GSTREAMER1_0_DRPAI_SSDv3_POST_PROCESSOR_H
