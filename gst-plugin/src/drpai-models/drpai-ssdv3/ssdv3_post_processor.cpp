@@ -3,8 +3,6 @@
 //
 
 #include "ssdv3_post_processor.h"
-#include <fstream>
-#include <iostream>
 
 const static float priors[21250][4] = {
         {0.0000, 0.0000, 0.0375, 0.0688}, {0.0000, 0.0000, 0.0500, 0.1063}, {0.0125, 0.0000, 0.0375, 0.0688},
