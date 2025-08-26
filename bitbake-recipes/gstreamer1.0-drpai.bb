@@ -52,6 +52,11 @@ RDEPENDS_${PN}-mobilenet = "${PN}"
 FILES_${PN}-mobilenet = "${libdir}/libgstdrpai-mobilenet.so"
 FILES_${PN}-mobilenet-dbg = "${libdir}/.debug/libgstdrpai-mobilenet.so"
 
+PACKAGES += " ${PN}-ssdv3 ${PN}-ssdv3-dbg"
+PROVIDES += " ${PN}-ssdv3"
+RDEPENDS_${PN}-ssdv3 = "${PN}"
+FILES_${PN}-ssdv3 = "${libdir}/libgstdrpai-ssdv3.so"
+FILES_${PN}-ssdv3-dbg = "${libdir}/.debug/libgstdrpai-ssdv3.so"
 
 PACKAGES += " gst-launch-split gst-launch-split-dbg"
 PROVIDES += " gst-launch-split"
