@@ -277,15 +277,12 @@ void YOLO_PostProcessor::load_anchors_file(const std::string &anchors_file_name)
     if (!infile.is_open()) {
         throw std::runtime_error("[ERROR] Failed to open anchors file: " + anchors_file_name);
     }
-    std::string line;
-    while (getline(infile, line)) {
-        if (line.empty()) {
-            continue;
-        }
-        anchors.push_back(std::stof(line));
-        if (infile.fail()) {
-            throw std::runtime_error("[ERROR] Failed to read anchors file: " + anchors_file_name);
-        }
+    float f = 0;
+    while (infile >> f) {
+        anchors.push_back(f);
+    }
+    if (!infile.eof()) {
+        throw std::runtime_error("[ERROR] Failed to read anchors file: " + anchors_file_name);
     }
     infile.close();
 }
