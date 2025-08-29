@@ -14,14 +14,13 @@ PACKAGES = "${PN} ${PN}-dbg"
 
 MESONOPTS += " -Dtvm=enabled"
 DEPENDS = "\
-    gstreamer1.0-plugins-base \
+    gstreamer1.0 \
     drpai \
     mmngr-user-module \
     mmngrbuf-user-module \
 "
 RDEPENDS_${PN} = "\
   gstreamer1.0 \
-  gstreamer1.0-plugins-base \
   mmngr-user-module \
   mmngrbuf-user-module \
   libtvm_runtime \

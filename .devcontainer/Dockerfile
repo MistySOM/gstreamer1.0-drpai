@@ -13,7 +13,6 @@ RUN apt-get update && \
     git \
     g++ \    
     libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev \
     net-tools \
     ninja-build \
     openssh-client \
