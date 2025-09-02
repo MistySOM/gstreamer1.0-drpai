@@ -3,7 +3,6 @@
 //
 
 #include "dummy_post_processor.h"
-#include <fstream>
 
 void Dummy_PostProcessor::extract_detections(const std::vector<float> &inference_output_buf) { detections.clear(); }
 
