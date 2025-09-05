@@ -3,9 +3,9 @@
 //
 
 #include "mobilenet_post_processor.h"
+#include <array>
 #include <fstream>
 #include <iostream>
-#include <vector>
 
 /*****************************************
  * Function Name : extract_detections
