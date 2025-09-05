@@ -51,8 +51,9 @@ void DRPAI_TVM::open_resource(const bool open_files)
             break;
     }
 
-    const auto output_num  = runtime.GetNumOutput();
-    long       output_size = 0;
+    const auto output_num = runtime.GetNumOutput();
+    drpai_output_buf.resize(output_num);
+
     for (int i = 0; i < output_num; i++) {
         const auto output = runtime.GetOutput(i);
 
@@ -65,11 +66,11 @@ void DRPAI_TVM::open_resource(const bool open_files)
                           << std::endl;
                 break;
             default:
-                output_size += std::get<2>(output);
+                long output_size = std::get<2>(output);
+                drpai_output_buf.at(i).resize(output_size);
                 break;
         }
     }
-    drpai_output_buf.resize(output_size);
 }
 
 void DRPAI_TVM::set_data_in_address(uint32_t data_in_address) { in_param.pre_in_addr = data_in_address; }
@@ -106,8 +107,7 @@ void DRPAI_TVM::run_inference()
     const auto t3 = std::chrono::high_resolution_clock::now();
 
     /* Get the number of output of the target model. For ResNet, 1 output. */
-    const auto output_num         = runtime.GetNumOutput();
-    int64_t    output_start_index = 0;
+    const auto output_num = runtime.GetNumOutput();
 
     for (int i = 0; i < output_num; i++) {
         /* output_buffer below is tuple, which is { data type, address of output data, number of elements } */
@@ -122,9 +122,8 @@ void DRPAI_TVM::run_inference()
                 /* Post-processing for FP16 */
                 /* Cast FP16 output data to FP32. */
                 for (int n = 0; n < out_size; n++) {
-                    drpai_output_buf.at(n + output_start_index) = float16_to_float32(data_ptr[n]);
+                    drpai_output_buf.at(i).at(n) = float16_to_float32(data_ptr[n]);
                 }
-                output_start_index += out_size;
                 break;
             }
             case InOutDataType::FLOAT32: {
@@ -132,9 +131,8 @@ void DRPAI_TVM::run_inference()
                 const auto *data_ptr = static_cast<float *>(std::get<1>(output_buffer));
                 /*Copy output data to buffer for post-processing. */
                 for (int n = 0; n < out_size; n++) {
-                    drpai_output_buf.at(n + output_start_index) = data_ptr[n];
+                    drpai_output_buf.at(i).at(n) = data_ptr[n];
                 }
-                output_start_index += out_size;
                 break;
             }
             case InOutDataType::INT64: {
@@ -144,9 +142,8 @@ void DRPAI_TVM::run_inference()
                 /* Post-processing for INT64 */
                 /* Cast INT64 output data to FP32. */
                 for (int n = 0; n < out_size; n++) {
-                    drpai_output_buf.at(n + output_start_index) = static_cast<float>(data_ptr[n]);
+                    drpai_output_buf.at(i).at(n) = static_cast<float>(data_ptr[n]);
                 }
-                output_start_index += out_size;
                 break;
             }
             case InOutDataType::OTHER: {

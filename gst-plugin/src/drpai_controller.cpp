@@ -172,7 +172,11 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
     image_mapped_udma->map_dma_buffer();
     drpai->set_data_in_address(image_mapped_udma->get_dma_buffer_physical_address());
 
-    postprocessor->open_resource(drpai->drpai_output_buf.size(), image_width, image_height, labels.size());
+    std::vector<uint32_t> inference_output_size;
+    for (const auto &buf: drpai->drpai_output_buf) {
+        inference_output_size.push_back(buf.size());
+    }
+    postprocessor->open_resource(inference_output_size, image_width, image_height, labels.size());
 
     if (det_filterer.is_filter_region_active())
         std::cout << "Option : Filtering region of interest to " << det_filterer.get_filter_region_json().to_string()

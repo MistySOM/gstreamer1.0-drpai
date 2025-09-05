@@ -79,8 +79,9 @@ public:
     int32_t      IN_CHANNEL = 0;
     IMAGE_FORMAT IN_FORMAT  = BGR_DATA;
 
-    /// The float array which needs to be post-processed to extract meaningful information
-    std::vector<float> drpai_output_buf;
+    /// The float arrays which needs to be post-processed to extract meaningful information
+    /// Some models output multiple arrays
+    std::vector<std::vector<float>> drpai_output_buf;
 
 protected:
     const std::string prefix;    /// The prefix of the DRP-AI object files.

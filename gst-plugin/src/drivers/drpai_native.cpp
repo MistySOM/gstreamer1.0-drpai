@@ -129,7 +129,7 @@ void DRPAI_Native::get_result()
                                  std::string(std::strerror(errno)));
     }
     /* Read the memory via DRP-AI Driver and store the output to buffer */
-    if (read(drpai_fd, drpai_output_buf.data(), drpai_data.size) == -1) {
+    if (read(drpai_fd, drpai_output_buf.at(0).data(), drpai_data.size) == -1) {
         throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
@@ -218,7 +218,8 @@ void DRPAI_Native::open_resource(const bool open_files)
 
     const std::string drpai_address_file = directory + "/" + prefix + "_addrmap_intm.txt";
     read_addrmap_txt(drpai_address_file);
-    drpai_output_buf.resize(proc.at(DRPAI_INDEX_OUTPUT).size / sizeof(float));
+    drpai_output_buf.resize(1);
+    drpai_output_buf.at(0).resize(proc.at(DRPAI_INDEX_OUTPUT).size / sizeof(float));
 
     /*Load pixel format from data_in_list file*/
     const static std::string data_in_list = directory + "/" + prefix + "_data_in_list.txt";

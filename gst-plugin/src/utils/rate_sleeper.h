@@ -5,6 +5,7 @@
 #pragma once
 
 #include <thread>
+#include "consts.h"
 
 /**
  * @brief Utility class to maintain a maximum execution rate by sleeping as needed.
@@ -16,7 +17,7 @@ private:
     float last_sleep_duration = 0; /**< Duration of the last sleep in seconds. */
 
 public:
-    float max = 1.0F / 120; /**< Maximum allowed duration per cycle in seconds. */
+    float max = 1.0F / FRAMERATE_MAX; /**< Maximum allowed duration per cycle in seconds. */
 
     /**
      * @brief Default constructor for rate_sleeper.
