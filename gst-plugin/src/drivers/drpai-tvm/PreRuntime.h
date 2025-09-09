@@ -359,10 +359,10 @@ private:
     void    UpdateResizeShape(const uint16_t w, const uint16_t h);
     void    UpdateResizeAlg(const uint8_t val);
     void    UpdateFormat(const uint16_t input_val, const uint16_t output_val);
-    uint8_t UpdateCoefficient(const float *cof_add, const float *cof_mul);
+    uint8_t UpdateCoefficient(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul);
     void    UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const uint16_t w, const uint16_t h);
 
-    bool     IsDifferentFmInternal(const float *cof_add, const float *cof_mul);
+    bool     IsDifferentFmInternal(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul);
     void     WriteValue(uint16_t offset, uint32_t value, uint8_t size);
     bool     IsInSupportedList(uint16_t format, uint8_t is_input);
     bool     IsSupportedFormat(const s_preproc_param_t param, uint16_t format_in, uint16_t format_out);

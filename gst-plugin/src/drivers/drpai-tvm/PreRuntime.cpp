@@ -92,7 +92,7 @@ static void print_preproc_param(const s_preproc_param_t data, uint8_t mode = MOD
 }
 #endif
 
-PreRuntime::PreRuntime() {};
+PreRuntime::PreRuntime() = default;
 
 PreRuntime::~PreRuntime()
 {
@@ -402,26 +402,21 @@ uint8_t PreRuntime::ReadFileData(std::vector<uint8_t> &data, std::string file, u
  ******************************************/
 uint8_t PreRuntime::UpdateParamToDynamic(uint32_t start_addr)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   raddr    = P_RADDR;
-    std::string   waddr    = P_WADDR;
-    std::string   add_addr = P_ADD_ADDR;
-    std::string   mul_addr = P_MUL_ADDR;
-    uint16_t      offset   = 0;
+    std::string raddr    = P_RADDR;
+    std::string waddr    = P_WADDR;
+    std::string add_addr = P_ADD_ADDR;
+    std::string mul_addr = P_MUL_ADDR;
+    uint16_t    offset   = 0;
 
     errno = 0;
-    uint8_t i, j;
 
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        for (j = 0; j < tmp_op->param_list.size(); j++) {
-            tmp_param = &tmp_op->param_list[j];
-            if (tmp_param->name == raddr || tmp_param->name == waddr || tmp_param->name == add_addr ||
-                tmp_param->name == mul_addr) {
-                tmp_param->value += (uint32_t) start_addr;
-                offset = tmp_op->offset + tmp_param->offset;
-                WriteValue(offset, tmp_param->value, tmp_param->size);
+    for (auto &tmp_op: param_info) {
+        for (auto &tmp_param: tmp_op.param_list) {
+            if (tmp_param.name == raddr || tmp_param.name == waddr || tmp_param.name == add_addr ||
+                tmp_param.name == mul_addr) {
+                tmp_param.value += (uint32_t) start_addr;
+                offset = tmp_op.offset + tmp_param.offset;
+                WriteValue(offset, tmp_param.value, tmp_param.size);
             }
         }
     }
@@ -573,126 +568,123 @@ uint8_t PreRuntime::ParseParamInfo(const std::string info_file)
  ******************************************/
 uint8_t PreRuntime::LoadParamInfo()
 {
-    uint8_t      i = 0, j = 0;
-    s_op_t      *tmp_op;
-    s_op_param_t tmp_op_param;
-    std::string  readaddr          = P_RADDR;
-    std::string  img_iwidth        = P_IMG_IWIDTH;
-    std::string  img_iheight       = P_IMG_IHEIGHT;
-    std::string  img_owidth        = P_IMG_OWIDTH;
-    std::string  img_oheight       = P_IMG_OHEIGHT;
-    std::string  input_yuv_format  = P_INPUT_YUV_FORMAT;
-    std::string  lib_convyuv2rgb   = LIB_CONVYUV2RGB;
-    std::string  lib_resize_hwc    = LIB_RESIZE_HWC;
-    std::string  lib_imagescaler   = LIB_IMAGESCALER;
-    std::string  lib_crop          = LIB_CROP;
-    std::string  lib_convx2gray    = LIB_CONVX2GRAY;
-    std::string  lib_argminmax     = LIB_ARGMINMAX;
-    std::string  dout_rgb_order    = P_DOUT_RGB_ORDER;
-    std::string  resize_alg        = P_RESIZE_ALG;
-    std::string  crop_pos_x        = P_CROP_POS_X;
-    std::string  crop_pos_y        = P_CROP_POS_Y;
-    std::string  x2gray_din_format = P_DIN_FORMAT;
-    std::string  dout_rgb_format   = P_DOUT_RGB_FORMAT;
-    std::string  img_ich           = P_IMG_ICH;
-    std::string  img_och           = P_IMG_OCH;
-    uint32_t     in_size           = 0;
-    uint32_t     out_size          = 0;
+    std::string readaddr          = P_RADDR;
+    std::string img_iwidth        = P_IMG_IWIDTH;
+    std::string img_iheight       = P_IMG_IHEIGHT;
+    std::string img_owidth        = P_IMG_OWIDTH;
+    std::string img_oheight       = P_IMG_OHEIGHT;
+    std::string input_yuv_format  = P_INPUT_YUV_FORMAT;
+    std::string lib_convyuv2rgb   = LIB_CONVYUV2RGB;
+    std::string lib_resize_hwc    = LIB_RESIZE_HWC;
+    std::string lib_imagescaler   = LIB_IMAGESCALER;
+    std::string lib_crop          = LIB_CROP;
+    std::string lib_convx2gray    = LIB_CONVX2GRAY;
+    std::string lib_argminmax     = LIB_ARGMINMAX;
+    std::string dout_rgb_order    = P_DOUT_RGB_ORDER;
+    std::string resize_alg        = P_RESIZE_ALG;
+    std::string crop_pos_x        = P_CROP_POS_X;
+    std::string crop_pos_y        = P_CROP_POS_Y;
+    std::string x2gray_din_format = P_DIN_FORMAT;
+    std::string dout_rgb_format   = P_DOUT_RGB_FORMAT;
+    std::string img_ich           = P_IMG_ICH;
+    std::string img_och           = P_IMG_OCH;
+    uint32_t    in_size           = 0;
+    uint32_t    out_size          = 0;
 
     /*pre_in_shape_w, pre_in_shape_h, pre_in_addr*/
-    tmp_op = &param_info[0];
-    for (i = 0; i < tmp_op->param_list.size(); i++) {
-        /*pre_in_shape_w*/
-        if (tmp_op->param_list[i].name == img_iwidth) {
-            internal_param_val.pre_in_shape_w = (uint16_t) tmp_op->param_list[i].value;
-            pre_out_shape_w                   = internal_param_val.pre_in_shape_w;
+    {
+        auto &tmp_op = param_info.at(0);
+        for (auto &tmp_param: tmp_op.param_list) {
+            /*pre_in_shape_w*/
+            if (tmp_param.name == img_iwidth) {
+                internal_param_val.pre_in_shape_w = (uint16_t) tmp_param.value;
+                pre_out_shape_w                   = internal_param_val.pre_in_shape_w;
+            }
+            /*pre_in_shape_h*/
+            else if (tmp_param.name == img_iheight) {
+                internal_param_val.pre_in_shape_h = (uint16_t) tmp_param.value;
+                pre_out_shape_h                   = internal_param_val.pre_in_shape_h;
+            }
+            /*pre_in_addr*/
+            else if (tmp_param.name == readaddr) {
+                internal_param_val.pre_in_addr = (uint32_t) tmp_param.value;
+            }
         }
-        /*pre_in_shape_h*/
-        else if (tmp_op->param_list[i].name == img_iheight) {
-            internal_param_val.pre_in_shape_h = (uint16_t) tmp_op->param_list[i].value;
-            pre_out_shape_h                   = internal_param_val.pre_in_shape_h;
-        }
-        /*pre_in_addr*/
-        else if (tmp_op->param_list[i].name == readaddr) {
-            internal_param_val.pre_in_addr = (uint32_t) tmp_op->param_list[i].value;
-        }
-    }
 
-    /*pre_in_format, pre_out_format*/
-    tmp_op                            = &param_info[0];
-    internal_param_val.pre_in_format  = (uint16_t) FORMAT_UNKNOWN;
-    internal_param_val.pre_out_format = (uint16_t) FORMAT_UNKNOWN;
+        /*pre_in_format, pre_out_format*/
+        internal_param_val.pre_in_format  = (uint16_t) FORMAT_UNKNOWN;
+        internal_param_val.pre_out_format = (uint16_t) FORMAT_UNKNOWN;
 
-    for (i = 0; i < tmp_op->param_list.size(); i++) {
+        for (auto &tmp_param: tmp_op.param_list) {
 
-        /*conv_yuv2rgb*/
-        if (tmp_op->lib == lib_convyuv2rgb) {
-            pre_in_shape_c  = (uint8_t) NUM_C_YUV;
-            pre_out_shape_c = (uint8_t) NUM_C_RGB_BGR;
-            if (tmp_op->param_list[i].name == input_yuv_format) {
-                /*pre_in_format*/
-                internal_param_val.pre_in_format = (uint16_t) tmp_op->param_list[i].value;
-            } else if (tmp_op->param_list[i].name == dout_rgb_format) {
-                /*pre_out_format*/
-                if (0 == (uint16_t) tmp_op->param_list[i].value) {
-                    internal_param_val.pre_out_format = (uint16_t) FORMAT_RGB;
+            /*conv_yuv2rgb*/
+            if (tmp_op.lib == lib_convyuv2rgb) {
+                pre_in_shape_c  = (uint8_t) NUM_C_YUV;
+                pre_out_shape_c = (uint8_t) NUM_C_RGB_BGR;
+                if (tmp_param.name == input_yuv_format) {
+                    /*pre_in_format*/
+                    internal_param_val.pre_in_format = (uint16_t) tmp_param.value;
+                } else if (tmp_param.name == dout_rgb_format) {
+                    /*pre_out_format*/
+                    if (0 == (uint16_t) tmp_param.value) {
+                        internal_param_val.pre_out_format = (uint16_t) FORMAT_RGB;
+                    } else {
+                        internal_param_val.pre_out_format = (uint16_t) FORMAT_BGR;
+                    }
+                    break;
                 } else {
-                    internal_param_val.pre_out_format = (uint16_t) FORMAT_BGR;
+                    /*Do nothing*/
                 }
-                break;
-            } else {
-                /*Do nothing*/
             }
-        }
-        /*conv_x2gray*/
-        else if (tmp_op->lib == lib_convx2gray && tmp_op->param_list[i].name == x2gray_din_format) {
-            pre_in_shape_c  = (uint8_t) NUM_C_YUV;
-            pre_out_shape_c = (uint8_t) NUM_C_GRAY;
-            /*pre_in_format/pre_out_format*/
-            internal_param_val.pre_in_format = (uint16_t) tmp_op->param_list[i].value;
-            if (DIN_FORMAT_RGB == tmp_op->param_list[i].value) {
-                pre_in_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
-                internal_param_val.pre_in_format = FORMAT_RGB;
+            /*conv_x2gray*/
+            else if (tmp_op.lib == lib_convx2gray && tmp_param.name == x2gray_din_format) {
+                pre_in_shape_c  = (uint8_t) NUM_C_YUV;
+                pre_out_shape_c = (uint8_t) NUM_C_GRAY;
+                /*pre_in_format/pre_out_format*/
+                internal_param_val.pre_in_format = (uint16_t) tmp_param.value;
+                if (DIN_FORMAT_RGB == tmp_param.value) {
+                    pre_in_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
+                    internal_param_val.pre_in_format = FORMAT_RGB;
 
-            } else if (DIN_FORMAT_BGR == tmp_op->param_list[i].value) {
-                internal_param_val.pre_in_format = FORMAT_BGR;
-                pre_in_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
-            } else {
-                /*Do nothing*/
-            }
-            internal_param_val.pre_out_format = (uint16_t) FORMAT_GRAY;
-            break;
-        }
-        /*Number of channel*/
-        else if (tmp_op->param_list[i].name == img_ich) {
-            pre_in_shape_c = (uint16_t) tmp_op->param_list[i].value;
-            if (1 == pre_in_shape_c) {
-                internal_param_val.pre_in_format  = (uint16_t) FORMAT_GRAY;
+                } else if (DIN_FORMAT_BGR == tmp_param.value) {
+                    internal_param_val.pre_in_format = FORMAT_BGR;
+                    pre_in_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
+                } else {
+                    /*Do nothing*/
+                }
                 internal_param_val.pre_out_format = (uint16_t) FORMAT_GRAY;
-                pre_out_shape_c                   = (uint8_t) NUM_C_GRAY;
-            } else if (3 == pre_in_shape_c) {
-                /*Temporal format = RGB (possibly BGR)*/
-                internal_param_val.pre_in_format  = (uint16_t) FORMAT_RGB;
-                internal_param_val.pre_out_format = (uint16_t) FORMAT_RGB;
-                pre_out_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
+                break;
+            }
+            /*Number of channel*/
+            else if (tmp_param.name == img_ich) {
+                pre_in_shape_c = (uint16_t) tmp_param.value;
+                if (1 == pre_in_shape_c) {
+                    internal_param_val.pre_in_format  = (uint16_t) FORMAT_GRAY;
+                    internal_param_val.pre_out_format = (uint16_t) FORMAT_GRAY;
+                    pre_out_shape_c                   = (uint8_t) NUM_C_GRAY;
+                } else if (3 == pre_in_shape_c) {
+                    /*Temporal format = RGB (possibly BGR)*/
+                    internal_param_val.pre_in_format  = (uint16_t) FORMAT_RGB;
+                    internal_param_val.pre_out_format = (uint16_t) FORMAT_RGB;
+                    pre_out_shape_c                   = (uint8_t) NUM_C_RGB_BGR;
+                } else {
+                    /*Ignore others*/
+                }
             } else {
                 /*Ignore others*/
             }
-        } else {
-            /*Ignore others*/
         }
     }
     /*Check imagescaler to determine RGB/BGR for pre_in/out_format */
     /*Also if imagescaler exists, enable normalize_included.*/
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_imagescaler) {
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_imagescaler) {
             normalize_included = true;
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
-                if (tmp_op->param_list[j].name == dout_rgb_order) {
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == dout_rgb_order) {
                     /*Change pre_out if dout_rgb_order is 1*/
                     /*Note that input format may be either RGB/BGR but here, we assume input is RGB.*/
-                    if (1 == (uint16_t) tmp_op->param_list[j].value) {
+                    if (1 == (uint16_t) tmp_param.value) {
                         if (FORMAT_RGB == internal_param_val.pre_out_format) {
                             internal_param_val.pre_out_format = (uint16_t) FORMAT_BGR;
                         } else if (FORMAT_BGR == internal_param_val.pre_out_format) {
@@ -710,38 +702,39 @@ uint8_t PreRuntime::LoadParamInfo()
         }
     }
     /*Check the output number of channel.*/
-    tmp_op = &param_info[param_info.size() - 1];
-    for (i = 0; i < tmp_op->param_list.size(); i++) {
-        if (tmp_op->param_list[i].name == img_och) {
-            pre_out_shape_c = (uint16_t) tmp_op->param_list[i].value;
-            break;
-            /*Ignore other operators*/
+    {
+        auto &tmp_op = param_info.at(param_info.size() - 1);
+        for (auto &tmp_param: tmp_op.param_list) {
+            if (tmp_param.name == img_och) {
+                pre_out_shape_c = (uint16_t) tmp_param.value;
+                break;
+                /*Ignore other operators*/
+            }
         }
     }
 
     /*crop_tl_x, crop_tl_y, crop_w, crop_h*/
     /*Also if crop exists, enable crop_included.*/
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_crop) {
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_crop) {
             crop_included = true;
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
+            for (auto &tmp_param: tmp_op.param_list) {
                 /*crop_tl_x*/
-                if (tmp_op->param_list[j].name == crop_pos_x) {
-                    internal_param_val.crop_tl_x = (uint16_t) tmp_op->param_list[j].value;
+                if (tmp_param.name == crop_pos_x) {
+                    internal_param_val.crop_tl_x = (uint16_t) tmp_param.value;
                 }
                 /*crop_tl_y*/
-                else if (tmp_op->param_list[j].name == crop_pos_y) {
-                    internal_param_val.crop_tl_y = (uint16_t) tmp_op->param_list[j].value;
+                else if (tmp_param.name == crop_pos_y) {
+                    internal_param_val.crop_tl_y = (uint16_t) tmp_param.value;
                 }
                 /*crop_w*/
-                if (tmp_op->param_list[j].name == img_owidth) {
-                    internal_param_val.crop_w = (uint16_t) tmp_op->param_list[j].value;
+                if (tmp_param.name == img_owidth) {
+                    internal_param_val.crop_w = (uint16_t) tmp_param.value;
                     pre_out_shape_w           = internal_param_val.crop_w;
                 }
                 /*crop_h*/
-                else if (tmp_op->param_list[j].name == img_oheight) {
-                    internal_param_val.crop_h = (uint16_t) tmp_op->param_list[j].value;
+                else if (tmp_param.name == img_oheight) {
+                    internal_param_val.crop_h = (uint16_t) tmp_param.value;
                     pre_out_shape_h           = internal_param_val.crop_h;
                 }
             }
@@ -750,22 +743,21 @@ uint8_t PreRuntime::LoadParamInfo()
 
     /*resize_w, resize_h, resize_alg*/
     /*Also if resize exists, enable resize_included.*/
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_resize_hwc) {
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_resize_hwc) {
             resize_included = true;
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
+            for (auto &tmp_param: tmp_op.param_list) {
                 /*resize_w*/
-                if (tmp_op->param_list[j].name == img_owidth) {
-                    internal_param_val.resize_w = (uint16_t) tmp_op->param_list[j].value;
+                if (tmp_param.name == img_owidth) {
+                    internal_param_val.resize_w = (uint16_t) tmp_param.value;
                     pre_out_shape_w             = internal_param_val.resize_w;
                 }
                 /*resize_h*/
-                else if (tmp_op->param_list[j].name == img_oheight) {
-                    internal_param_val.resize_h = (uint16_t) tmp_op->param_list[j].value;
+                else if (tmp_param.name == img_oheight) {
+                    internal_param_val.resize_h = (uint16_t) tmp_param.value;
                     pre_out_shape_h             = internal_param_val.resize_h;
-                } else if (tmp_op->param_list[j].name == resize_alg) {
-                    internal_param_val.resize_alg = (uint8_t) tmp_op->param_list[j].value;
+                } else if (tmp_param.name == resize_alg) {
+                    internal_param_val.resize_alg = (uint8_t) tmp_param.value;
                     /*Ignore after ops*/
                     break;
                 } else {
@@ -786,7 +778,7 @@ uint8_t PreRuntime::LoadParamInfo()
     uint8_t cof_num   = (uint8_t) (weight_data.size() - cood_num) / sizeof(float);
     /*Minimum size of coefficient data. cof_add(2 or 6bytes)+padding(2bytes)+cof_mul(2 or 6bytes)*/
     uint8_t cof_size = 2 * cof_num * cood_num + cood_num;
-    for (i = 0; i < weight_data.size(); i++) {
+    for (std::size_t i = 0; i < weight_data.size(); i++) {
         index = (int) i / cood_num;
         mod   = i % cood_num;
         if (cof_num != index && index <= float_num) {
@@ -807,17 +799,16 @@ uint8_t PreRuntime::LoadParamInfo()
     }
 
     /*pre_out_shape_w, pre_out_shape_h*/
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_argminmax) {
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_argminmax) {
+            for (auto &tmp_param: tmp_op.param_list) {
                 /*pre_out_shape_w*/
-                if (tmp_op->param_list[j].name == img_owidth) {
-                    pre_out_shape_w = (uint16_t) tmp_op->param_list[j].value;
+                if (tmp_param.name == img_owidth) {
+                    pre_out_shape_w = (uint16_t) tmp_param.value;
                 }
                 /*pre_out_shape_h*/
-                else if (tmp_op->param_list[j].name == img_oheight) {
-                    pre_out_shape_h = (uint16_t) tmp_op->param_list[j].value;
+                else if (tmp_param.name == img_oheight) {
+                    pre_out_shape_h = (uint16_t) tmp_param.value;
                 } else {
                     /*Ignore other parameters*/
                 }
@@ -1049,7 +1040,6 @@ void PreRuntime::WriteValue(uint16_t offset, uint32_t value, uint8_t size)
     for (i = 0; i < size; i++) {
         param_data[address + i] = (uint8_t) (val >> 8 * i) & 0xFF;
     }
-    return;
 }
 /*****************************************
  * Function Name : UpdateInputShape
@@ -1060,41 +1050,34 @@ void PreRuntime::WriteValue(uint16_t offset, uint32_t value, uint8_t size)
  ******************************************/
 void PreRuntime::UpdateInputShape(const uint16_t w, const uint16_t h)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   img_iwidth     = P_IMG_IWIDTH;
-    std::string   img_iheight    = P_IMG_IHEIGHT;
-    std::string   img_owidth     = P_IMG_OWIDTH;
-    std::string   img_oheight    = P_IMG_OHEIGHT;
-    std::string   lib_resize_hwc = LIB_RESIZE_HWC;
-    std::string   lib_crop       = LIB_CROP;
-    uint16_t      offset         = 0;
-    uint8_t       i              = 0;
-    uint8_t       j              = 0;
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        for (j = 0; j < tmp_op->param_list.size(); j++) {
-            tmp_param = &tmp_op->param_list[j];
-            if (tmp_param->name == img_iwidth || (tmp_param->name == img_owidth && tmp_op->lib != lib_resize_hwc)) {
-                tmp_param->value = w;
-                offset           = tmp_op->offset + tmp_param->offset;
-                WriteValue(offset, tmp_param->value, tmp_param->size);
+    std::string img_iwidth     = P_IMG_IWIDTH;
+    std::string img_iheight    = P_IMG_IHEIGHT;
+    std::string img_owidth     = P_IMG_OWIDTH;
+    std::string img_oheight    = P_IMG_OHEIGHT;
+    std::string lib_resize_hwc = LIB_RESIZE_HWC;
+    std::string lib_crop       = LIB_CROP;
+    uint16_t    offset         = 0;
+    for (auto &tmp_op: param_info) {
+        for (auto &tmp_param: tmp_op.param_list) {
+            if (tmp_param.name == img_iwidth || (tmp_param.name == img_owidth && tmp_op.lib != lib_resize_hwc)) {
+                tmp_param.value = w;
+                offset          = tmp_op.offset + tmp_param.offset;
+                WriteValue(offset, tmp_param.value, tmp_param.size);
             }
-            if (tmp_param->name == img_iheight || (tmp_param->name == img_oheight && tmp_op->lib != lib_resize_hwc)) {
-                tmp_param->value = h;
-                offset           = tmp_op->offset + tmp_param->offset;
-                WriteValue(offset, tmp_param->value, tmp_param->size);
+            if (tmp_param.name == img_iheight || (tmp_param.name == img_oheight && tmp_op.lib != lib_resize_hwc)) {
+                tmp_param.value = h;
+                offset          = tmp_op.offset + tmp_param.offset;
+                WriteValue(offset, tmp_param.value, tmp_param.size);
             }
         }
 
-        if ((tmp_op->lib == lib_resize_hwc) || (tmp_op->lib == lib_crop)) {
+        if ((tmp_op.lib == lib_resize_hwc) || (tmp_op.lib == lib_crop)) {
             /*Ignore all op after resize_hwc and crop*/
             break;
         }
     }
     internal_param_val.pre_in_shape_w = w;
     internal_param_val.pre_in_shape_h = h;
-    return;
 }
 
 /*****************************************
@@ -1106,51 +1089,44 @@ void PreRuntime::UpdateInputShape(const uint16_t w, const uint16_t h)
  ******************************************/
 void PreRuntime::UpdateResizeShape(const uint16_t w, const uint16_t h)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   img_iwidth     = P_IMG_IWIDTH;
-    std::string   img_iheight    = P_IMG_IHEIGHT;
-    std::string   img_owidth     = P_IMG_OWIDTH;
-    std::string   img_oheight    = P_IMG_OHEIGHT;
-    std::string   lib_resize_hwc = LIB_RESIZE_HWC;
-    bool          after_resize   = false;
-    uint16_t      offset         = 0;
-    std::size_t   i              = 0;
-    std::size_t   j              = 0;
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_resize_hwc) {
+    std::string img_iwidth     = P_IMG_IWIDTH;
+    std::string img_iheight    = P_IMG_IHEIGHT;
+    std::string img_owidth     = P_IMG_OWIDTH;
+    std::string img_oheight    = P_IMG_OHEIGHT;
+    std::string lib_resize_hwc = LIB_RESIZE_HWC;
+    bool        after_resize   = false;
+    uint16_t    offset         = 0;
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_resize_hwc) {
             after_resize = true;
-            for (std::size_t j = 0; j < tmp_op->param_list.size(); j++) {
-                tmp_param = &tmp_op->param_list[j];
-                if (tmp_param->name == img_owidth) {
-                    tmp_param->value = w;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == img_owidth) {
+                    tmp_param.value = w;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
-                if (tmp_param->name == img_oheight) {
-                    tmp_param->value = h;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+                if (tmp_param.name == img_oheight) {
+                    tmp_param.value = h;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                     /*Ignore all parameter after IMAGE_OHEIGHT */
                     break;
                 }
             }
         } else if (after_resize) {
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
-                tmp_param = &tmp_op->param_list[j];
-                if (tmp_param->name == img_iwidth || tmp_param->name == img_owidth) {
-                    tmp_param->value = w;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == img_iwidth || tmp_param.name == img_owidth) {
+                    tmp_param.value = w;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
-                if (tmp_param->name == img_iheight || tmp_param->name == img_oheight) {
-                    tmp_param->value = h;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+                if (tmp_param.name == img_iheight || tmp_param.name == img_oheight) {
+                    tmp_param.value = h;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
                 /*Ignore all parameter after IMAGE_OHEIGHT */
-                if (tmp_param->name == img_oheight)
+                if (tmp_param.name == img_oheight)
                     break;
             }
         } else {
@@ -1159,7 +1135,6 @@ void PreRuntime::UpdateResizeShape(const uint16_t w, const uint16_t h)
     }
     internal_param_val.resize_w = (uint16_t) w;
     internal_param_val.resize_h = (uint16_t) h;
-    return;
 }
 
 
@@ -1174,62 +1149,55 @@ void PreRuntime::UpdateResizeShape(const uint16_t w, const uint16_t h)
  ******************************************/
 void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const uint16_t w, const uint16_t h)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   img_iwidth     = P_IMG_IWIDTH;
-    std::string   img_iheight    = P_IMG_IHEIGHT;
-    std::string   img_owidth     = P_IMG_OWIDTH;
-    std::string   img_oheight    = P_IMG_OHEIGHT;
-    std::string   crop_pos_x     = P_CROP_POS_X;
-    std::string   crop_pos_y     = P_CROP_POS_Y;
-    std::string   lib_crop       = LIB_CROP;
-    std::string   lib_resize_hwc = LIB_RESIZE_HWC;
-    bool          after_crop     = false;
-    uint16_t      offset         = 0;
-    uint8_t       i              = 0;
-    uint8_t       j              = 0;
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_crop) {
+    std::string img_iwidth     = P_IMG_IWIDTH;
+    std::string img_iheight    = P_IMG_IHEIGHT;
+    std::string img_owidth     = P_IMG_OWIDTH;
+    std::string img_oheight    = P_IMG_OHEIGHT;
+    std::string crop_pos_x     = P_CROP_POS_X;
+    std::string crop_pos_y     = P_CROP_POS_Y;
+    std::string lib_crop       = LIB_CROP;
+    std::string lib_resize_hwc = LIB_RESIZE_HWC;
+    bool        after_crop     = false;
+    uint16_t    offset         = 0;
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_crop) {
             after_crop = true;
-            for (std::size_t j = 0; j < tmp_op->param_list.size(); j++) {
-                tmp_param = &tmp_op->param_list[j];
-                if (tmp_param->name == img_owidth) {
-                    tmp_param->value = w;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == img_owidth) {
+                    tmp_param.value = w;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
-                if (tmp_param->name == img_oheight) {
-                    tmp_param->value = h;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+                if (tmp_param.name == img_oheight) {
+                    tmp_param.value = h;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
-                if (tmp_param->name == crop_pos_x) {
-                    tmp_param->value = tl_x;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+                if (tmp_param.name == crop_pos_x) {
+                    tmp_param.value = tl_x;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                 }
-                if (tmp_param->name == crop_pos_y) {
-                    tmp_param->value = tl_y;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+                if (tmp_param.name == crop_pos_y) {
+                    tmp_param.value = tl_y;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                     /*Ignore all parameter after CROP_POS_Y */
                     break;
                 }
             }
         } else if (after_crop) {
-            if (tmp_op->lib == lib_resize_hwc) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == img_iwidth) {
-                        tmp_param->value = w;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+            if (tmp_op.lib == lib_resize_hwc) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == img_iwidth) {
+                        tmp_param.value = w;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                     }
-                    if (tmp_param->name == img_iheight) {
-                        tmp_param->value = h;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                    if (tmp_param.name == img_iheight) {
+                        tmp_param.value = h;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                         /*Ignore all parameter after IMAGE_IHEIGHT */
                         break;
                     }
@@ -1237,20 +1205,19 @@ void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const
                 /*Ignore all op after resize_hwc */
                 break;
             } else {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == img_iwidth || tmp_param->name == img_owidth) {
-                        tmp_param->value = w;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == img_iwidth || tmp_param.name == img_owidth) {
+                        tmp_param.value = w;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                     }
-                    if (tmp_param->name == img_iheight || tmp_param->name == img_oheight) {
-                        tmp_param->value = h;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                    if (tmp_param.name == img_iheight || tmp_param.name == img_oheight) {
+                        tmp_param.value = h;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                     }
                     /*Ignore all parameter after IMAGE_OHEIGHT */
-                    if (tmp_param->name == img_oheight)
+                    if (tmp_param.name == img_oheight)
                         break;
                 }
             }
@@ -1262,7 +1229,6 @@ void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const
     internal_param_val.crop_tl_y = (uint16_t) tl_y;
     internal_param_val.crop_w    = (uint16_t) w;
     internal_param_val.crop_h    = (uint16_t) h;
-    return;
 }
 /*****************************************
  * Function Name : UpdateFormat
@@ -1273,68 +1239,60 @@ void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const
  ******************************************/
 void PreRuntime::UpdateFormat(const uint16_t input_val, const uint16_t output_val)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   din_yuv_format  = P_INPUT_YUV_FORMAT;
-    std::string   din_format      = P_DIN_FORMAT;
-    std::string   lib_convyuv2rgb = LIB_CONVYUV2RGB;
-    std::string   lib_imagescaler = LIB_IMAGESCALER;
-    std::string   lib_convx2gray  = LIB_CONVX2GRAY;
-    std::string   out_rgb_format  = P_DOUT_RGB_FORMAT;
-    std::string   out_rgb_order   = P_DOUT_RGB_ORDER;
-    uint8_t       i               = 0;
-    uint8_t       j               = 0;
-    uint16_t      offset          = 0;
+    std::string din_yuv_format  = P_INPUT_YUV_FORMAT;
+    std::string din_format      = P_DIN_FORMAT;
+    std::string lib_convyuv2rgb = LIB_CONVYUV2RGB;
+    std::string lib_imagescaler = LIB_IMAGESCALER;
+    std::string lib_convx2gray  = LIB_CONVX2GRAY;
+    std::string out_rgb_format  = P_DOUT_RGB_FORMAT;
+    std::string out_rgb_order   = P_DOUT_RGB_ORDER;
+    uint16_t    offset          = 0;
     if (1 >= (input_val >> BIT_YUV)) {
-        for (i = 0; i < param_info.size(); i++) {
-            tmp_op = &param_info[i];
-            if (tmp_op->lib == lib_convyuv2rgb) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == din_yuv_format) {
+        for (auto &tmp_op: param_info) {
+            if (tmp_op.lib == lib_convyuv2rgb) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == din_yuv_format) {
                         /*DIN_YUV_FORMAT*/
-                        tmp_param->value = input_val;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
-                    } else if (tmp_param->name == out_rgb_format) {
+                        tmp_param.value = input_val;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
+                    } else if (tmp_param.name == out_rgb_format) {
                         /*DOUT_RGB_FORMAT*/
                         if (internal_param_val.pre_out_format != output_val) {
                             if (FORMAT_RGB == output_val) {
-                                tmp_param->value = 0;
+                                tmp_param.value = 0;
                             } else if (FORMAT_BGR == output_val) {
-                                tmp_param->value = 1;
+                                tmp_param.value = 1;
                             } else {
                                 /*Do nothing*/
                             }
-                            offset = tmp_op->offset + tmp_param->offset;
-                            WriteValue(offset, tmp_param->value, tmp_param->size);
+                            offset = tmp_op.offset + tmp_param.offset;
+                            WriteValue(offset, tmp_param.value, tmp_param.size);
                         }
                         break;
                     }
                 }
                 /*Do not break since stil need to check imagescaler > DOUT_RGB_ORDER*/
-            } else if (tmp_op->lib == lib_convx2gray) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == din_format) {
+            } else if (tmp_op.lib == lib_convx2gray) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == din_format) {
                         /*DIN_FORMAT*/
-                        tmp_param->value = input_val;
-                        offset           = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                        tmp_param.value = input_val;
+                        offset          = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                         break;
                     }
                 }
                 break;
-            } else if (tmp_op->lib == lib_imagescaler) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == out_rgb_order) {
-                        if (1 == tmp_param->value) {
+            } else if (tmp_op.lib == lib_imagescaler) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == out_rgb_order) {
+                        if (1 == tmp_param.value) {
                             /*DOUT_RGB_ORDER*/
                             /*Change it to 0 so that no swap occurs.*/
-                            tmp_param->value = 0;
-                            offset           = tmp_op->offset + tmp_param->offset;
-                            WriteValue(offset, tmp_param->value, tmp_param->size);
+                            tmp_param.value = 0;
+                            offset          = tmp_op.offset + tmp_param.offset;
+                            WriteValue(offset, tmp_param.value, tmp_param.size);
                         }
                         break;
                     }
@@ -1346,40 +1304,37 @@ void PreRuntime::UpdateFormat(const uint16_t input_val, const uint16_t output_va
         }
     } else {
         /*RGB/BGR*/
-        for (i = 0; i < param_info.size(); i++) {
-            tmp_op = &param_info[i];
-            if (tmp_op->lib == lib_convx2gray) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == din_format) {
+        for (auto &tmp_op: param_info) {
+            if (tmp_op.lib == lib_convx2gray) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == din_format) {
                         /*DIN_FORMAT*/
                         if (FORMAT_RGB == input_val) {
-                            tmp_param->value = DIN_FORMAT_RGB;
+                            tmp_param.value = DIN_FORMAT_RGB;
                         } else if (FORMAT_BGR == input_val) {
-                            tmp_param->value = DIN_FORMAT_BGR;
+                            tmp_param.value = DIN_FORMAT_BGR;
                         } else {
                             /*Do nothing*/
                         }
-                        offset = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                        offset = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                         break;
                     }
                 }
                 break;
-            } else if (tmp_op->lib == lib_imagescaler) {
-                for (j = 0; j < tmp_op->param_list.size(); j++) {
-                    tmp_param = &tmp_op->param_list[j];
-                    if (tmp_param->name == out_rgb_order) {
+            } else if (tmp_op.lib == lib_imagescaler) {
+                for (auto &tmp_param: tmp_op.param_list) {
+                    if (tmp_param.name == out_rgb_order) {
                         /*DOUT_RGB_ORDER*/
                         if (input_val == output_val) {
                             /*Change it to 0 so that no swap occurs.*/
-                            tmp_param->value = 0;
+                            tmp_param.value = 0;
                         } else {
                             /*Change it to 1 so that swap occurs.*/
-                            tmp_param->value = 1;
+                            tmp_param.value = 1;
                         }
-                        offset = tmp_op->offset + tmp_param->offset;
-                        WriteValue(offset, tmp_param->value, tmp_param->size);
+                        offset = tmp_op.offset + tmp_param.offset;
+                        WriteValue(offset, tmp_param.value, tmp_param.size);
                         break;
                     }
                 }
@@ -1391,7 +1346,6 @@ void PreRuntime::UpdateFormat(const uint16_t input_val, const uint16_t output_va
     }
     internal_param_val.pre_in_format  = input_val;
     internal_param_val.pre_out_format = output_val;
-    return;
 }
 
 /*****************************************
@@ -1402,22 +1356,17 @@ void PreRuntime::UpdateFormat(const uint16_t input_val, const uint16_t output_va
  ******************************************/
 void PreRuntime::UpdateResizeAlg(const uint8_t val)
 {
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   resize_alg_name = P_RESIZE_ALG;
-    std::string   lib_resize_hwc  = LIB_RESIZE_HWC;
-    uint8_t       i = 0, j = 0;
-    uint16_t      offset = 0;
+    std::string resize_alg_name = P_RESIZE_ALG;
+    std::string lib_resize_hwc  = LIB_RESIZE_HWC;
+    uint16_t    offset          = 0;
 
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_resize_hwc) {
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
-                tmp_param = &tmp_op->param_list[j];
-                if (tmp_param->name == resize_alg_name) {
-                    tmp_param->value = val;
-                    offset           = tmp_op->offset + tmp_param->offset;
-                    WriteValue(offset, tmp_param->value, tmp_param->size);
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_resize_hwc) {
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == resize_alg_name) {
+                    tmp_param.value = val;
+                    offset          = tmp_op.offset + tmp_param.offset;
+                    WriteValue(offset, tmp_param.value, tmp_param.size);
                     break;
                 }
             }
@@ -1425,7 +1374,6 @@ void PreRuntime::UpdateResizeAlg(const uint8_t val)
         }
     }
     internal_param_val.resize_alg = val;
-    return;
 }
 
 /*****************************************
@@ -1436,33 +1384,27 @@ void PreRuntime::UpdateResizeAlg(const uint8_t val)
  * Return value  : 0 if succeeded
  *                 not 0 otherwise
  ******************************************/
-uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new_cof_mul)
+uint8_t PreRuntime::UpdateCoefficient(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul)
 {
-    uint8_t       cood_num = 2;
-    uint8_t       cof_num  = (uint8_t) (weight_data.size() - cood_num) / sizeof(float);
-    uint8_t       cof_size = cood_num * cof_num;
-    uint16_t      fp16_data_add, fp16_data_mul;
-    uint8_t       new_cof_add_char[cof_size];
-    uint8_t       new_cof_mul_char[cof_size];
-    s_op_t       *tmp_op;
-    s_op_param_t *tmp_param;
-    std::string   add_addr        = P_ADD_ADDR;
-    std::string   lib_imagescaler = LIB_IMAGESCALER;
-    uint16_t      weight_offset   = 0;
-    uint8_t       weight_size     = weight_data.size();
-    uint8_t       empty_size      = 2;
-    uint8_t       i               = 0;
-    uint8_t       j               = 0;
+    uint8_t     cood_num = 2;
+    uint8_t     cof_num  = (uint8_t) (weight_data.size() - cood_num) / sizeof(float);
+    uint8_t     cof_size = cood_num * cof_num;
+    uint16_t    fp16_data_add, fp16_data_mul;
+    uint8_t     new_cof_add_char[cof_size];
+    uint8_t     new_cof_mul_char[cof_size];
+    std::string add_addr        = P_ADD_ADDR;
+    std::string lib_imagescaler = LIB_IMAGESCALER;
+    uint16_t    weight_offset   = 0;
+    uint8_t     weight_size     = weight_data.size();
+    uint8_t     empty_size      = 2;
 
     /*Get offset*/
-    for (i = 0; i < param_info.size(); i++) {
-        tmp_op = &param_info[i];
-        if (tmp_op->lib == lib_imagescaler) {
-            for (j = 0; j < tmp_op->param_list.size(); j++) {
-                tmp_param = &tmp_op->param_list[j];
-                if (tmp_param->name == add_addr) {
-                    weight_offset = tmp_param->value - (drpai_obj_info.drpai_address.weight_addr +
-                                                        drpai_obj_info.data_inout.start_address);
+    for (auto &tmp_op: param_info) {
+        if (tmp_op.lib == lib_imagescaler) {
+            for (auto &tmp_param: tmp_op.param_list) {
+                if (tmp_param.name == add_addr) {
+                    weight_offset = tmp_param.value - (drpai_obj_info.drpai_address.weight_addr +
+                                                       drpai_obj_info.data_inout.start_address);
                     break;
                 }
             }
@@ -1475,7 +1417,7 @@ uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new
         return PRE_ERROR;
     }
 
-    for (i = 0; i < cof_num; i++) {
+    for (uint8_t i = 0; i < cof_num; i++) {
         fp16_data_add                      = float32_to_float16(new_cof_add[i]);
         fp16_data_mul                      = float32_to_float16(new_cof_mul[i]);
         new_cof_add_char[cood_num * i]     = (uint8_t) fp16_data_add & 0xFF;
@@ -1484,7 +1426,7 @@ uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new
         new_cof_mul_char[cood_num * i + 1] = (uint8_t) (fp16_data_mul >> 8) & 0xFF;
     }
 
-    for (i = weight_offset; i < weight_size + weight_offset; i++) {
+    for (uint8_t i = weight_offset; i < weight_size + weight_offset; i++) {
         uint8_t id = i - weight_offset;
         if (i < cof_size) {
             weight_data[i] = new_cof_add_char[id];
@@ -1495,8 +1437,8 @@ uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new
         }
     }
     /*Update the current parameters in internal_param_val*/
-    memcpy(internal_param_val.cof_add, new_cof_add, cof_num * sizeof(float));
-    memcpy(internal_param_val.cof_mul, new_cof_mul, cof_num * sizeof(float));
+    std::copy(new_cof_add.begin(), new_cof_add.end(), internal_param_val.cof_add);
+    std::copy(new_cof_mul.begin(), new_cof_mul.end(), internal_param_val.cof_mul);
     return PRE_SUCCESS;
 }
 
@@ -1509,15 +1451,13 @@ uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new
  * Return value  : true if argument is different from internal_param_val
  *                 false if not
  ******************************************/
-bool PreRuntime::IsDifferentFmInternal(const float *new_cof_add, const float *new_cof_mul)
+bool PreRuntime::IsDifferentFmInternal(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul)
 {
-    uint8_t i        = 0;
-    uint8_t cood_num = 0;
-    uint8_t size     = (uint8_t) (weight_data.size() - cood_num) / sizeof(float);
-    for (i = 0; i < size; i++) {
-        if (new_cof_add[i] != internal_param_val.cof_add[i] || new_cof_mul[i] != internal_param_val.cof_mul[i]) {
-            return true;
-        }
+    if (!std::equal(new_cof_add.begin(), new_cof_add.end(), internal_param_val.cof_add)) {
+        return true;
+    }
+    if (!std::equal(new_cof_mul.begin(), new_cof_mul.end(), internal_param_val.cof_mul)) {
+        return true;
     }
     return false;
 }
@@ -1887,11 +1827,9 @@ int8_t PreRuntime::UpdateWeightData(const s_preproc_param_t param)
         return num_updated;
     }
 
-    float new_cof_add[size];
-    float new_cof_mul[size];
+    std::vector<float> new_cof_add(param.cof_add, param.cof_add + size);
+    std::vector<float> new_cof_mul(param.cof_mul, param.cof_mul + size);
 
-    memcpy(new_cof_add, param.cof_add, size * sizeof(float));
-    memcpy(new_cof_mul, param.cof_mul, size * sizeof(float));
     uint8_t ret = 0;
     uint8_t i   = 0;
     for (i = 0; i < size; i++) {
