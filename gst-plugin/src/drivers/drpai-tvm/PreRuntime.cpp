@@ -34,6 +34,64 @@
 #include <regex>
 #include "consts.h"
 
+static void clear_param(s_op_param_t *data)
+{
+    data->name   = "";
+    data->value  = 0;
+    data->offset = 0;
+    data->size   = 0;
+}
+
+static void clear_op(s_op_t *data)
+{
+    data->name   = "";
+    data->lib    = "";
+    data->offset = 0;
+    data->param_list.clear();
+}
+
+#ifdef DEBUG_LOG
+static std::string setW(std::string const &str, int n)
+{
+    std::ostringstream oss;
+    oss << std::left << std::setw(n) << str;
+    return oss.str();
+}
+static void print_preproc_param(const s_preproc_param_t data, uint8_t mode = MODE_PRE)
+{
+    std::cout << "PreProcessing Parameter List " << std::endl;
+    std::cout << "  pre_in_shape_w = " << std::setw(8) << std::dec << data.pre_in_shape_w << std::endl;
+    std::cout << "  pre_in_shape_h = " << std::setw(8) << std::dec << data.pre_in_shape_h << std::endl;
+    std::cout << "  pre_in_addr    = " << std::setw(8) << std::hex << data.pre_in_addr << std::endl;
+    if (!mode) {
+        std::cout << "  pre_in_format  = " << std::setw(8) << std::hex << data.pre_in_format << "("
+                  << format_string_table.at(data.pre_in_format) << ")" << std::endl;
+        std::cout << "  pre_out_format = " << std::setw(8) << std::hex << data.pre_out_format << "("
+                  << format_string_table.at(data.pre_out_format) << ")" << std::endl;
+        std::cout << "  resize_alg     = " << std::setw(8) << std::dec << (int) data.resize_alg << std::endl;
+        std::cout << "  resize_w       = " << std::setw(8) << std::dec << (int) data.resize_w << std::endl;
+        std::cout << "  resize_h       = " << std::setw(8) << std::dec << (int) data.resize_h << std::endl;
+        std::cout << "  cof_add        = ";
+        std::cout << std::fixed << std::setw(5) << std::setprecision(4) << (float) data.cof_add[0];
+        if (FORMAT_GRAY != data.pre_out_format) {
+            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_add[1];
+            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_add[2];
+        }
+        std::cout << std::endl << "  cof_mul        = ";
+        std::cout << std::fixed << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[0];
+        if (FORMAT_GRAY != data.pre_out_format) {
+            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[1];
+            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[2];
+        }
+        std::cout << std::endl;
+        std::cout << "  crop_tl_x      = " << std::setw(8) << std::dec << (int) data.crop_tl_x << std::endl;
+        std::cout << "  crop_tl_y      = " << std::setw(8) << std::dec << (int) data.crop_tl_y << std::endl;
+        std::cout << "  crop_w         = " << std::setw(8) << std::dec << (int) data.crop_w << std::endl;
+        std::cout << "  crop_h         = " << std::setw(8) << std::dec << (int) data.crop_h << std::endl;
+    }
+}
+#endif
+
 PreRuntime::PreRuntime() {};
 
 PreRuntime::~PreRuntime()
@@ -88,7 +146,6 @@ double PreRuntime::timedifference_msec(struct timespec t0, struct timespec t1)
  ******************************************/
 uint8_t PreRuntime::ReadAddrmapTxt(std::string addr_file)
 {
-    size_t      ret = 0;
     std::string str;
     uint32_t    l_addr = 0;
     uint32_t    l_size = 0;
@@ -197,7 +254,7 @@ uint8_t PreRuntime::LoadFileToMemDynamic(std::string data, unsigned long offset,
     int                  drpai_fd = drpai_obj_info.drpai_fd;
     drpai_data_dynamic_t drpai_data_dynamic;
     uint8_t              ret = 0;
-    int32_t              i   = 0;
+    uint32_t             i   = 0;
 
     errno  = 0;
     obj_fd = open(data.c_str(), O_RDONLY);
@@ -270,7 +327,7 @@ uint8_t PreRuntime::LoadDataToMem(std::vector<uint8_t> data, unsigned long from,
     int          drpai_fd = drpai_obj_info.drpai_fd;
     drpai_data_t drpai_data;
     uint8_t      ret = 0;
-    int32_t      i   = 0;
+    uint32_t     i   = 0;
 
     errno              = 0;
     drpai_data.address = from;
@@ -311,8 +368,6 @@ uint8_t PreRuntime::LoadDataToMem(std::vector<uint8_t> data, unsigned long from,
  ******************************************/
 uint8_t PreRuntime::ReadFileData(std::vector<uint8_t> &data, std::string file, unsigned long size)
 {
-    uint8_t      obj_fd, ret;
-    drpai_data_t drpai_data;
     errno = 0;
     data.resize(size);
     data.clear();
@@ -541,11 +596,8 @@ uint8_t PreRuntime::LoadParamInfo()
     std::string  dout_rgb_format   = P_DOUT_RGB_FORMAT;
     std::string  img_ich           = P_IMG_ICH;
     std::string  img_och           = P_IMG_OCH;
-    uint32_t     data_in_size      = 0;
-    uint32_t     data_out_size     = 0;
     uint32_t     in_size           = 0;
     uint32_t     out_size          = 0;
-    uint16_t     num_ch            = 0;
 
     /*pre_in_shape_w, pre_in_shape_h, pre_in_addr*/
     tmp_op = &param_info[0];
@@ -774,8 +826,6 @@ uint8_t PreRuntime::LoadParamInfo()
         }
     }
     /*pre_in_type_size, pre_out_type_size*/
-    data_in_size      = drpai_obj_info.data_inout.data_in_size;
-    data_out_size     = drpai_obj_info.data_inout.data_out_size;
     in_size           = internal_param_val.pre_in_shape_w * internal_param_val.pre_in_shape_h * pre_in_shape_c;
     out_size          = pre_out_shape_w * pre_out_shape_h * pre_out_shape_c;
     pre_in_type_size  = (uint8_t) (drpai_obj_info.data_inout.data_in_size / in_size);
@@ -1065,13 +1115,13 @@ void PreRuntime::UpdateResizeShape(const uint16_t w, const uint16_t h)
     std::string   lib_resize_hwc = LIB_RESIZE_HWC;
     bool          after_resize   = false;
     uint16_t      offset         = 0;
-    uint8_t       i              = 0;
-    uint8_t       j              = 0;
+    std::size_t   i              = 0;
+    std::size_t   j              = 0;
     for (i = 0; i < param_info.size(); i++) {
         tmp_op = &param_info[i];
         if (tmp_op->lib == lib_resize_hwc) {
             after_resize = true;
-            for (int j = 0; j < tmp_op->param_list.size(); j++) {
+            for (std::size_t j = 0; j < tmp_op->param_list.size(); j++) {
                 tmp_param = &tmp_op->param_list[j];
                 if (tmp_param->name == img_owidth) {
                     tmp_param->value = w;
@@ -1135,7 +1185,6 @@ void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const
     std::string   lib_crop       = LIB_CROP;
     std::string   lib_resize_hwc = LIB_RESIZE_HWC;
     bool          after_crop     = false;
-    bool          before_resize  = false;
     uint16_t      offset         = 0;
     uint8_t       i              = 0;
     uint8_t       j              = 0;
@@ -1143,7 +1192,7 @@ void PreRuntime::UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const
         tmp_op = &param_info[i];
         if (tmp_op->lib == lib_crop) {
             after_crop = true;
-            for (int j = 0; j < tmp_op->param_list.size(); j++) {
+            for (std::size_t j = 0; j < tmp_op->param_list.size(); j++) {
                 tmp_param = &tmp_op->param_list[j];
                 if (tmp_param->name == img_owidth) {
                     tmp_param->value = w;
@@ -1515,7 +1564,6 @@ bool PreRuntime::IsInSupportedList(uint16_t format, uint8_t is_input)
 ******************************************/
 bool PreRuntime::IsSupportedFormat(const s_preproc_param_t param, uint16_t format_in, uint16_t format_out)
 {
-    uint8_t i = 0;
     /* Check format is in the supported table*/
     if (!IsInSupportedList(format_in, 1)) {
         std::cerr << "[ERROR] Invalid parameter: pre_in_format=" << format_in << std::endl;
@@ -1953,18 +2001,20 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
 {
     uint8_t         ret = 0;
     drpai_data_t    proc[DRPAI_INDEX_NUM];
-    struct timespec ts_start, ts_end;
     drpai_status_t  drpai_status;
     fd_set          rfds;
     struct timespec tv;
     int8_t          ret_drpai;
-    double          preproc_time = 0;
     sigset_t        sigset;
-    float           diff            = 0;
-    int8_t          param_modified  = 0;
-    int8_t          weight_modified = 0;
-    uint32_t        addr            = 0;
-    uint32_t        size            = 0;
+#ifdef DEBUG_LOG
+    struct timespec ts_start, ts_end;
+    float           diff         = 0;
+    double          preproc_time = 0;
+#endif
+    int8_t   param_modified  = 0;
+    int8_t   weight_modified = 0;
+    uint32_t addr            = 0;
+    uint32_t size            = 0;
 
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGUSR1);
