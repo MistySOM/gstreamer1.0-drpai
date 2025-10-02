@@ -52,7 +52,7 @@ void Image::copy(const uint8_t *data, uint32_t data_len, IMAGE_FORMAT f)
     }
 
     if (f != BGR_DATA) {
-        throw std::runtime_error("[ERROR] Can't convert image formats.");
+        throw std::runtime_error("Can't convert image formats.");
     }
 
     switch (format) {
@@ -89,7 +89,7 @@ void Image::copy(const uint8_t *data, uint32_t data_len, IMAGE_FORMAT f)
             memcpy(img_buffer, data, data_len);
             break;
         default:
-            throw std::runtime_error("[ERROR] Can't convert image formats.");
+            throw std::runtime_error("Can't convert image formats.");
     }
 }
 
@@ -422,7 +422,7 @@ void Image::save_bmp(const std::string &filename) const
 
     std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("[ERROR] Could not open the file " + filename + "for writing.");
+        throw std::runtime_error("Could not open the file " + filename + "for writing.");
     }
 
     // Prepare the BMP file header

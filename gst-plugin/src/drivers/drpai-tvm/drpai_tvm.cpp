@@ -26,8 +26,7 @@ void DRPAI_TVM::open_resource(const bool open_files)
     /*Load pre_dir object to DRP-AI */
     auto ret = preruntime.Load(prefix + "/preprocess");
     if (0 < ret) {
-        std::cerr << "[ERROR] Failed to run Pre-processing Runtime Load()." << std::endl;
-        throw;
+        throw std::runtime_error("Failed to run Pre-processing Runtime Load().");
     }
     IN_WIDTH   = preruntime.internal_param_val.pre_in_shape_w;
     IN_HEIGHT  = preruntime.internal_param_val.pre_in_shape_h;
@@ -85,7 +84,7 @@ void DRPAI_TVM::run_inference()
     const auto t1  = std::chrono::high_resolution_clock::now();
     auto       ret = preruntime.Pre(&in_param, &preprocess_output_ptr, &preprocess_out_size);
     if (0 < ret) {
-        throw std::runtime_error("[ERROR] Failed to run Pre-processing Runtime Pre().");
+        throw std::runtime_error("Failed to run Pre-processing Runtime Pre().");
     }
     const auto t2 = std::chrono::high_resolution_clock::now();
 

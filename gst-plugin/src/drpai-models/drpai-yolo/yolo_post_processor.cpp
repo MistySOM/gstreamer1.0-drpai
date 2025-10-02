@@ -58,7 +58,7 @@ struct matrix_ref {
     {
         if (t.size() != static_cast<long>(x_len) * y_len) {
             throw std::runtime_error(
-                    "[Error] The source vector size does not match the matrix sizes: " + std::to_string(t.size()) +
+                    "The source vector size does not match the matrix sizes: " + std::to_string(t.size()) +
                     " != " + std::to_string(x_len) + "x" + std::to_string(y_len));
         }
     }
@@ -203,7 +203,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
 
     auto value = get_param("[yolo_version]");
     if (value.empty()) {
-        throw std::runtime_error("[ERROR] Failed to load value for param [yolo_version]");
+        throw std::runtime_error("Failed to load value for param [yolo_version]");
     }
     yolo_version = value.at(0);
     switch (yolo_version) {
@@ -218,7 +218,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
             MODEL_IN_W = MODEL_IN_H = 640;
             break;
         default:
-            throw std::runtime_error("[ERROR] Yolo version is not supported: " + value);
+            throw std::runtime_error("Yolo version is not supported: " + value);
     }
     std::cout << "YOLO Version: " << yolo_version << std::endl;
 
@@ -248,7 +248,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
             num_bb = inference_output_size / (item_size * sum_grids);
             std::cout << " & num BB: " << num_bb << std::endl;
             if (num_bb == 0) {
-                throw std::runtime_error("[ERROR] Either classes or grids are not matching with the model output.");
+                throw std::runtime_error("Either classes or grids are not matching with the model output.");
             }
             break;
         }
@@ -275,14 +275,14 @@ void YOLO_PostProcessor::load_anchors_file(const std::string &anchors_file_name)
 {
     std::ifstream infile(anchors_file_name);
     if (!infile.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to open anchors file: " + anchors_file_name);
+        throw std::runtime_error("Failed to open anchors file: " + anchors_file_name);
     }
     float f = 0;
     while (infile >> f) {
         anchors.push_back(f);
     }
     if (!infile.eof()) {
-        throw std::runtime_error("[ERROR] Failed to read anchors file: " + anchors_file_name);
+        throw std::runtime_error("Failed to read anchors file: " + anchors_file_name);
     }
     infile.close();
 }
@@ -298,7 +298,7 @@ void YOLO_PostProcessor::load_num_grids(const std::string &data_out_list_file_na
 {
     std::ifstream infile(data_out_list_file_name);
     if (!infile.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to open data out file: " + data_out_list_file_name);
+        throw std::runtime_error("Failed to open data out file: " + data_out_list_file_name);
     }
     const std::string find = "Width";
     std::string       line;
@@ -308,7 +308,7 @@ void YOLO_PostProcessor::load_num_grids(const std::string &data_out_list_file_na
             num_grids.push_back(std::stoi(line.substr(pos)));
         }
         if (infile.fail()) {
-            throw std::runtime_error("[ERROR] Failed to read data out file: " + data_out_list_file_name);
+            throw std::runtime_error("Failed to read data out file: " + data_out_list_file_name);
         }
     }
     infile.close();

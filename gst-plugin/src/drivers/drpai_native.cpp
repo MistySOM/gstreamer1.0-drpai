@@ -21,7 +21,7 @@ void DRPAI_Native::read_addrmap_txt(const std::string &addr_file)
     std::cout << "Loading : " << addr_file << std::endl;
     std::ifstream ifs(addr_file);
     if (ifs.fail()) {
-        throw std::runtime_error("[ERROR] Failed to open address map list : " + addr_file);
+        throw std::runtime_error("Failed to open address map list : " + addr_file);
     }
 
     const std::map<std::string, int> drpai_index = {
@@ -66,11 +66,11 @@ void DRPAI_Native::load_data_to_mem(const std::string &file, const drpai_data_t 
     std::cout << "Loading : " << file << " " << std::flush;
     std::ifstream file_stream(file, std::ios::binary);
     if (!file_stream.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to open: " + file);
+        throw std::runtime_error("Failed to open: " + file);
     }
     errno = 0;
     if (ioctl(drpai_fd, DRPAI_ASSIGN, &data) == -1) {
-        throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
 
@@ -80,8 +80,8 @@ void DRPAI_Native::load_data_to_mem(const std::string &file, const drpai_data_t 
     while (file_stream.read(drpai_buf.data(), BUF_SIZE)) {
         errno = 0;
         if (write(drpai_fd, drpai_buf.data(), BUF_SIZE) == -1) {
-            throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
-                                     " " + std::string(std::strerror(errno)));
+            throw std::runtime_error("Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+                                     std::string(std::strerror(errno)));
         }
         if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start).count() > 0) {
             std::cout << "." << std::flush;
@@ -94,8 +94,8 @@ void DRPAI_Native::load_data_to_mem(const std::string &file, const drpai_data_t 
         file_stream.read(drpai_buf.data(), remaining_size);
         errno = 0;
         if (write(drpai_fd, drpai_buf.data(), remaining_size) == -1) {
-            throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
-                                     " " + std::string(std::strerror(errno)));
+            throw std::runtime_error("Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+                                     std::string(std::strerror(errno)));
         }
     }
     std::cout << std::endl;
@@ -125,12 +125,12 @@ void DRPAI_Native::get_result()
     errno = 0;
     /* Assign the memory address and size to be read */
     if (ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data) == -1) {
-        throw std::runtime_error("[ERROR] Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to run DRPAI_ASSIGN:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
     /* Read the memory via DRP-AI Driver and store the output to buffer */
     if (read(drpai_fd, drpai_output_buf.data(), drpai_data.size) == -1) {
-        throw std::runtime_error("[ERROR] Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to read via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
 }
@@ -142,7 +142,7 @@ uint32_t DRPAI_Native::get_drpai_start_addr() const
     drpai_data_t drpai_data;
     errno = 0;
     if (const auto ret = ioctl(drpai_fd, DRPAI_GET_DRPAI_AREA, &drpai_data); 0 != ret) {
-        throw std::runtime_error("[ERROR] Failed to get DRP-AI Memory Area : errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to get DRP-AI Memory Area : errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
     return drpai_data.address;
@@ -153,7 +153,7 @@ void DRPAI_Native::start()
 {
     errno = 0;
     if (const int ret = ioctl(drpai_fd, DRPAI_START, proc); 0 != ret) {
-        throw std::runtime_error("[ERROR] Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to run DRPAI_START:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
 }
@@ -170,12 +170,12 @@ void DRPAI_Native::wait() const
 
     switch (select(drpai_fd + 1, &rfds, nullptr, nullptr, &tv)) {
         case 0:
-            throw std::runtime_error("[ERROR] DRP-AI select() Timeout");
+            throw std::runtime_error("DRP-AI select() Timeout");
         case -1: {
-            auto s = "[ERROR] DRP-AI select() Error :  errno=" + std::to_string(errno) + " " +
-                     std::string(std::strerror(errno));
+            auto s =
+                    "DRP-AI select() Error :  errno=" + std::to_string(errno) + " " + std::string(std::strerror(errno));
             if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1) {
-                s += "\n[ERROR] Failed to run DRPAI_GET_STATUS :  errno=" + std::to_string(errno) + " " +
+                s += "\nFailed to run DRPAI_GET_STATUS :  errno=" + std::to_string(errno) + " " +
                      std::string(std::strerror(errno));
             }
             throw std::runtime_error(s);
@@ -187,7 +187,7 @@ void DRPAI_Native::wait() const
     if (FD_ISSET(drpai_fd, &rfds)) {
         errno = 0;
         if (ioctl(drpai_fd, DRPAI_GET_STATUS, &drpai_status) == -1) {
-            throw std::runtime_error("[ERROR] Failed to run DRPAI_GET_STATUS :  errno=" + std::to_string(errno) + " " +
+            throw std::runtime_error("Failed to run DRPAI_GET_STATUS :  errno=" + std::to_string(errno) + " " +
                                      std::string(std::strerror(errno)));
         }
     }
@@ -209,7 +209,7 @@ void DRPAI_Native::open_resource(const bool open_files)
     errno    = 0;
     drpai_fd = open("/dev/drpai0", O_RDWR);
     if (0 > drpai_fd) {
-        throw std::runtime_error("[ERROR] Failed to open DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to open DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
     if (!open_files) {
@@ -240,14 +240,14 @@ void DRPAI_Native::read_data_in_list(const std::string &data_in_list)
     std::ifstream infile(data_in_list);
 
     if (!infile.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to load data in file: " + data_in_list);
+        throw std::runtime_error("Failed to load data in file: " + data_in_list);
     }
 
     std::cout << "\t\tFound input type:";
     std::string line;
     while (getline(infile, line)) {
         if (infile.fail()) {
-            throw std::runtime_error("[ERROR] Failed to load data in file: " + data_in_list);
+            throw std::runtime_error("Failed to load data in file: " + data_in_list);
         }
         if (line.find("Height") != std::string::npos) {
             const auto pos = line.find(':') + 2;
@@ -274,7 +274,7 @@ void DRPAI_Native::read_data_in_list(const std::string &data_in_list)
             } else if (value == "rgb_data") {
                 IN_FORMAT = RGB_DATA;
             } else {
-                throw std::runtime_error("[ERROR] DRP-AI data in format unsupported: " + value);
+                throw std::runtime_error("DRP-AI data in format unsupported: " + value);
             }
             std::cout << " " << value;
         }
@@ -288,7 +288,7 @@ void DRPAI_Native::release_resource()
 {
     errno = 0;
     if (drpai_fd > 0 && close(drpai_fd) != 0) {
-        throw std::runtime_error("[ERROR] Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to close DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
 }
@@ -349,7 +349,7 @@ void DRPAI_Native::load_drpai_param_file(const drpai_data_t &_proc, const std::s
 
     drpai_assign_param_t assign_param{static_cast<uint32_t>(file_stream.tellg()), _proc};
     if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &assign_param)) {
-        throw std::runtime_error("[ERROR] DRPAI Assign Parameter Failed:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("DRPAI Assign Parameter Failed:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
     file_stream.seekg(0, std::ios::beg);
@@ -358,7 +358,7 @@ void DRPAI_Native::load_drpai_param_file(const drpai_data_t &_proc, const std::s
     while (file_stream.read(drpai_buf.data(), BUF_SIZE)) {
         errno = 0;
         if (0 > write(drpai_fd, drpai_buf.data(), BUF_SIZE)) {
-            throw std::runtime_error("[ERROR] DRPAI Write Failed:  errno=" + std::to_string(errno) + " " +
+            throw std::runtime_error("DRPAI Write Failed:  errno=" + std::to_string(errno) + " " +
                                      std::string(std::strerror(errno)));
         }
     }
@@ -368,8 +368,8 @@ void DRPAI_Native::load_drpai_param_file(const drpai_data_t &_proc, const std::s
         file_stream.read(drpai_buf.data(), remaining_size);
         errno = 0;
         if (write(drpai_fd, drpai_buf.data(), remaining_size) == -1) {
-            throw std::runtime_error("[ERROR] Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) +
-                                     " " + std::string(std::strerror(errno)));
+            throw std::runtime_error("Failed to write via DRP-AI Driver:  errno=" + std::to_string(errno) + " " +
+                                     std::string(std::strerror(errno)));
         }
     }
 }
@@ -386,7 +386,7 @@ void DRPAI_Native::crop(const Box &crop_region) const
     crop_param.pos_y       = std::clamp(static_cast<int>(crop_region.getTop()), 0, IN_HEIGHT - crop_param.img_oheight);
     crop_param.obj         = proc[DRPAI_INDEX_DRP_PARAM];
     if (0 != ioctl(drpai_fd, DRPAI_PREPOST_CROP, &crop_param)) {
-        throw std::runtime_error("[ERROR] Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " +
+        throw std::runtime_error("Failed to DRPAI prepost crop:  errno=" + std::to_string(errno) + " " +
                                  std::string(std::strerror(errno)));
     }
 }

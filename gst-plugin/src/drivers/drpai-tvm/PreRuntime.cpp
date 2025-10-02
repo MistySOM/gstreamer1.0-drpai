@@ -46,7 +46,7 @@ PreRuntime::~PreRuntime()
     if (0 <= drpai_obj_info.drpai_fd) {
         errno = 0;
         if (PRE_SUCCESS != close(drpai_obj_info.drpai_fd)) {
-            std::cerr << "[ERROR] Failed to close DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to close DRP-AI Driver : errno=" << errno << std::endl;
         }
     }
 }
@@ -99,7 +99,7 @@ uint8_t PreRuntime::ReadAddrmapTxt(std::string addr_file)
 
     std::ifstream ifs(addr_file);
     if (ifs.fail()) {
-        std::cerr << "[ERROR] Failed to open Address Map List " << addr_file << ": errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to open Address Map List " << addr_file << ": errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
@@ -143,7 +143,7 @@ uint8_t PreRuntime::ReadAddrmapTxt(std::string addr_file)
         /* Check the start address of Object files */
         if (0 == cnt) {
             if (0x00000000 != l_addr) {
-                std::cerr << "[ERROR] Directory name=" << drpai_obj_info.data_inout.directory_name
+                std::cerr << ERROR << "Directory name=" << drpai_obj_info.data_inout.directory_name
                           << ":This Object files do not support the Dynamic allocation function." << std::endl;
                 ifs.close();
                 return PRE_ERROR;
@@ -202,7 +202,7 @@ uint8_t PreRuntime::LoadFileToMemDynamic(std::string data, unsigned long offset,
     errno  = 0;
     obj_fd = open(data.c_str(), O_RDONLY);
     if (0 > obj_fd) {
-        std::cerr << "[ERROR] Failed to open " << data << ": errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to open " << data << ": errno=" << errno << std::endl;
         ret_load_data = PRE_ERROR;
         goto end;
     }
@@ -213,7 +213,7 @@ uint8_t PreRuntime::LoadFileToMemDynamic(std::string data, unsigned long offset,
     errno                            = 0;
     ret                              = ioctl(drpai_fd, DRPAI_ASSIGN_DYNAMIC, &drpai_data_dynamic);
     if (-1 == ret) {
-        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN_DYNAMIC : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRPAI_ASSIGN_DYNAMIC : errno=" << errno << std::endl;
         ret_load_data = PRE_ERROR;
         goto end;
     }
@@ -222,13 +222,13 @@ uint8_t PreRuntime::LoadFileToMemDynamic(std::string data, unsigned long offset,
         errno = 0;
         ret   = read(obj_fd, drpai_buf, BUF_SIZE);
         if (0 > ret) {
-            std::cerr << "[ERROR] Failed to read " << data << " : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to read " << data << " : errno=" << errno << std::endl;
             ret_load_data = PRE_ERROR;
             goto end;
         }
         ret = write(drpai_fd, drpai_buf, BUF_SIZE);
         if (-1 == ret) {
-            std::cerr << "[ERROR] Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
             ret_load_data = PRE_ERROR;
             goto end;
         }
@@ -237,13 +237,13 @@ uint8_t PreRuntime::LoadFileToMemDynamic(std::string data, unsigned long offset,
         errno = 0;
         ret   = read(obj_fd, drpai_buf, (drpai_data_dynamic.size % BUF_SIZE));
         if (0 > ret) {
-            std::cerr << "[ERROR] Failed to read " << data << " : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to read " << data << " : errno=" << errno << std::endl;
             ret_load_data = PRE_ERROR;
             goto end;
         }
         ret = write(drpai_fd, drpai_buf, (drpai_data_dynamic.size % BUF_SIZE));
         if (-1 == ret) {
-            std::cerr << "[ERROR] Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
             ret_load_data = PRE_ERROR;
             goto end;
         }
@@ -277,14 +277,14 @@ uint8_t PreRuntime::LoadDataToMem(std::vector<uint8_t> data, unsigned long from,
     drpai_data.size    = size;
     ret                = ioctl(drpai_fd, DRPAI_ASSIGN, &drpai_data);
     if (-1 == ret) {
-        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRPAI_ASSIGN : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
     for (i = 0; i < (drpai_data.size / BUF_SIZE); i++) {
         errno = 0;
         ret   = write(drpai_fd, &data[BUF_SIZE * i], BUF_SIZE);
         if (-1 == ret) {
-            std::cerr << "[ERROR] Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
             return PRE_ERROR;
         }
     }
@@ -293,7 +293,7 @@ uint8_t PreRuntime::LoadDataToMem(std::vector<uint8_t> data, unsigned long from,
         errno = 0;
         ret   = write(drpai_fd, &data[BUF_SIZE * (int) (drpai_data.size / BUF_SIZE)], (drpai_data.size % BUF_SIZE));
         if (-1 == ret) {
-            std::cerr << "[ERROR] Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to write via DRP-AI Driver : errno=" << errno << std::endl;
             return PRE_ERROR;
         }
     }
@@ -319,7 +319,7 @@ uint8_t PreRuntime::ReadFileData(std::vector<uint8_t> &data, std::string file, u
 
     std::ifstream ifs(file);
     if (!ifs) {
-        std::cerr << "[ERROR] Failed to open " << file << ": errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to open " << file << ": errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
@@ -331,7 +331,7 @@ uint8_t PreRuntime::ReadFileData(std::vector<uint8_t> &data, std::string file, u
     }
     /* Check the param_data size is appropriate */
     if (size != data.size()) {
-        std::cerr << "[ERROR] Failed to read " << file << ": errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to read " << file << ": errno=" << errno << std::endl;
         return PRE_ERROR;
     }
     ifs.close();
@@ -414,14 +414,14 @@ uint8_t PreRuntime::ParseParamInfo(const std::string info_file)
     drpai_param.obj.size    = drpai_obj_info.drpai_address.drp_param_size;
 
     if (0 != ioctl(drpai_fd, DRPAI_ASSIGN_PARAM, &drpai_param)) {
-        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN_PARAM : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRPAI_ASSIGN_PARAM : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
     /* Open param info file */
     std::ifstream param_file(info_file);
     if (param_file.fail()) {
-        std::cerr << "[ERROR] Failed to open Param Info file " << info_file << ": errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to open Param Info file " << info_file << ": errno=" << errno << std::endl;
         return PRE_ERROR;
     }
     while (getline(param_file, str)) {
@@ -429,7 +429,7 @@ uint8_t PreRuntime::ParseParamInfo(const std::string info_file)
         str_return = str + "\n";
         /*Write to DRP-AI Driver*/
         if (0 > write(drpai_fd, str_return.c_str(), str_return.size())) {
-            std::cerr << "[ERROR] Failed to write to DRP-AI Driver : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to write to DRP-AI Driver : errno=" << errno << std::endl;
             param_file.close();
             return PRE_ERROR;
         }
@@ -813,11 +813,11 @@ uint32_t PreRuntime::GetStartAddress(uint32_t addr, drpai_data_t drpai_data)
         return drpai_data.address;
     }
     if ((drpai_data.address > addr) || drpai_mem_addr_end < addr) {
-        std::cerr << "[ERROR] Not in DRP-AI memory area." << std::endl;
+        std::cerr << ERROR << "Not in DRP-AI memory area." << std::endl;
         return INVALID_ADDR;
     }
     if (0 != (addr % 64)) {
-        std::cerr << "[ERROR] Not 64-byte aligned." << std::endl;
+        std::cerr << ERROR << "Not 64-byte aligned." << std::endl;
         return INVALID_ADDR;
     }
     return addr;
@@ -857,7 +857,7 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
     }
     /* Check whether directory exists*/
     if (0 != stat(dir.c_str(), &statBuf)) {
-        std::cerr << "[ERROR] Directory " << dir << " not found." << std::endl;
+        std::cerr << ERROR << "Directory " << dir << " not found." << std::endl;
         return PRE_ERROR;
     }
 
@@ -881,20 +881,20 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
     /*Open DRP-AI Driver*/
     drpai_obj_info.drpai_fd = open("/dev/drpai0", O_RDWR);
     if (PRE_SUCCESS > drpai_obj_info.drpai_fd) {
-        std::cerr << "[ERROR] Failed to open DRP-AI Driver : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to open DRP-AI Driver : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
     /* Get DRP-AI Memory Area Address via DRP-AI Driver */
     ret = ioctl(drpai_obj_info.drpai_fd, DRPAI_GET_DRPAI_AREA, &drpai_data0);
     if (-1 == ret) {
-        std::cerr << "[ERROR] Failed to get DRP-AI Memory Area : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to get DRP-AI Memory Area : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
     /*Define the start address*/
     drpai_obj_info.data_inout.start_address = GetStartAddress(start_address, drpai_data0);
     if (INVALID_ADDR == drpai_obj_info.data_inout.start_address) {
-        std::cerr << "[ERROR] Invalid argument: start_addr = 0x" << std::setw(8) << std::hex << start_address
+        std::cerr << ERROR << "Invalid argument: start_addr = 0x" << std::setw(8) << std::hex << start_address
                   << std::endl;
         return PRE_ERROR;
     }
@@ -902,14 +902,14 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
     /* Read Address Map List file */
     ret = ReadAddrmapTxt(address_file);
     if (PRE_SUCCESS < ret) {
-        std::cerr << "[ERROR] Failed to read Address Map List " << address_file << std::endl;
+        std::cerr << ERROR << "Failed to read Address Map List " << address_file << std::endl;
         return PRE_ERROR;
     }
 
     /*Parse drp_param_info.txt*/
     ret = ParseParamInfo(drpai_param_file);
     if (PRE_SUCCESS < ret) {
-        std::cerr << "[ERROR] Failed to read param info file: " << drpai_param_file << std::endl;
+        std::cerr << ERROR << "Failed to read param info file: " << drpai_param_file << std::endl;
         return PRE_ERROR;
     }
 
@@ -948,7 +948,7 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
             /*Read and Hold drp_param.bin data internally in param_data vector. */
             ret = ReadFileData(param_data, drpai_file_path[i], size);
             if (PRE_SUCCESS < ret) {
-                std::cerr << "[ERROR] Failed to read file " << drpai_file_path[i] << std::endl;
+                std::cerr << ERROR << "Failed to read file " << drpai_file_path[i] << std::endl;
                 return PRE_ERROR;
             }
             /*Update address in drp_param.bin for dynamic allocation*/
@@ -958,7 +958,7 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
             /*Read and Hold weight.dat data internally in weight_data array. */
             ret = ReadFileData(weight_data, drpai_file_path[i], size);
             if (PRE_SUCCESS < ret) {
-                std::cerr << "[ERROR] Failed to read file " << drpai_file_path[i] << std::endl;
+                std::cerr << ERROR << "Failed to read file " << drpai_file_path[i] << std::endl;
                 return PRE_ERROR;
             }
             /*Load weight data to memory using non-dynamic function.*/
@@ -969,7 +969,7 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
         }
         /*Error Check*/
         if (PRE_SUCCESS < ret) {
-            std::cerr << "[ERROR] Failed to load data to memory: " << drpai_file_path[i] << std::endl;
+            std::cerr << ERROR << "Failed to load data to memory: " << drpai_file_path[i] << std::endl;
             return PRE_ERROR;
         }
     }
@@ -977,7 +977,7 @@ uint8_t PreRuntime::Load(const std::string pre_dir, uint32_t start_addr, uint8_t
     /*Load param data*/
     ret = LoadParamInfo();
     if (PRE_SUCCESS < ret) {
-        std::cerr << "[ERROR] Failed to load param info. " << std::endl;
+        std::cerr << ERROR << "Failed to load param info. " << std::endl;
         return PRE_ERROR;
     }
     return PRE_SUCCESS;
@@ -1422,7 +1422,7 @@ uint8_t PreRuntime::UpdateCoefficient(const float *new_cof_add, const float *new
     }
 
     if (0 > weight_offset) {
-        std::cerr << "[ERROR] Wrong address of weight area or wrong drp_param_info.txt. " << std::endl;
+        std::cerr << ERROR << "Wrong address of weight area or wrong drp_param_info.txt. " << std::endl;
         return PRE_ERROR;
     }
 
@@ -1518,11 +1518,11 @@ bool PreRuntime::IsSupportedFormat(const s_preproc_param_t param, uint16_t forma
     uint8_t i = 0;
     /* Check format is in the supported table*/
     if (!IsInSupportedList(format_in, 1)) {
-        std::cerr << "[ERROR] Invalid parameter: pre_in_format=" << format_in << std::endl;
+        std::cerr << ERROR << "Invalid parameter: pre_in_format=" << format_in << std::endl;
         goto end_false;
     }
     if (!IsInSupportedList(format_out, 0)) {
-        std::cerr << "[ERROR] Invalid parameter: pre_out_format=" << format_out << std::endl;
+        std::cerr << ERROR << "Invalid parameter: pre_out_format=" << format_out << std::endl;
         goto end_false;
     }
 
@@ -1530,40 +1530,40 @@ bool PreRuntime::IsSupportedFormat(const s_preproc_param_t param, uint16_t forma
     if ((internal_param_val.pre_in_format != format_in) || (internal_param_val.pre_out_format != format_out)) {
         /*Not supported combination In YUV420 & Out Gray*/
         if ((1 == (format_in >> BIT_YUV)) && (FORMAT_GRAY == format_out)) {
-            std::cerr << "[ERROR] Not supported format combination." << std::endl;
+            std::cerr << ERROR << "Not supported format combination." << std::endl;
             std::cerr << "        In=YUV420 & Out=Gray " << std::endl;
             goto end_false;
         }
         /*When current format is Gray, it cannot be changed.*/
         if ((FORMAT_GRAY == internal_param_val.pre_in_format) && (FORMAT_GRAY != format_in)) {
-            std::cerr << "[ERROR] Parameter pre_in_format change is not allowed" << std::endl;
+            std::cerr << ERROR << "Parameter pre_in_format change is not allowed" << std::endl;
             std::cerr << "          if current pre_in_format is Gray." << std::endl;
             goto print_err_format_in;
         }
         if ((FORMAT_GRAY == internal_param_val.pre_out_format) && (FORMAT_GRAY != format_out)) {
-            std::cerr << "[ERROR] Parameter pre_out_format change is not allowed" << std::endl;
+            std::cerr << ERROR << "Parameter pre_out_format change is not allowed" << std::endl;
             std::cerr << "          if current pre_out_format is Gray." << std::endl;
             goto print_err_format_out;
         }
         /*When current format is not Gray, it cannot be changed to Gray*/
         if ((FORMAT_GRAY != internal_param_val.pre_in_format) && (FORMAT_GRAY == format_in)) {
-            std::cerr << "[ERROR] Parameter pre_in_format change is not allowed" << std::endl;
+            std::cerr << ERROR << "Parameter pre_in_format change is not allowed" << std::endl;
             std::cerr << "          for non-Gray pre_in_format to Gray." << std::endl;
             goto print_err_format_in;
         }
         if ((FORMAT_GRAY != internal_param_val.pre_out_format) && (FORMAT_GRAY == format_out)) {
-            std::cerr << "[ERROR] Parameter pre_out_format change is not allowed" << std::endl;
+            std::cerr << ERROR << "Parameter pre_out_format change is not allowed" << std::endl;
             std::cerr << "          for non-Gray pre_out_format to Gray." << std::endl;
             goto print_err_format_out;
         }
         /*When current input format is YUV, new format_in must be YUV.*/
         if ((1 >= (internal_param_val.pre_in_format >> BIT_YUV)) && (1 < (format_in >> BIT_YUV))) {
-            std::cerr << "[ERROR] Parameter change is not allowed if In=YUV & New In=Not YUV." << std::endl;
+            std::cerr << ERROR << "Parameter change is not allowed if In=YUV & New In=Not YUV." << std::endl;
             goto print_err_format_in;
         }
         /*When current input format is not YUV, new format_in must not be YUV.*/
         if ((1 < (internal_param_val.pre_in_format >> BIT_YUV)) && (1 >= (format_in >> BIT_YUV))) {
-            std::cerr << "[ERROR] Parameter change is not allowed if In=Not YUV & New In=YUV." << std::endl;
+            std::cerr << ERROR << "Parameter change is not allowed if In=Not YUV & New In=YUV." << std::endl;
             goto print_err_format_in;
         }
     }
@@ -1622,11 +1622,11 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
         new_pre_in_shape_h = internal_param_val.pre_in_shape_h;
     /* Size restriction check */
     if (MIN_INPUT_W_BOUND > new_pre_in_shape_w) {
-        std::cerr << "[ERROR] Invalid parameter: pre_in_shape_w=" << new_pre_in_shape_w << std::endl;
+        std::cerr << ERROR << "Invalid parameter: pre_in_shape_w=" << new_pre_in_shape_w << std::endl;
         return (int8_t) PRE_ERROR_UI;
     }
     if (MIN_INPUT_H_BOUND > new_pre_in_shape_h) {
-        std::cerr << "[ERROR] Invalid parameter: pre_in_shape_h=" << new_pre_in_shape_h << std::endl;
+        std::cerr << ERROR << "Invalid parameter: pre_in_shape_h=" << new_pre_in_shape_h << std::endl;
         return (int8_t) PRE_ERROR_UI;
     }
     if (new_pre_in_shape_w != internal_param_val.pre_in_shape_w ||
@@ -1671,7 +1671,7 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
             /* If there is any crop parameters in user input, print warning and ignore the user input. */
             if ((INVALID_SHAPE != new_crop_tl_x) || (INVALID_SHAPE != new_crop_tl_y) || (INVALID_SHAPE != new_crop_w) ||
                 (INVALID_SHAPE != new_crop_h)) {
-                std::cerr << "[WARNING] Crop parameters are specified in Pre()," << std::endl;
+                std::cerr << WARNING << "Crop parameters are specified in Pre()," << std::endl;
                 std::cerr << "          but no crop operator used in loaded Pre-runtime Object files." << std::endl;
                 std::cerr << "          Specified crop_tl_x, crop_tl_y, crop_w and crop_h are ignored." << std::endl;
             }
@@ -1689,28 +1689,28 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
             /* Size restriction check */
             {
                 if ((MIN_CROP_W_BOUND > new_crop_tl_x) || ((internal_param_val.pre_in_shape_w - 1) < new_crop_tl_x)) {
-                    std::cerr << "[ERROR] Invalid parameter: crop_tl_x=" << new_crop_tl_x << std::endl;
+                    std::cerr << ERROR << "Invalid parameter: crop_tl_x=" << new_crop_tl_x << std::endl;
                     if ((internal_param_val.pre_in_shape_w - 1) < new_crop_tl_x) {
                         std::cerr << "          Requirement: crop_tl_x <= pre_in_shape_w - 1." << std::endl;
                     }
                     return (int8_t) PRE_ERROR_UI;
                 }
                 if ((MIN_CROP_H_BOUND > new_crop_tl_y) || ((internal_param_val.pre_in_shape_h - 1) < new_crop_tl_y)) {
-                    std::cerr << "[ERROR] Invalid parameter: crop_tl_y=" << new_crop_tl_y << std::endl;
+                    std::cerr << ERROR << "Invalid parameter: crop_tl_y=" << new_crop_tl_y << std::endl;
                     if ((internal_param_val.pre_in_shape_h - 1) < new_crop_tl_y) {
                         std::cerr << "          Requirement: crop_tl_y <= pre_in_shape_h - 1." << std::endl;
                     }
                     return (int8_t) PRE_ERROR_UI;
                 }
                 if ((MIN_CROP_W_BOUND > new_crop_w) || (internal_param_val.pre_in_shape_w < new_crop_w)) {
-                    std::cerr << "[ERROR] Invalid parameter: crop_w=" << new_crop_w << std::endl;
+                    std::cerr << ERROR << "Invalid parameter: crop_w=" << new_crop_w << std::endl;
                     if (internal_param_val.pre_in_shape_h < new_crop_w) {
                         std::cerr << "          Requirement: crop_w <= pre_in_shape_w" << std::endl;
                     }
                     return (int8_t) PRE_ERROR_UI;
                 }
                 if ((MIN_CROP_H_BOUND > new_crop_h) || (internal_param_val.pre_in_shape_h < new_crop_h)) {
-                    std::cerr << "[ERROR] Invalid parameter: crop_h=" << new_crop_h << std::endl;
+                    std::cerr << ERROR << "Invalid parameter: crop_h=" << new_crop_h << std::endl;
                     if (internal_param_val.pre_in_shape_h < new_crop_h) {
                         std::cerr << "          Requirement: crop_h <= pre_in_shape_h" << std::endl;
                     }
@@ -1742,7 +1742,7 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
             /* If there is any resize parameters in user input, print warning and ignore the user input. */
             if ((INVALID_SHAPE != new_resize_w) || (INVALID_SHAPE != new_resize_h) ||
                 (INVALID_RESIZE_ALG != new_resize_alg)) {
-                std::cerr << "[WARNING] Resize parameters are specified in Pre()," << std::endl;
+                std::cerr << WARNING << "Resize parameters are specified in Pre()," << std::endl;
                 std::cerr << "          but no resize operator used in loaded Pre-runtime Object files." << std::endl;
                 std::cerr << "          Specified resize_w, resize_h and resize_alg are ignored." << std::endl;
             }
@@ -1754,13 +1754,13 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
                 new_resize_h = internal_param_val.resize_h;
             /* Size restriction check */
             if (MIN_RESIZE_W_BOUND >= new_resize_w || MAX_RESIZE_W_BOUND < new_resize_w) {
-                std::cerr << "[ERROR] Invalid parameter: resize_w=" << new_resize_w << std::endl;
+                std::cerr << ERROR << "Invalid parameter: resize_w=" << new_resize_w << std::endl;
                 std::cerr << "          Requirement: " << (uint32_t) MIN_RESIZE_W_BOUND
                           << " < resize_w <= " << (uint32_t) MAX_RESIZE_W_BOUND << std::endl;
                 return (int8_t) PRE_ERROR_UI;
             }
             if (MIN_RESIZE_H_BOUND >= new_resize_h || MAX_RESIZE_H_BOUND < new_resize_h) {
-                std::cerr << "[ERROR] Invalid parameter: resize_h=" << new_resize_h << std::endl;
+                std::cerr << ERROR << "Invalid parameter: resize_h=" << new_resize_h << std::endl;
                 std::cerr << "          Requirement: " << (uint32_t) MIN_RESIZE_H_BOUND
                           << " < resize_h <= " << (uint32_t) MAX_RESIZE_H_BOUND << std::endl;
                 return (int8_t) PRE_ERROR_UI;
@@ -1781,7 +1781,7 @@ int8_t PreRuntime::UpdateParamData(const s_preproc_param_t param)
             if (new_resize_alg == INVALID_RESIZE_ALG) {
                 /*param.resize_alg not defined*/
             } else if (1 < new_resize_alg) {
-                std::cerr << "[ERROR] Invalid parameter: resize_alg=" << std::dec << (int) new_resize_alg << std::endl;
+                std::cerr << ERROR << "Invalid parameter: resize_alg=" << std::dec << (int) new_resize_alg << std::endl;
                 return (int8_t) PRE_ERROR_UI;
             } else if (new_resize_alg != internal_param_val.resize_alg) {
                 UpdateResizeAlg(new_resize_alg);
@@ -1832,7 +1832,7 @@ int8_t PreRuntime::UpdateWeightData(const s_preproc_param_t param)
         /* Normalize is not used in loaded Pre-runtime Object files.*/
         /* If there is any normalize parameters in user input, print warning and ignore the user input. */
         if ((-FLT_MAX != param.cof_add[0]) || (-FLT_MAX != param.cof_mul[0])) {
-            std::cerr << "[WARNING] Normalize parameters are specified in Pre()," << std::endl;
+            std::cerr << WARNING << "Normalize parameters are specified in Pre()," << std::endl;
             std::cerr << "          but no normalize operator used in loaded Pre-runtime Object files." << std::endl;
             std::cerr << "          Specified cof_add and cof_mul are ignored." << std::endl;
         }
@@ -1915,7 +1915,7 @@ uint8_t PreRuntime::GetResult(unsigned long output_addr, unsigned long output_si
     }
 
     if (internal_buffer == NULL) {
-        std::cerr << "[ERROR] Failed to malloc PreRuntime internal buffer." << std::endl;
+        std::cerr << ERROR << "Failed to malloc PreRuntime internal buffer." << std::endl;
         return PRE_ERROR;
     }
     internal_buffer_size = (uint32_t) (drpai_data.size / pre_out_type_size);
@@ -1924,7 +1924,7 @@ uint8_t PreRuntime::GetResult(unsigned long output_addr, unsigned long output_si
     /* Assign the memory address and size to be read */
     ret = ioctl(drpai_obj_info.drpai_fd, DRPAI_ASSIGN, &drpai_data);
     if (-1 == ret) {
-        std::cerr << "[ERROR] Failed to run DRPAI_ASSIGN: errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRPAI_ASSIGN: errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
@@ -1932,7 +1932,7 @@ uint8_t PreRuntime::GetResult(unsigned long output_addr, unsigned long output_si
     errno = 0;
     ret   = read(drpai_obj_info.drpai_fd, internal_buffer, drpai_data.size);
     if (-1 == ret) {
-        std::cerr << "[ERROR] Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to read via DRP-AI Driver: errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
@@ -2012,7 +2012,7 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
         size = drpai_obj_info.drpai_address.drp_param_size;
         ret  = LoadDataToMem(param_data, addr, size);
         if (PRE_SUCCESS < ret) {
-            std::cerr << "[ERROR] Failed to load param data to memory : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to load param data to memory : errno=" << errno << std::endl;
             return PRE_ERROR;
         }
     }
@@ -2031,7 +2031,7 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
         size = drpai_obj_info.drpai_address.weight_size;
         ret  = LoadDataToMem(weight_data, addr, size);
         if (PRE_SUCCESS < ret) {
-            std::cerr << "[ERROR] Failed to load weight data to memory : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to load weight data to memory : errno=" << errno << std::endl;
             return PRE_ERROR;
         }
     }
@@ -2078,7 +2078,7 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
 #endif
     errno = 0;
     if (PRE_SUCCESS != ioctl(drpai_obj_info.drpai_fd, DRPAI_START, &proc[0])) {
-        std::cerr << "[ERROR] Failed to run DRPAI_START : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRPAI_START : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
     /* Wait till DRP-AI ends */
@@ -2090,10 +2090,10 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
     ret_drpai = pselect(drpai_obj_info.drpai_fd + 1, &rfds, NULL, NULL, &tv, &sigset);
 
     if (0 == ret_drpai) {
-        std::cerr << "[ERROR] DRP-AI timed out : errno=" << errno << std::endl;
+        std::cerr << ERROR << "DRP-AI timed out : errno=" << errno << std::endl;
         return PRE_ERROR;
     } else if (-1 == ret_drpai) {
-        std::cerr << "[ERROR] Failed to run DRP-AI Driver pselect : errno=" << errno << std::endl;
+        std::cerr << ERROR << "Failed to run DRP-AI Driver pselect : errno=" << errno << std::endl;
         return PRE_ERROR;
     }
 
@@ -2101,7 +2101,7 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
         errno     = 0;
         ret_drpai = ioctl(drpai_obj_info.drpai_fd, DRPAI_GET_STATUS, &drpai_status);
         if (-1 == ret_drpai) {
-            std::cerr << "[ERROR] Failed to run DRPAI_GET_STATUS : errno=" << errno << std::endl;
+            std::cerr << ERROR << "Failed to run DRPAI_GET_STATUS : errno=" << errno << std::endl;
             return PRE_ERROR;
         }
     }
@@ -2117,7 +2117,7 @@ uint8_t PreRuntime::Pre(s_preproc_param_t *param, void **out_ptr, uint32_t *out_
     /* Obtain result. Result is stored in internal_buffer */
     ret = GetResult(drpai_obj_info.data_inout.data_out_addr, drpai_obj_info.data_inout.data_out_size);
     if (PRE_SUCCESS < ret) {
-        std::cerr << "[ERROR] Failed to get result." << std::endl;
+        std::cerr << ERROR << "Failed to get result." << std::endl;
         return PRE_ERROR;
     }
 #ifdef DEBUG_LOG

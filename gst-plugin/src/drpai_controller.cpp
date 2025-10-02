@@ -24,7 +24,7 @@
 void DRPAI_Controller::open_resources()
 {
     if (drpai->rate.get_max_rate() == 0) {
-        std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
+        std::cout << WARNING << "DRPAI is disabled by the zero max framerate.\n" << std::endl;
         return;
     }
     if (share_udma_buffer) {
@@ -152,7 +152,7 @@ void DRPAI_Controller::set_socket_address(const std::string &address)
     int       r      = getaddrinfo(host.c_str(), port.c_str(), &hints, &result);
     if (r != 0) {
         freeaddrinfo(result);
-        std::cerr << "[Warning] Can't resolve " << address << ": " << gai_strerror(r) << std::endl;
+        std::cerr << WARNING << "Can't resolve " << address << ": " << gai_strerror(r) << std::endl;
         return;
     }
 
@@ -169,7 +169,7 @@ void DRPAI_Controller::set_socket_address(const std::string &address)
         }
     }
     if (rp == nullptr) { /* No address succeeded */
-        std::cerr << "[Warning] Can't connect to " + address << std::endl;
+        std::cerr << WARNING << "Can't connect to " + address << std::endl;
         socket_fd = 0;
         freeaddrinfo(result);
         return;
@@ -185,7 +185,7 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
 {
     if (drpai->IN_WIDTH != static_cast<int16_t>(image_width) ||
         drpai->IN_HEIGHT != static_cast<int16_t>(image_height)) {
-        throw std::runtime_error(std::string("[ERROR] The model only supports image input with resolution ") +
+        throw std::runtime_error(std::string("The model only supports image input with resolution ") +
                                  std::to_string(drpai->IN_WIDTH) + "x" + std::to_string(drpai->IN_HEIGHT));
     }
     image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT);
@@ -338,13 +338,13 @@ void DRPAI_Controller::open_post_processor_library(const std::string &modelPrefi
     std::cout << "Loading : " << model_library_path << std::endl;
     dynamic_library_handle = dlopen(model_library_path.c_str(), RTLD_NOW);
     if (dynamic_library_handle == nullptr) {
-        throw std::runtime_error("[ERROR] Failed to open library " + std::string(dlerror()));
+        throw std::runtime_error("Failed to open library " + std::string(dlerror()));
     }
     dlerror(); /* Clear any existing error */
     const auto create_post_processor_instance_dl = reinterpret_cast<create_post_processor_instance_def>(
             dlsym(dynamic_library_handle, "create_post_processor_instance"));
     if (auto *const error = dlerror(); error != nullptr) {
-        throw std::runtime_error("[ERROR] Failed to locate function in " + model_library_path + ": error=" + error);
+        throw std::runtime_error("Failed to locate function in " + model_library_path + ": error=" + error);
     }
     postprocessor = (*create_post_processor_instance_dl)(modelPrefix.c_str());
 }
@@ -725,7 +725,7 @@ void DRPAI_Controller::load_label_file(const std::string &label_file_name)
 {
     std::ifstream infile(label_file_name);
     if (!infile.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to open label file: " + label_file_name);
+        throw std::runtime_error("Failed to open label file: " + label_file_name);
     }
 
     std::string line;
@@ -735,7 +735,7 @@ void DRPAI_Controller::load_label_file(const std::string &label_file_name)
         }
         labels.push_back(line);
         if (infile.fail()) {
-            throw std::runtime_error("[ERROR] Failed to read label file: " + label_file_name);
+            throw std::runtime_error("Failed to read label file: " + label_file_name);
         }
     }
     infile.close();
@@ -765,7 +765,7 @@ void DRPAI_Controller::send_socket_data() const
                             sizeof(socket_address));
 
     if (static_cast<int>(r) < static_cast<int>(str.size())) {
-        std::cerr << "[ERROR] Error sending log to the server: " << std::strerror(errno) << std::endl;
+        std::cerr << ERROR << "Error sending log to the server: " << std::strerror(errno) << std::endl;
         if (errno == EMSGSIZE) {
             std::cerr << "\tMessage Length: " << str.size() << " - Message sent: " << r << std::endl;
         }

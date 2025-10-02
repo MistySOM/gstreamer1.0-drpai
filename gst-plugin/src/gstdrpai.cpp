@@ -86,8 +86,6 @@ static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *q
                 gst_query_add_allocation_pool(query, obj->udma_buffer_pool.get(), 1, 0, 1);
 
                 std::cout << "\tUDMA buffer allocation pool provided." << std::endl;
-
-                // obj->drpai_controller->validate_properties();
                 return TRUE;
             }
             break;
@@ -124,7 +122,7 @@ static GstStateChangeReturn gst_drpai_change_state(GstElement *element, const Gs
                 break;
         }
     } catch (std::runtime_error &e) {
-        std::cerr << "\n" << e.what() << "\n" << std::endl;
+        std::cerr << ERROR << e.what() << "\n" << std::endl;
         if (obj->stop_error) {
             return GST_STATE_CHANGE_FAILURE;
         }
@@ -146,7 +144,7 @@ static void gst_drpai_set_property(GObject *object, const guint prop_id, const G
                 break;
         }
     } catch (std::runtime_error &e) {
-        std::cerr << "\n" << e.what() << "\n" << std::endl;
+        std::cerr << ERROR << e.what() << "\n" << std::endl;
         throw;
     } catch (std::exception &e) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -200,7 +198,7 @@ static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *e
             try {
                 obj->drpai_controller->open_resources_with_image_size(width, height);
             } catch (const std::exception &e) {
-                std::cerr << "\n" << e.what() << "\n" << std::endl;
+                std::cerr << ERROR << e.what() << "\n" << std::endl;
                 throw;
             }
 
@@ -227,7 +225,7 @@ static GstFlowReturn gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *
     try {
         obj->drpai_controller->process_image(info.data, info.size);
     } catch (const std::exception &e) {
-        std::cerr << "\n" << e.what() << "\n" << std::endl;
+        std::cerr << ERROR << e.what() << "\n" << std::endl;
         if (obj->stop_error) {
             gst_buffer_unref(buf);
             return GST_FLOW_ERROR;

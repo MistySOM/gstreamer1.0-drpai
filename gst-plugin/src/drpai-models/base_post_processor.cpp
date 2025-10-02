@@ -16,7 +16,7 @@ std::string BasePostProcessor::get_param(const std::string &params_file_name, co
 {
     std::ifstream infile(params_file_name);
     if (!infile.is_open()) {
-        throw std::runtime_error("[ERROR] Failed to open param in file: " + params_file_name);
+        throw std::runtime_error("Failed to open param in file: " + params_file_name);
     }
 
     bool        found = false;
@@ -24,7 +24,7 @@ std::string BasePostProcessor::get_param(const std::string &params_file_name, co
     while (getline(infile, line)) {
         line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
         if (infile.fail()) {
-            throw std::runtime_error("[ERROR] Failed to read param in file: " + params_file_name);
+            throw std::runtime_error("Failed to read param in file: " + params_file_name);
         }
         if (line.empty()) {
             continue;
@@ -39,7 +39,7 @@ std::string BasePostProcessor::get_param(const std::string &params_file_name, co
     }
     infile.close();
     if (error_not_found) {
-        throw std::runtime_error("[ERROR] Failed to find param '" + param + "' in file: " + params_file_name);
+        throw std::runtime_error("Failed to find param '" + param + "' in file: " + params_file_name);
     }
     return "";
 }

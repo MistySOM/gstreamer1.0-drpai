@@ -119,7 +119,7 @@ void filterer::set_filter_classes(const std::vector<std::string> &labels, const 
             }
             classID index = std_find_index(labels, item);
             if (index == labels.size()) {
-                throw std::runtime_error("[ERROR] Can not find the class name in model's classes: " + item);
+                throw std::runtime_error("Can not find the class name in model's classes: " + item);
             }
             filter_classes.insert(std::make_pair(index, color));
         }
