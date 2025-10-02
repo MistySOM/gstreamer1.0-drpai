@@ -27,3 +27,6 @@ constexpr static uint8_t  PERCENT_MUL  = 100;
 constexpr static uint16_t SEC_PER_MIN  = 60;
 constexpr static uint16_t MIN_PER_HOUR = 60;
 constexpr static uint16_t SEC_PER_HOUR = SEC_PER_MIN * MIN_PER_HOUR;
+
+constexpr static auto WARNING = "\n\x1b[33m[WARNING]\x1b[0m : ";
+constexpr static auto ERROR   = "\n\x1b[33m[ERROR]\x1b[0m : ";

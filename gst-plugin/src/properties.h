@@ -18,6 +18,7 @@ enum GstDRPAI_Properties : std::uint8_t {
     PROP_STOP_ERROR,
     PROP_LOG_SERVER,
     PROP_LOG_EXEC_TIME,
+    PROP_SHARE_UDMA_BUF,
 
     PROP_TRACKING,
     PROP_SHOW_TRACK_ID,

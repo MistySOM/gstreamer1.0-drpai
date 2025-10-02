@@ -9,6 +9,10 @@
 class DMABuffer
 {
 public:
+    /* Singleton design pattern functions */
+    static DMABuffer *instance(uint32_t buf_size);
+    static void       release();
+
     explicit DMABuffer(uint32_t buf_size);
     ~DMABuffer();
 
@@ -27,6 +31,8 @@ public:
 private:
     /* The index of the buffer. */
     int idx = 0;
+    /* The file descriptor of the buffer */
+    int fd = 0;
     /* The size of the buffer in bytes. */
     const uint32_t size;
     /* The physical address of DMA buffer. */
