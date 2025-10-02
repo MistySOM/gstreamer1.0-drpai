@@ -41,10 +41,10 @@ void DRPAI_TVM::open_resource(const bool open_files)
 
     switch (input_data_type) {
         case InOutDataType::INT64:
-            std::cerr << "Error: Input data type INT64 is not supported." << std::endl;
+            std::cerr << ERROR << "TVM input data type INT64 is not supported." << std::endl;
             break;
         case InOutDataType::OTHER:
-            std::cerr << "Error: Input data type is unknown and not supported." << std::endl;
+            std::cerr << ERROR << "TVM input data type is unknown and not supported." << std::endl;
             break;
         default:
             break;
@@ -57,10 +57,11 @@ void DRPAI_TVM::open_resource(const bool open_files)
 
         switch (std::get<0>(output)) {
             case InOutDataType::INT64:
-                std::cout << "Warning: Output data type INT64 is not supported for output index " << i << std::endl;
+                std::cout << WARNING << "TVM output data type INT64 is not supported for output index " << i
+                          << std::endl;
                 break;
             case InOutDataType::OTHER:
-                std::cout << "Warning: Output data type is unknown and not supported for output index " << i
+                std::cout << WARNING << "TVM output data type is unknown and not supported for output index " << i
                           << std::endl;
                 break;
             default:

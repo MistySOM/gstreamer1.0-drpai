@@ -20,6 +20,7 @@ echo "Connecting to ${MISTYSOM_USER}@${MISTYSOM_HOST}..."
 
 ${SSH_CMD} << EOF
 set -e
+export TVM_NUM_THREADS=1
 /home/root/v4l2-init.sh ${CAMERA_WIDTH}x${CAMERA_HEIGHT}
 gst-launch-1.0 ${PIPELINE}
 EOF

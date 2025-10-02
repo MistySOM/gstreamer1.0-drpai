@@ -281,62 +281,6 @@ typedef struct {
     std::vector<s_op_param_t> param_list;
 } s_op_t;
 
-static void clear_param(s_op_param_t *data)
-{
-    data->name   = "";
-    data->value  = 0;
-    data->offset = 0;
-    data->size   = 0;
-}
-
-static void clear_op(s_op_t *data)
-{
-    data->name   = "";
-    data->lib    = "";
-    data->offset = 0;
-    data->param_list.clear();
-}
-
-static std::string setW(std::string const &str, int n)
-{
-    std::ostringstream oss;
-    oss << std::left << std::setw(n) << str;
-    return oss.str();
-}
-static void print_preproc_param(const s_preproc_param_t data, uint8_t mode = MODE_PRE)
-{
-    std::cout << "PreProcessing Parameter List " << std::endl;
-    std::cout << "  pre_in_shape_w = " << std::setw(8) << std::dec << data.pre_in_shape_w << std::endl;
-    std::cout << "  pre_in_shape_h = " << std::setw(8) << std::dec << data.pre_in_shape_h << std::endl;
-    std::cout << "  pre_in_addr    = " << std::setw(8) << std::hex << data.pre_in_addr << std::endl;
-    if (!mode) {
-        std::cout << "  pre_in_format  = " << std::setw(8) << std::hex << data.pre_in_format << "("
-                  << format_string_table.at(data.pre_in_format) << ")" << std::endl;
-        std::cout << "  pre_out_format = " << std::setw(8) << std::hex << data.pre_out_format << "("
-                  << format_string_table.at(data.pre_out_format) << ")" << std::endl;
-        std::cout << "  resize_alg     = " << std::setw(8) << std::dec << (int) data.resize_alg << std::endl;
-        std::cout << "  resize_w       = " << std::setw(8) << std::dec << (int) data.resize_w << std::endl;
-        std::cout << "  resize_h       = " << std::setw(8) << std::dec << (int) data.resize_h << std::endl;
-        std::cout << "  cof_add        = ";
-        std::cout << std::fixed << std::setw(5) << std::setprecision(4) << (float) data.cof_add[0];
-        if (FORMAT_GRAY != data.pre_out_format) {
-            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_add[1];
-            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_add[2];
-        }
-        std::cout << std::endl << "  cof_mul        = ";
-        std::cout << std::fixed << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[0];
-        if (FORMAT_GRAY != data.pre_out_format) {
-            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[1];
-            std::cout << ", " << std::setw(5) << std::setprecision(4) << (float) data.cof_mul[2];
-        }
-        std::cout << std::endl;
-        std::cout << "  crop_tl_x      = " << std::setw(8) << std::dec << (int) data.crop_tl_x << std::endl;
-        std::cout << "  crop_tl_y      = " << std::setw(8) << std::dec << (int) data.crop_tl_y << std::endl;
-        std::cout << "  crop_w         = " << std::setw(8) << std::dec << (int) data.crop_w << std::endl;
-        std::cout << "  crop_h         = " << std::setw(8) << std::dec << (int) data.crop_h << std::endl;
-    }
-}
-
 /***********************************************************************************************************************
  * PreRuntime Class
  ***********************************************************************************************************************/
@@ -415,10 +359,10 @@ private:
     void    UpdateResizeShape(const uint16_t w, const uint16_t h);
     void    UpdateResizeAlg(const uint8_t val);
     void    UpdateFormat(const uint16_t input_val, const uint16_t output_val);
-    uint8_t UpdateCoefficient(const float *cof_add, const float *cof_mul);
+    uint8_t UpdateCoefficient(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul);
     void    UpdateCropParam(const uint16_t tl_x, const uint16_t tl_y, const uint16_t w, const uint16_t h);
 
-    bool     IsDifferentFmInternal(const float *cof_add, const float *cof_mul);
+    bool     IsDifferentFmInternal(const std::vector<float> &new_cof_add, const std::vector<float> &new_cof_mul);
     void     WriteValue(uint16_t offset, uint32_t value, uint8_t size);
     bool     IsInSupportedList(uint16_t format, uint8_t is_input);
     bool     IsSupportedFormat(const s_preproc_param_t param, uint16_t format_in, uint16_t format_out);

@@ -58,7 +58,7 @@ void DRPAI_Controller::open_resources()
 
     /* Read DRP-AI Object files address and size */
     drpai->open_resource(true);
-    std::cout << "DRP-AI Ready!" << std::endl;
+    std::cout << "\nDRP-AI Ready!\n" << std::endl;
 }
 
 void DRPAI_Controller::process_image(uint8_t *img_data, uint32_t img_data_len)
