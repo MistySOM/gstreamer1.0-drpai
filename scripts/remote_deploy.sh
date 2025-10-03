@@ -39,6 +39,8 @@ eval $RSYNC "/workspace/build/gst-plugin/src/drpai-models/drpai-dummy/libgstdrpa
   "${MISTYSOM_USER}@${MISTYSOM_HOST}:/usr/lib64/"
 eval $RSYNC "/workspace/build/gst-plugin/src/drpai-models/drpai-mobilenet/libgstdrpai-mobilenet.so" \
   "${MISTYSOM_USER}@${MISTYSOM_HOST}:/usr/lib64/"
+eval $RSYNC "/workspace/build/gst-plugin/src/drpai-models/drpai-ssdv3/libgstdrpai-ssdv3.so" \
+  "${MISTYSOM_USER}@${MISTYSOM_HOST}:/usr/lib64/"
 eval $RSYNC "/workspace/gst-plugin/src/drivers/drpai-tvm/rzv_drp-ai_tvm/obj/build_runtime/V2L/libtvm_runtime.so" \
   "${MISTYSOM_USER}@${MISTYSOM_HOST}:/usr/lib64/"
 

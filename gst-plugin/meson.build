@@ -44,4 +44,5 @@ gstdrpai_dep = declare_dependency(link_with : gstplugindrpai, include_directorie
 subdir('src/drpai-models/drpai-yolo')
 subdir('src/drpai-models/drpai-dummy')
 subdir('src/drpai-models/drpai-mobilenet')
+subdir('src/drpai-models/drpai-ssdv3')
 subdir('tests')
