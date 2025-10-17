@@ -45,14 +45,15 @@ public:
     static void install_properties(std::map<GstDRPAI_Properties, GParamSpec *> &params);
 
 private:
-    bool            multithread   = true;
-    bool            show_fps      = false;
-    bool            show_time     = false;
-    bool            show_bbox     = true;
-    bool            show_track_id = false;
-    bool            show_filter   = false;
-    bool            log_exec_time = false;
-    bool            log_detects   = false; /// Log detections in the standard output.
+    bool            multithread       = true;
+    bool            show_fps          = false;
+    bool            show_time         = false;
+    bool            show_bbox         = true;
+    bool            show_track_id     = false;
+    bool            show_filter       = false;
+    bool            log_exec_time     = false;
+    bool            log_detects       = false; /// Log detections in the standard output.
+    bool            share_udma_buffer = false;
     rate_controller video_rate;
     tracker         det_tracker;
     filterer        det_filterer;

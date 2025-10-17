@@ -13,7 +13,7 @@ enum IMAGE_FORMAT : std::uint8_t { BGR_DATA, RGB_DATA, YUV_DATA };
 class Image
 {
 public:
-    explicit Image(uint32_t w, uint32_t h, uint32_t c, IMAGE_FORMAT format, uint8_t *data);
+    explicit Image(uint32_t w, uint32_t h, uint32_t c, IMAGE_FORMAT format, uint8_t *data = nullptr);
     ~Image();
 
     Image(const Image &)            = delete;
@@ -42,17 +42,15 @@ public:
     /// @param [in] corner_text Reference to the array of strings to be rendered at the corner of the image.
     void render_text_at_corner(std::vector<std::string> const &corner_text) const;
 
-    [[nodiscard]] uint32_t get_dma_buffer_physical_address() const;
-
     uint8_t       *img_buffer = nullptr;
     const uint32_t img_w;
     const uint32_t img_h;
     const uint32_t img_c;
+    const uint32_t size;
 
 private:
-    std::unique_ptr<DMABuffer> dma_buffer;
-    IMAGE_FORMAT               format;
-    uint32_t                   size;
+    IMAGE_FORMAT format;
+    DMABuffer   *mapped_dma_buffer = nullptr;
 
     /* converting section */
     constexpr static uint32_t  BGR_NUM_CHANNEL  = 3;

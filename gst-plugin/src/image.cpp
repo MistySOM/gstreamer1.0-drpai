@@ -21,7 +21,7 @@ constexpr static int32_t  TEXT_CHAR_HEIGHT = 8;
 constexpr static int32_t  TEXT_STR_HEIGHT  = TEXT_CHAR_HEIGHT + (2 * TEXT_MARGIN);
 
 Image::Image(const uint32_t w, const uint32_t h, const uint32_t c, const IMAGE_FORMAT format, uint8_t *data) :
-    img_buffer(data), img_w(w), img_h(h), img_c(c), dma_buffer(nullptr), format(format), size(img_w * img_h * img_c),
+    img_buffer(data), img_w(w), img_h(h), img_c(c), size(img_w * img_h * img_c), format(format),
     convert_from_format(format)
 {
 }
@@ -41,8 +41,8 @@ Image::~Image() = default;
  ******************************************/
 void Image::map_dma_buffer()
 {
-    dma_buffer = std::make_unique<DMABuffer>(size);
-    img_buffer = dma_buffer->get_mem();
+    mapped_dma_buffer = DMABuffer::instance(size);
+    img_buffer        = mapped_dma_buffer->get_mem();
 }
 
 void Image::copy(const uint8_t *data, uint32_t data_len, IMAGE_FORMAT f)
@@ -341,8 +341,8 @@ void Image::prepare()
             convert_from_format = format;
         }
     }
-    if (dma_buffer != nullptr) {
-        dma_buffer->flush();
+    if (mapped_dma_buffer != nullptr) {
+        mapped_dma_buffer->flush();
     }
 }
 
@@ -383,8 +383,6 @@ void Image::render_text_at_corner(const std::vector<std::string> &corner_text) c
         line++;
     }
 }
-
-uint32_t Image::get_dma_buffer_physical_address() const { return dma_buffer->get_physical_address(); }
 
 inline static void write_u16(std::vector<char> &buffer, uint16_t value)
 {

@@ -4,27 +4,46 @@
 
 #include "drpai_controller.h"
 
+#include "consts.h"
+#include "drivers/dmabuf.h"
 #include "drivers/drpai_native.h"
 #include "drpai-models/base_post_processor.h"
 #ifdef ENABLE_TVM
 #include "drivers/drpai-tvm/drpai_tvm.h"
 #endif
-#include <dlfcn.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <unistd.h>
-
 #include <chrono>
 #include <cstring>
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <netdb.h>
+#include <unistd.h>
 
 void DRPAI_Controller::open_resources()
 {
     if (drpai->rate.get_max_rate() == 0) {
         std::cout << "[WARNING] DRPAI is disabled by the zero max framerate." << std::endl;
         return;
+    }
+    if (share_udma_buffer) {
+        if (show_fps || show_time || show_bbox || show_filter) {
+            std::cout << WARNING << "Using these properties while sharing the UDMA buffer is not recommended:";
+            if (show_fps) {
+                std::cout << " show-fps";
+            }
+            if (show_time) {
+                std::cout << " show-time";
+            }
+            if (show_bbox) {
+                std::cout << " show-bbox";
+            }
+            if (show_filter) {
+                std::cout << " filter-show";
+            }
+            std::cout << "\n" << std::endl;
+        }
     }
 
     if (multithread) {
@@ -52,7 +71,9 @@ void DRPAI_Controller::process_image(uint8_t *img_data, uint32_t img_data_len)
                 throw std::exception();
 
             case Ready:
-                image_mapped_udma->copy(img_data, img_data_len, BGR_DATA);
+                if (!share_udma_buffer) {
+                    image_mapped_udma->copy(img_data, img_data_len, BGR_DATA);
+                }
                 // std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 thread_state = Processing;
                 if (multithread) {
@@ -167,10 +188,9 @@ void DRPAI_Controller::open_resources_with_image_size(uint16_t image_width, uint
         throw std::runtime_error(std::string("[ERROR] The model only supports image input with resolution ") +
                                  std::to_string(drpai->IN_WIDTH) + "x" + std::to_string(drpai->IN_HEIGHT));
     }
-    image_mapped_udma =
-            std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT, nullptr);
+    image_mapped_udma = std::make_unique<Image>(image_width, image_height, drpai->IN_CHANNEL, drpai->IN_FORMAT);
     image_mapped_udma->map_dma_buffer();
-    drpai->set_data_in_address(image_mapped_udma->get_dma_buffer_physical_address());
+    drpai->set_data_in_address(DMABuffer::instance(image_mapped_udma->size)->get_physical_address());
 
     std::vector<uint32_t> inference_output_size;
     for (const auto &buf: drpai->drpai_output_buf) {
@@ -201,6 +221,7 @@ void DRPAI_Controller::release_resources()
 
     drpai->release_resource();
     image_mapped_udma.reset();
+    DMABuffer::release();
     dlclose(dynamic_library_handle);
 }
 
@@ -238,7 +259,9 @@ void DRPAI_Controller::thread_function_single()
         }
         const auto t1 = std::chrono::high_resolution_clock::now();
 
-        image_mapped_udma->prepare();
+        if (!share_udma_buffer) {
+            image_mapped_udma->prepare();
+        }
         const auto t2 = std::chrono::high_resolution_clock::now();
 
         drpai->run_inference();
@@ -382,6 +405,9 @@ void DRPAI_Controller::set_property(GstDRPAI_Properties prop, const GValue *valu
         case PROP_LOG_EXEC_TIME:
             log_exec_time = g_value_get_boolean(value) == TRUE;
             break;
+        case PROP_SHARE_UDMA_BUF:
+            share_udma_buffer = g_value_get_boolean(value) == TRUE;
+            break;
         case PROP_TRACKING:
             det_tracker.active = g_value_get_boolean(value) == TRUE;
             if (det_tracker.active) {
@@ -477,6 +503,9 @@ void DRPAI_Controller::get_property(GstDRPAI_Properties prop, GValue *value) con
             break;
         case PROP_LOG_EXEC_TIME:
             g_value_set_boolean(value, log_exec_time ? TRUE : FALSE);
+            break;
+        case PROP_SHARE_UDMA_BUF:
+            g_value_set_boolean(value, share_udma_buffer ? TRUE : FALSE);
             break;
         case PROP_TRACKING:
             g_value_set_boolean(value, det_tracker.active ? TRUE : FALSE);
@@ -581,7 +610,12 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSp
                                                         "Send UDP messages in JSON about detected "
                                                         "objects to the mentioned host:port.",
                                                         nullptr, G_PARAM_WRITABLE));
-
+    params.emplace(PROP_SHARE_UDMA_BUF,
+                   g_param_spec_boolean("share_udma_buf", "Share UDMA Buffer",
+                                        "Use a shared buffer for DRP-AI and other gstreamer elements. "
+                                        "Note that using this is not recommended alongside `show-fps`, `show-time`, "
+                                        "`show-bbox`, and `filter-show` properties.",
+                                        FALSE, G_PARAM_READWRITE));
     params.emplace(PROP_TRACKING, g_param_spec_boolean("tracking", "Tracking",
                                                        "Track detected objects based on their previous locations. Each "
                                                        "detected object gets an ID that persists across multiple "
