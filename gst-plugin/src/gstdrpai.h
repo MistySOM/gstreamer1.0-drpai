@@ -55,14 +55,16 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(GstDRPAI, gst_drpai, GST, PLUGIN_DRPAI, GstElement)
 
 class DRPAI_Controller;
+struct Gst_UDMA_BufferPool;
 
 struct _GstDRPAI : GstElement {
-    GstPad *sinkpad;
-    GstPad *srcpad;
+    GstPad *sinkpad = nullptr;
+    GstPad *srcpad  = nullptr;
 
-    bool stop_error;
+    bool stop_error = true;
 
-    std::unique_ptr<DRPAI_Controller> drpai_controller;
+    std::unique_ptr<Gst_UDMA_BufferPool> udma_buffer_pool;
+    std::unique_ptr<DRPAI_Controller>    drpai_controller;
 };
 
 GST_DEBUG_CATEGORY_STATIC(gst_drpai_debug);

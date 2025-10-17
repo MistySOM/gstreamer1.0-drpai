@@ -37,6 +37,7 @@ The plugin also provides you with the following parameters:
 | **multithread**             | Boolean             |    true | Use a separate thread for object detection.                                                               |
 | **log-detects**             | Boolean             |   false | Print detected objects in standard output.                                                                |
 | **log-exec-time**           | Boolean             |   false | Print execution time into the standard output.                                                            |
+| **share-udma-buf**          | Boolean             |   false | Use a shared buffer for DRP-AI and other gstreamer elements. Note that using this is not recommended alongside `show-fps`, `show-time`, `show-bbox`, and `filter-show` properties. |
 | **log-server**              | Host:Port (String)  |     --- | Address of logs to send in UDP messages in [JSON format](JSON.md) to the specified port on a remote host. |
 | **show-fps**                | Boolean             |   false | Render frame rates of video and DRPAI at the corner of the video.                                         |
 | **show-time**               | Boolean             |    true | Render the current time at the corner of the video.                                                       |

@@ -64,13 +64,44 @@
 #include <iostream>
 #include "drivers/drpai_native.h"
 #include "drpai_controller.h"
+#include "gst_udma_buffer_pool.h"
 #include "gstdrpai.h"
 #include "image.h"
 #include "properties.h"
 
+static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *query)
+{
+    std::cout << "DRP-AI received query: " << GST_QUERY_TYPE_NAME(query) << std::endl;
+    auto *const obj = GST_PLUGIN_DRPAI(parent);
+
+    switch (query->type) {
+        case GST_QUERY_ALLOCATION: {
+            GstCaps *caps      = nullptr;
+            gboolean need_pool = FALSE;
+            gst_query_parse_allocation(query, &caps, &need_pool);
+
+            if (need_pool == TRUE && obj->udma_buffer_pool != nullptr) {
+                std::cout << "\tNeed a pool for " << gst_caps_to_string(caps) << std::endl;
+
+                gst_query_add_allocation_pool(query, obj->udma_buffer_pool.get(), 1, 0, 1);
+
+                std::cout << "\tUDMA buffer allocation pool provided." << std::endl;
+
+                // obj->drpai_controller->validate_properties();
+                return TRUE;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    return FALSE;
+}
+
 static GstStateChangeReturn gst_drpai_change_state(GstElement *element, const GstStateChange transition)
 {
-    const auto          *obj                  = GST_PLUGIN_DRPAI(&element->object);
+    auto                *obj                  = GST_PLUGIN_DRPAI(&element->object);
     auto *const          parent_element_class = GST_ELEMENT_CLASS(parent_class);
     GstStateChangeReturn ret                  = GST_STATE_CHANGE_SUCCESS;
 
@@ -79,12 +110,14 @@ static GstStateChangeReturn gst_drpai_change_state(GstElement *element, const Gs
             case GST_STATE_CHANGE_NULL_TO_READY:
                 /* open the device */
                 obj->drpai_controller->open_resources();
+                obj->udma_buffer_pool.reset(gst_udma_buffer_pool_new());
                 ret = parent_element_class->change_state(element, transition);
                 break;
             case GST_STATE_CHANGE_READY_TO_NULL:
                 ret = parent_element_class->change_state(element, transition);
                 /* close the device */
                 obj->drpai_controller->release_resources();
+                obj->udma_buffer_pool.reset();
                 break;
             default:
                 ret = parent_element_class->change_state(element, transition);
@@ -147,7 +180,7 @@ static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *e
     gboolean    ret = TRUE;
     auto *const obj = GST_PLUGIN_DRPAI(parent);
 
-    GST_LOG_OBJECT(obj, "Received %s event: %" GST_PTR_FORMAT, GST_EVENT_TYPE_NAME(event), event);
+    std::cout << "DRP-AI received event from sink: " << GST_EVENT_TYPE_NAME(event) << std::endl;
 
     switch (GST_EVENT_TYPE(event)) {
         case GST_EVENT_CAPS: {
@@ -215,6 +248,7 @@ static void gst_drpai_init(GstDRPAI *self)
 {
     self->sinkpad = gst_pad_new_from_static_template(&sink_factory, "sink");
     gst_pad_set_event_function(self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_event));
+    gst_pad_set_query_function(self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_sink_query));
     gst_pad_set_chain_function(self->sinkpad, GST_DEBUG_FUNCPTR(gst_drpai_chain));
     GST_PAD_SET_PROXY_CAPS(self->sinkpad);
     gst_element_add_pad(GST_ELEMENT(self), self->sinkpad);
@@ -266,15 +300,6 @@ static gboolean plugin_init(GstPlugin *plugin)
     GST_DEBUG_CATEGORY_INIT(gst_drpai_debug, "drpai", 0, "DRP-AI plugin");
     return gst_element_register(plugin, "drpai", GST_RANK_NONE, GST_TYPE_PLUGIN_DRPAI);
 }
-
-/* PACKAGE: this is usually set by meson depending on some _INIT macro
- * in meson.build and then written into and defined in config.h, but we can
- * just set it ourselves here in case someone doesn't use meson to
- * compile this code. GST_PLUGIN_DEFINE needs PACKAGE to be defined.
- */
-#ifndef PACKAGE
-#define PACKAGE "myfirstplugin"
-#endif
 
 /* gstreamer looks for this structure to register plugins */
 GST_PLUGIN_DEFINE(GST_VERSION_MAJOR, GST_VERSION_MINOR, drpai, "DRP-AI Plug-in", plugin_init, PACKAGE_VERSION,
