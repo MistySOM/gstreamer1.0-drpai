@@ -4,14 +4,17 @@
 
 #include "dummy_post_processor.h"
 
-void Dummy_PostProcessor::extract_detections(const std::vector<float> &inference_output_buf) { detections.clear(); }
+void Dummy_PostProcessor::extract_detections(std::vector<std::vector<float>> const &inference_output_buf)
+{
+    detections.clear();
+}
 
 void Dummy_PostProcessor::print_string_hr(const std::vector<std::string> &labels) const
 {
     BasePostProcessor::print_string_hr(labels);
 }
 
-void Dummy_PostProcessor::open_resource(const uint32_t inference_output_size, const uint32_t img_width,
+void Dummy_PostProcessor::open_resource(const std::vector<uint32_t> &inference_output_size, const uint32_t img_width,
                                         uint32_t const img_height, const uint32_t num_classes)
 {
     BasePostProcessor::open_resource(inference_output_size, img_width, img_height, num_classes);

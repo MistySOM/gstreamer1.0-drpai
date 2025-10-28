@@ -53,10 +53,10 @@ BasePostProcessor::BasePostProcessor(const std::string &prefix) :
 
 /// Opens post processor resources.
 /// This function can get overridden by the child class to allocate any additional devices, libraries, files, etc.
-/// @param [in] inference_output_size The size of output layer
+/// @param [in] inference_output_size The size of output buffers
 /// @param [in] img_width The width of the input image to match bounding box locations.
 /// @param [in] img_height The height of the input image to match bounding box locations.
-void BasePostProcessor::open_resource(uint32_t inference_output_size, const uint32_t img_width,
+void BasePostProcessor::open_resource(const std::vector<uint32_t> &inference_output_size, const uint32_t img_width,
                                       const uint32_t img_height, const uint32_t num_classes)
 {
     BasePostProcessor::img_width   = img_width;

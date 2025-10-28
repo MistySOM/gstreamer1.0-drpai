@@ -29,8 +29,8 @@ private:
     MeraDrpRuntimeWrapper runtime;
     /* Pre-processing Runtime Object */
     PreRuntime        preruntime;
-    InOutDataType     input_data_type;
-    s_preproc_param_t in_param = {};
+    InOutDataType     input_data_type = InOutDataType::OTHER;
+    s_preproc_param_t in_param        = {};
 
     uint64_t ms_int1 = 0, ms_int2 = 0, ms_int3 = 0;
 };

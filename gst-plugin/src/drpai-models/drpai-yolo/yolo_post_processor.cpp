@@ -50,20 +50,20 @@ void YOLO_PostProcessor::softmax(std::vector<float> &val)
 }
 
 struct matrix_ref {
-    const std::vector<float> &t;
+    const std::vector<float> *t;
     uint32_t                  x_len;
     uint32_t                  y_len;
 
-    explicit matrix_ref(const std::vector<float> &t, uint32_t x_len, uint32_t y_len) : t(t), x_len(x_len), y_len(y_len)
+    explicit matrix_ref(const std::vector<float> *t, uint32_t x_len, uint32_t y_len) : t(t), x_len(x_len), y_len(y_len)
     {
-        if (t.size() != static_cast<long>(x_len) * y_len) {
+        if (t->size() != static_cast<long>(x_len) * y_len) {
             throw std::runtime_error(
-                    "[Error] The source vector size does not match the matrix sizes: " + std::to_string(t.size()) +
+                    "[Error] The source vector size does not match the matrix sizes: " + std::to_string(t->size()) +
                     " != " + std::to_string(x_len) + "x" + std::to_string(y_len));
         }
     }
 
-    [[nodiscard]] const float &get(const uint32_t x, const uint32_t y) const { return t.at((y * x_len) + x); }
+    [[nodiscard]] const float &get(const uint32_t x, const uint32_t y) const { return t->at((y * x_len) + x); }
 };
 
 /*****************************************
@@ -74,8 +74,11 @@ struct matrix_ref {
  * Return value  : 0 if succeeded
  *                 not 0 otherwise
  ******************************************/
-void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_output_buf)
+void YOLO_PostProcessor::extract_detections(const std::vector<std::vector<float>> &inference_output_buf)
 {
+    // YOLO only has one output
+    const auto &output = inference_output_buf.at(0);
+
     std::vector<float> classes(num_classes);
     detections.clear();
 
@@ -83,7 +86,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_
         case 'x':
         case 'X':
         case '8': {
-            const matrix_ref m(inference_output_buf, sum_grids, item_size);
+            const matrix_ref m(&output, sum_grids, item_size);
             for (uint32_t item = 0; item < sum_grids; item++) {
                 for (uint32_t i = 0; i < classes.size(); i++) {
                     classes.at(i) = m.get(item, 4 + i);
@@ -112,7 +115,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_
                         for (uint32_t x = 0; x < num_grid; x++) {
                             const uint32_t offs = yolo_offset(n, b, y, x);
 
-                            const float &tc = inference_output_buf.at(yolo_index(num_grid, offs, 4));
+                            const float &tc = output.at(yolo_index(num_grid, offs, 4));
 
                             auto objectness = sigmoid(tc);
                             if (objectness < TH_PROB) {
@@ -120,7 +123,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_
                             }
                             /* Get the class prediction */
                             for (uint32_t i = 0; i < classes.size(); i++) {
-                                classes.at(i) = inference_output_buf.at(yolo_index(num_grid, offs, 5 + i));
+                                classes.at(i) = output.at(yolo_index(num_grid, offs, 5 + i));
                             }
 
                             switch (yolo_version) {
@@ -141,10 +144,10 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_
                             /* Store the result into the list if the probability is more than the threshold */
                             if (probability >= TH_PROB) {
                                 const uint32_t pred_class = max_pred - classes.begin();
-                                const float   &tx         = inference_output_buf.at(yolo_index(num_grid, offs, 0));
-                                const float   &ty         = inference_output_buf.at(yolo_index(num_grid, offs, 1));
-                                const float   &tw         = inference_output_buf.at(yolo_index(num_grid, offs, 2));
-                                const float   &th         = inference_output_buf.at(yolo_index(num_grid, offs, 3));
+                                const float   &tx         = output.at(yolo_index(num_grid, offs, 0));
+                                const float   &ty         = output.at(yolo_index(num_grid, offs, 1));
+                                const float   &tw         = output.at(yolo_index(num_grid, offs, 2));
+                                const float   &th         = output.at(yolo_index(num_grid, offs, 3));
 
                                 /* Compute the bounding box */
                                 /*get_yolo_box/get_region_box in paper implementation*/
@@ -196,7 +199,7 @@ void YOLO_PostProcessor::extract_detections(const std::vector<float> &inference_
     }
 }
 
-void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, const uint32_t img_width,
+void YOLO_PostProcessor::open_resource(const std::vector<uint32_t> &inference_output_size, const uint32_t img_width,
                                        const uint32_t img_height, uint32_t num_classes)
 {
     BasePostProcessor::open_resource(inference_output_size, img_width, img_height, num_classes);
@@ -245,7 +248,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
                 sum_grids += n * n;
             }
 
-            num_bb = inference_output_size / (item_size * sum_grids);
+            num_bb = inference_output_size.at(0) / (item_size * sum_grids);
             std::cout << " & num BB: " << num_bb << std::endl;
             if (num_bb == 0) {
                 throw std::runtime_error("[ERROR] Either classes or grids are not matching with the model output.");
@@ -256,7 +259,7 @@ void YOLO_PostProcessor::open_resource(const uint32_t inference_output_size, con
         case 'X':
         case '8':
             item_size = num_classes + 4;
-            sum_grids = inference_output_size / item_size;
+            sum_grids = inference_output_size.at(0) / item_size;
             num_bb    = 1;
             break;
         default:

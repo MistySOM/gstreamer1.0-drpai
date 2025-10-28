@@ -18,14 +18,14 @@ public:
 
     /// Opens post processor resources.
     /// This function can get overridden by the child class to allocate any additional devices, libraries, files, etc.
-    /// @param [in] inference_output_size The size of output layer
+    /// @param [in] inference_output_size The size of output buffers
     /// @param [in] img_width The width of the input image to match bounding box locations.
     /// @param [in] img_height The height of the input image to match bounding box locations.
     /// @param [in] num_classes The number of classes with labels
-    virtual void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height,
-                               uint32_t num_classes);
+    virtual void open_resource(const std::vector<uint32_t> &inference_output_size, uint32_t img_width,
+                               uint32_t img_height, uint32_t num_classes);
 
-    virtual void print_string_hr(const std::vector<std::string> &labels) const;
+    virtual void print_string_hr(std::vector<std::string> const &labels) const;
 
     /// Get status to be shown at the corner of the image.
     /// This function usually gets overridden by the child class. But it is not a must.
@@ -54,7 +54,7 @@ public:
     /// Extract information from the output layer of the running ML model and writes them into the last detections list.
     /// This function MUST be implemented by the child class
     /// @param [in] inference_output_buf Array of floats containing the output layer of the running ML model.
-    virtual void extract_detections(const std::vector<float> &inference_output_buf) = 0;
+    virtual void extract_detections(const std::vector<std::vector<float>> &inference_output_buf) = 0;
 
 protected:
     /// Loads post process params list text file and finds the param variable.

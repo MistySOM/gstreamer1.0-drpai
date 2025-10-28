@@ -57,7 +57,7 @@ protected:
                 add(static_cast<int>(value));
                 return;
             default: {
-                std::ostringstream out;
+                std::ostringstream out{};
                 out << std::fixed << std::setprecision(precision) << value;
                 s += out.str();
             }

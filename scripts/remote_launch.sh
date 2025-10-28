@@ -9,7 +9,8 @@ SSH_CMD="sshpass -e ssh \
   -o ControlMaster=auto \
   -o ControlPath=${SOCK} \
   -o ControlPersist=180 \
-  -o StrictHostKeyChecking=no ${MISTYSOM_USER}@${MISTYSOM_HOST}"
+  -o StrictHostKeyChecking=no \
+  ${MISTYSOM_USER}@${MISTYSOM_HOST}"
 
 cleanup() {
   ./scripts/remote_stop.sh
