@@ -79,6 +79,7 @@ void DRPAI_Controller::process_image(uint8_t *img_data, uint32_t img_data_len)
                 if (multithread) {
                     v.notify_one();
                 }
+                break;
 
             case Processing:
             default:
@@ -327,7 +328,7 @@ void DRPAI_Controller::thread_function_single()
                                          "Letting the GStreamer know.");
             }
         } else {
-            throw e;
+            throw;
         }
     }
 }
@@ -674,7 +675,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSp
     params.emplace(PROP_BITMAP_SAVE_DIR, g_param_spec_string("bitmap_save_dir", "Bitmap Save Directory",
                                                              "The directory path to save bitmap images "
                                                              "for fewer probability detections.",
-                                                             "", G_PARAM_READWRITE));
+                                                             DEFAULT_BITMAP_SAVE_DIRECTORY, G_PARAM_READWRITE));
     params.emplace(PROP_BITMAP_SAVE_MINUTES,
                    g_param_spec_float("bitmap_save_minutes", "Bitmap Save Minutes",
                                       "Minutes between each bitmap save for fewer probability detections.", 0, 1000,
@@ -686,7 +687,7 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSp
     params.emplace(PROP_BITMAP_SAVE_CLASS, g_param_spec_string("bitmap_save_classes", "Bitmap Save Classes",
                                                                "A comma seperated list of classes that triggers the "
                                                                "bitmap saving for detections.",
-                                                               DEFAULT_BITMAP_SAVE_DIRECTORY, G_PARAM_READWRITE));
+                                                               "", G_PARAM_READWRITE));
 
     DRPAI_Native::install_properties(params);
 }
@@ -701,7 +702,7 @@ void DRPAI_Controller::check_save_bmp()
     }
 
     /* Bitmap saving for fewer probabilities */
-    for (auto det: postprocessor->detections) {
+    for (auto &det: postprocessor->detections) {
         if (det.prob < bitmap_save_class_probability) {
             const auto &name = labels.at(det.c);
             if (bitmap_save_classes.empty() || std_find(bitmap_save_classes, name) != bitmap_save_classes.end()) {

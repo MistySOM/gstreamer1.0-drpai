@@ -120,6 +120,7 @@
         "future": "cpp",
         "iomanip": "cpp",
         "shared_mutex": "cpp",
-        "variant": "cpp"
-    },
+        "variant": "cpp",
+        "compare": "cpp"
+    }
 }

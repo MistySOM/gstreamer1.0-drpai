@@ -10,7 +10,6 @@ enum GstDRPAI_Properties : std::uint8_t {
     PROP_0,
     PROP_MULTITHREAD,
     PROP_MODEL,
-    PROP_PP_PROPERTIES,
     PROP_SHOW_FPS,
     PROP_SHOW_TIME,
     PROP_SHOW_BBOX,

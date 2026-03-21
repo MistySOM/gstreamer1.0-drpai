@@ -30,12 +30,13 @@ colorBGR filterer::get_color(const classID class_id, const colorBGR default_colo
  ******************************************/
 void filterer::filter_boxes_nms(std::list<detection> &det) const
 {
-    for (auto i = det.begin(); i != det.end(); ++i) {
-        for (auto j = det.begin(); j != det.end(); ++j) {
-            if (i == j) {
-                continue;
-            }
-            if (i->c != j->c) {
+    /* erase() returns the next valid iterator, so the loop only advances
+     * manually when no erasure occurred. */
+    for (auto i = det.begin(); i != det.end();) {
+        bool i_erased = false;
+        for (auto j = det.begin(); j != det.end();) {
+            if (i == j || i->c != j->c) {
+                ++j;
                 continue;
             }
 
@@ -43,12 +44,18 @@ void filterer::filter_boxes_nms(std::list<detection> &det) const
             if ((i->bbox.iou_with(j->bbox) > TH_NMS) || (b_intersection >= i->bbox.area() - 1) ||
                 (b_intersection >= j->bbox.area() - 1)) {
                 if (i->prob > j->prob) {
-                    j = --det.erase(j);
+                    j = det.erase(j);
                 } else {
-                    i = --det.erase(i);
+                    i        = det.erase(i);
+                    i_erased = true;
                     break;
                 }
+            } else {
+                ++j;
             }
+        }
+        if (!i_erased) {
+            ++i;
         }
     }
 }
@@ -62,17 +69,17 @@ void filterer::apply(std::list<detection> &d) const
     /* Non-Maximum Suppression filter */
     filter_boxes_nms(d);
 
-    for (auto det = d.begin(); det != d.end(); ++det) {
+    for (auto det = d.begin(); det != d.end();) {
         /* Skip the bounding boxes outside of region of interest */
-        if (!filter_classes.empty()) {
-            if (filter_classes.find(det->c) == filter_classes.end()) {
-                det = --d.erase(det);
-                continue;
-            }
+        if (!filter_classes.empty() && filter_classes.find(det->c) == filter_classes.end()) {
+            det = d.erase(det);
+            continue;
         }
 
         if ((filter_region & det->bbox) == 0) {
-            det = --d.erase(det);
+            det = d.erase(det);
+        } else {
+            ++det;
         }
     }
 }

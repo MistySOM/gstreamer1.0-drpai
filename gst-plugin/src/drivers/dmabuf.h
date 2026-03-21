@@ -29,8 +29,10 @@ public:
     [[nodiscard]] constexpr uint32_t get_physical_address() const { return phy_addr; }
 
 private:
-    /* The index of the buffer. */
+    /* The index of the allocated buffer. */
     int idx = 0;
+    /* The index of the exported buffer (MMNGR). */
+    int export_id = 0;
     /* The file descriptor of the buffer */
     int fd = 0;
     /* The size of the buffer in bytes. */
