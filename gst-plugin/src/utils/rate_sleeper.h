@@ -2,31 +2,48 @@
 // Created by matin on 07/01/24.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_RATE_SLEEPER_H
-#define GSTREAMER1_0_DRPAI_RATE_SLEEPER_H
+#pragma once
 
 #include <thread>
+#include "consts.h"
 
-class rate_sleeper {
+/**
+ * @brief Utility class to maintain a maximum execution rate by sleeping as needed.
+ */
+class rate_sleeper
+{
 
 private:
-    float last_sleep_duration = 0;
+    float last_sleep_duration = 0; /**< Duration of the last sleep in seconds. */
 
 public:
-    float max = 1.0f / 120;
+    float max = 1.0F / FRAMERATE_MAX; /**< Maximum allowed duration per cycle in seconds. */
 
+    /**
+     * @brief Default constructor for rate_sleeper.
+     */
     explicit rate_sleeper() = default;
 
-    void sleep_to_max_rate(float current_duration) {
+    /**
+     * @brief Sleeps for the required time to maintain the maximum rate.
+     * @param current_duration The duration of the current cycle in seconds.
+     */
+    void sleep_to_max_rate(const float current_duration)
+    {
+        // Calculate the required sleep time to maintain the max rate,
+        // adjusting for any leftover sleep from the previous cycle.
         const float s = max - current_duration + last_sleep_duration;
-        if (s > 0) {
-            //for some reason I had to add 25 milliseconds to this sleep to match the max_rate result. I don't know why.
-            last_sleep_duration = s;
-            std::this_thread::sleep_for(std::chrono::duration<float>(s));
-        }
-        else
+
+        // If no sleep is needed (or negative), reset last_sleep_duration and return.
+        if (s <= 0) {
             last_sleep_duration = 0;
+            return;
+        }
+
+        // Store the sleep duration for potential adjustment in the next cycle.
+        last_sleep_duration = s;
+
+        // Sleep for the calculated duration to maintain the desired rate.
+        std::this_thread::sleep_for(std::chrono::duration<float>(s));
     }
 };
-
-#endif //GSTREAMER1_0_DRPAI_RATE_SLEEPER_H

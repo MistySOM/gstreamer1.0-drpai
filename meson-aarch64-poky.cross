@@ -1,13 +1,16 @@
 [binaries]
-c = ['aarch64-poky-linux-gcc', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.14/sysroots/aarch64-poky-linux']
-cpp = ['aarch64-poky-linux-g++', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.14/sysroots/aarch64-poky-linux']
+c = ['aarch64-poky-linux-gcc', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.31/sysroots/aarch64-poky-linux']
+cpp = ['aarch64-poky-linux-g++', '-mcpu=cortex-a55', '-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-Wformat', '-Wformat-security', '-Werror=format-security', '--sysroot=/opt/poky/3.1.31/sysroots/aarch64-poky-linux']
 ar = ['aarch64-poky-linux-ar']
 nm = ['aarch64-poky-linux-nm']
 strip = ['aarch64-poky-linux-strip']
 pkg-config = 'pkg-config'
 
-[properties]
-needs_exe_wrapper = true
+[built-in options]
+c_args = []
+c_link_args = []
+cpp_args = []
+cpp_link_args = []
 
 [host_machine]
 system = 'linux'

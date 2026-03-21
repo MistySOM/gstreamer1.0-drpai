@@ -2,33 +2,23 @@
 // Created by matin on 01/12/23.
 //
 
-#ifndef GSTREAMER1_0_DRPAI_MOBILENET_POST_PROCESSOR_H
-#define GSTREAMER1_0_DRPAI_MOBILENET_POST_PROCESSOR_H
+#pragma once
 
 #include "../base_post_processor.h"
 
-class MobileNet_PostProcessor: public BasePostProcessor {
+class MobileNet_PostProcessor final : public BasePostProcessor
+{
 
 public:
-    explicit MobileNet_PostProcessor(const std::string& prefix);
+    explicit MobileNet_PostProcessor(const std::string &prefix);
     ~MobileNet_PostProcessor() override = default;
 
-    void open_resource(uint32_t inference_output_size, uint32_t img_width, uint32_t img_height) override;
-    void extract_detections(const std::vector<float>& inference_output_buf) override;
-    void render_detections_on_image(Image &img) override;
-    [[nodiscard]] std::string get_status() const override;
-
-    [[nodiscard]] json_array get_detections_json() override;
-    [[nodiscard]] json_object get_json() override;
-
-    [[nodiscard]] bool set_property(const std::string& key, const std::string& value) override;
+    void extract_detections(std::vector<std::vector<float>> const &inference_output_buf) override;
 
 private:
-    float TH_PROB = 0.5f;
-    std::vector<std::string> labels {};
+    int output_index_classes = -1;
+    int output_index_boxes   = -1;
+    int output_index_scores  = -1;
 
-    void load_label_file(const std::string& label_file_name);
+    void update_output_indices(std::vector<std::vector<float>> const &inference_output_buf);
 };
-
-
-#endif //GSTREAMER1_0_DRPAI_MOBILENET_POST_PROCESSOR_H

@@ -2,7 +2,7 @@
 // Created by matin on 25/12/23.
 //
 
-#include "drpai-models/drpai-yolo/tracker.h"
+#include "../src/tracker.h"
 #include "box.h"
 #include <thread>
 #include <chrono>
@@ -33,10 +33,10 @@ int main(int argc, char** argv) {
     tracker t(true, 1, 2.25, 1);
     t.history_length = 3;
 
-    std::list<detection> detections = {
-            detection(Box(100, 100, 20, 20), 1, 1, "name"),
-            detection(Box(200, 100, 20, 20), 2, 1, "name"),
-            detection(Box(100, 200, 20, 20), 1, 1, "name"),
+    std::list detections = {
+            detection(Box(100, 100, 20, 20), 1, 1),
+            detection(Box(200, 100, 20, 20), 2, 1),
+            detection(Box(100, 200, 20, 20), 1, 1),
     };
     t.track(detections);
     auto result = t.last_tracked_detection;
@@ -47,9 +47,9 @@ int main(int argc, char** argv) {
         if (arg == ARG_TIME || arg == ARG_HISTORY) std::this_thread::sleep_for(std::chrono::seconds(2));
 
         detections = std::list<detection> {
-                detection{Box(202, 101, 20, 20), 2, 1, "name"},
-                detection{Box(102, 201, 20, 20), 1, 1, "name"},
-                detection{Box(101, 105, 20, 20), 1, 1, "name"},
+                detection{Box(202, 101, 20, 20), 2, 1},
+                detection{Box(102, 201, 20, 20), 1, 1},
+                detection{Box(101, 105, 20, 20), 1, 1},
         };
         t.track(detections);
         auto result_later = t.last_tracked_detection;
