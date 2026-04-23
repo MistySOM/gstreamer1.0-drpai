@@ -33,6 +33,7 @@
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
         "modernize-use-trailing-return-type",
         "readability-identifier-length",
+        "readability-avoid-const-params-in-decls",
         "bugprone-easily-swappable-parameters",
         "bugprone-implicit-widening-of-multiplication-result",
         "performance-avoid-endl",

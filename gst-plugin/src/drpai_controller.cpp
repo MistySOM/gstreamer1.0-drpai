@@ -647,9 +647,10 @@ void DRPAI_Controller::install_properties(std::map<GstDRPAI_Properties, GParamSp
                                                       "Suppression (NMS), "
                                                       "which filters out overlapping bounding boxes.",
                                                       0, PERCENT_MUL, 50, G_PARAM_READWRITE));
-    params.emplace(PROP_FILTER_PROB, g_param_spec_uint("filter-prob", "Filter Probability",
-                                                       "The probability in percent of detection to consider as valid.",
-                                                       0, PERCENT_MUL, 50, G_PARAM_READWRITE));
+    params.emplace(PROP_FILTER_PROB,
+                   g_param_spec_uint("filter-prob", "Filter Probability",
+                                     "The probability in percent of detection to consider as valid.", 0, PERCENT_MUL,
+                                     static_cast<uint32_t>(TH_PROB_DEFAULT * PERCENT_MUL), G_PARAM_READWRITE));
     params.emplace(PROP_FILTER_SHOW,
                    g_param_spec_boolean("filter-show", "Filter Show", "Show a yellow box where the filter is applied.",
                                         FALSE, G_PARAM_READWRITE));

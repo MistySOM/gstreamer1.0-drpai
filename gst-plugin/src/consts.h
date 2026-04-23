@@ -2,13 +2,14 @@
 
 #include <cstdint>
 
-constexpr static uint32_t BYTE_MASK      = 0xFF;
-constexpr static uint32_t BITS_PER_HEX   = 4;
-constexpr static uint32_t BITS_PER_BYTE  = 8;
-constexpr static uint32_t BITS_PER_SHORT = 2 * BITS_PER_BYTE;
-constexpr static uint32_t HEX_BASE       = 16;
-constexpr static float    FRAMERATE_MAX  = 120.0F;
-constexpr static uint32_t SMOOTH_FPS_MAX = 1000;
+constexpr static uint32_t BYTE_MASK       = 0xFF;
+constexpr static uint32_t BITS_PER_HEX    = 4;
+constexpr static uint32_t BITS_PER_BYTE   = 8;
+constexpr static uint32_t BITS_PER_SHORT  = 2 * BITS_PER_BYTE;
+constexpr static uint32_t HEX_BASE        = 16;
+constexpr static float    FRAMERATE_MAX   = 120.0F;
+constexpr static float    TH_PROB_DEFAULT = 0.5F;
+constexpr static uint32_t SMOOTH_FPS_MAX  = 1000;
 
 constexpr static uint32_t DRPAI_MEM_OFFSET = 0x38E0000;
 constexpr static uint32_t DRPAI_TIMEOUT    = 5;    /// Seconds to wait until DRP-AI Driver generates the output.
