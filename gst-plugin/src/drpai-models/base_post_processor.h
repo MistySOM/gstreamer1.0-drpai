@@ -6,6 +6,7 @@
 
 #include <list>
 #include "box.h"
+#include "consts.h"
 #include "utils/json.h"
 
 class BasePostProcessor
@@ -15,6 +16,11 @@ public:
     /// @param [in] prefix The prefix of the DRP-AI object files.
     explicit BasePostProcessor(const std::string &prefix);
     virtual ~BasePostProcessor() = default;
+
+    BasePostProcessor(const BasePostProcessor &)            = delete;
+    BasePostProcessor &operator=(const BasePostProcessor &) = delete;
+    BasePostProcessor(BasePostProcessor &&)                 = delete;
+    BasePostProcessor &operator=(BasePostProcessor &&)      = delete;
 
     /// Opens post processor resources.
     /// This function can get overridden by the child class to allocate any additional devices, libraries, files, etc.
@@ -48,7 +54,8 @@ public:
     [[nodiscard]] static std::string get_param(const std::string &params_file_name, const std::string &param,
                                                bool error_not_found = true);
 
-    float                TH_PROB = 0.5F;
+    float TH_PROB = TH_PROB_DEFAULT;
+
     std::list<detection> detections; /// List of latest detections, filled by `extract_detections` function
 
     /// Extract information from the output layer of the running ML model and writes them into the last detections list.

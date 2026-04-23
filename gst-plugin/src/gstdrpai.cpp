@@ -81,7 +81,9 @@ static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *q
             gst_query_parse_allocation(query, &caps, &need_pool);
 
             if (need_pool == TRUE && obj->udma_buffer_pool != nullptr) {
-                std::cout << "\tNeed a pool for " << gst_caps_to_string(caps) << std::endl;
+                gchar *caps_str = gst_caps_to_string(caps);
+                std::cout << "\tNeed a pool for " << caps_str << std::endl;
+                g_free(caps_str);
 
                 gst_query_add_allocation_pool(query, obj->udma_buffer_pool.get(), 1, 0, 1);
 
@@ -96,7 +98,7 @@ static gboolean gst_drpai_sink_query(GstPad *pad, GstObject *parent, GstQuery *q
             break;
     }
 
-    return FALSE;
+    return gst_pad_query_default(pad, parent, query);
 }
 
 static GstStateChangeReturn gst_drpai_change_state(GstElement *element, const GstStateChange transition)
@@ -147,10 +149,8 @@ static void gst_drpai_set_property(GObject *object, const guint prop_id, const G
         }
     } catch (std::runtime_error &e) {
         std::cerr << "\n" << e.what() << "\n" << std::endl;
-        throw;
-    } catch (std::exception &e) {
+    } catch (std::exception &) {
         G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-        throw;
     }
 }
 
@@ -201,7 +201,7 @@ static gboolean gst_drpai_sink_event(GstPad *pad, GstObject *parent, GstEvent *e
                 obj->drpai_controller->open_resources_with_image_size(width, height);
             } catch (const std::exception &e) {
                 std::cerr << "\n" << e.what() << "\n" << std::endl;
-                throw;
+                return FALSE;
             }
 
             /* and forward */
@@ -229,6 +229,7 @@ static GstFlowReturn gst_drpai_chain(GstPad *pad, GstObject *parent, GstBuffer *
     } catch (const std::exception &e) {
         std::cerr << "\n" << e.what() << "\n" << std::endl;
         if (obj->stop_error) {
+            gst_buffer_unmap(buf, &info);
             gst_buffer_unref(buf);
             return GST_FLOW_ERROR;
         }
@@ -261,6 +262,14 @@ static void gst_drpai_init(GstDRPAI *self)
     self->stop_error       = TRUE;
 }
 
+static void gst_drpai_finalize(GObject *object)
+{
+    auto *self = GST_PLUGIN_DRPAI(object);
+    self->drpai_controller.reset();
+    self->udma_buffer_pool.reset();
+    G_OBJECT_CLASS(parent_class)->finalize(object);
+}
+
 /* initialize the plugin's class */
 static void gst_drpai_class_init(GstDRPAIClass *klass)
 {
@@ -269,6 +278,7 @@ static void gst_drpai_class_init(GstDRPAIClass *klass)
 
     gobject_class->set_property = gst_drpai_set_property;
     gobject_class->get_property = gst_drpai_get_property;
+    gobject_class->finalize     = gst_drpai_finalize;
 
     gstelement_class->change_state = gst_drpai_change_state;
 

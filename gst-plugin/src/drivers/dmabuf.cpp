@@ -31,6 +31,9 @@ DMABuffer *DMABuffer::instance(uint32_t buf_size)
 {
     if (singleton_instance == nullptr) {
         singleton_instance = std::make_unique<DMABuffer>(buf_size);
+    } else if (singleton_instance->size != buf_size) {
+        std::cerr << ERROR << "DMABuffer::instance() called with buf_size=" << buf_size
+                  << " but singleton already allocated with size=" << singleton_instance->size << std::endl;
     }
     return singleton_instance.get();
 }
@@ -46,8 +49,6 @@ void DMABuffer::release()
 DMABuffer::DMABuffer(const uint32_t buf_size) : size(buf_size)
 {
 #ifdef HAVE_MMNGR
-    MMNGR_ID id = 0;
-
     int ret = mmngr_alloc_in_user_ext(&idx, size, &phy_addr, &mem, MMNGR_VA_SUPPORT_CACHED, nullptr);
     if (ret < 0) {
         throw std::runtime_error("Can't allocate user ext in mmngr: " + std::to_string(ret));
@@ -56,7 +57,7 @@ DMABuffer::DMABuffer(const uint32_t buf_size) : size(buf_size)
     // Write once to allocate physical memory to u-dma-buf virtual space.
     std::memset(mem, 0, size);
 
-    ret = mmngr_export_start_in_user_ext(&id, size, phy_addr, &fd, nullptr);
+    ret = mmngr_export_start_in_user_ext(&export_id, size, phy_addr, &fd, nullptr);
     if (ret < 0) {
         throw std::runtime_error("Can't export start user ext in mmngr: " + std::to_string(ret));
     }
@@ -84,6 +85,9 @@ DMABuffer::DMABuffer(const uint32_t buf_size) : size(buf_size)
 DMABuffer::~DMABuffer()
 {
 #ifdef HAVE_MMNGR
+    if (const int ret = mmngr_export_end_in_user_ext(export_id); ret < 0) {
+        std::cerr << ERROR << "Can't end export in mmngr: " << ret << std::endl;
+    }
     if (const int ret = mmngr_free_in_user_ext(idx); ret < 0) {
         std::cerr << ERROR << "Can't free user ext in mmngr: " << ret << std::endl;
     }
